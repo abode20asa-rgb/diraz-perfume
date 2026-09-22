@@ -1,0 +1,1146 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>لوحة التحكم | ديراز</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root { --pink:#f4a7be; --pink-dark:#e07898; --pink-deep:#c45a7a; --pink-light:#fce4ef; }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        body {
+            font-family:'Cairo',sans-serif; direction:rtl;
+            background-color:var(--pink);
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat:repeat; background-size:120px 60px; min-height:100vh;
+        }
+
+        /* ══ شاشة كلمة السر ══ */
+        #lockScreen {
+            position:fixed; inset:0; z-index:9999;
+            background:rgba(196,90,122,0.96); backdrop-filter:blur(20px);
+            display:flex; align-items:center; justify-content:center;
+        }
+        .lock-box {
+            background:rgba(255,255,255,0.18); border:1.5px solid rgba(255,255,255,0.45);
+            border-radius:24px; padding:50px 40px; text-align:center;
+            max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.2);
+        }
+        .lock-icon { font-size:3rem; margin-bottom:14px; }
+        .lock-box h2 { color:white; font-size:1.5rem; font-weight:900; margin-bottom:6px; }
+        .lock-box p  { color:rgba(255,255,255,0.8); font-size:0.9rem; margin-bottom:28px; }
+        .lock-input {
+            width:100%; padding:14px 18px; border-radius:50px;
+            border:2px solid rgba(255,255,255,0.5); background:rgba(255,255,255,0.2);
+            color:white; font-family:'Cairo',sans-serif; font-size:1rem;
+            text-align:center; letter-spacing:3px; outline:none; margin-bottom:14px;
+        }
+        .lock-input::placeholder { color:rgba(255,255,255,0.6); letter-spacing:1px; }
+        .lock-input:focus { border-color:white; background:rgba(255,255,255,0.3); }
+        .lock-btn {
+            width:100%; padding:14px; border-radius:50px; border:none;
+            background:white; color:var(--pink-deep);
+            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:900;
+            cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
+            box-shadow:0 5px 20px rgba(255,255,255,0.3);
+        }
+        .lock-btn:hover { transform:translateY(-3px); }
+        .lock-error { color:#ffd0d0; font-size:0.85rem; margin-top:10px; display:none; }
+
+        /* ══ Admin Panel ══ */
+        #adminPanel { display:none; padding-bottom:60px; }
+        header {
+            position:sticky; top:0; z-index:100;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 24px;
+            background:rgba(244,150,185,0.9); backdrop-filter:blur(14px);
+            border-bottom:1px solid rgba(255,255,255,0.35);
+            box-shadow:0 2px 20px rgba(196,90,122,0.2);
+        }
+        .logo { width:46px; height:46px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.7); }
+        .header-title { color:white; font-size:1rem; font-weight:900; }
+        .logout-btn {
+            background:white; color:var(--pink-deep); border:none;
+            padding:8px 18px; border-radius:50px;
+            font-family:'Cairo',sans-serif; font-size:0.85rem; font-weight:700;
+            cursor:pointer; transition:transform 0.2s;
+        }
+        .logout-btn:hover { transform:translateY(-2px); }
+
+        main { max-width:900px; margin:0 auto; padding:40px 20px; }
+        .section-card {
+            background:rgba(255,255,255,0.25); backdrop-filter:blur(18px);
+            border:1.5px solid rgba(255,255,255,0.5);
+            border-radius:22px; padding:30px; margin-bottom:28px;
+        }
+        .section-card h2 {
+            color:white; font-size:1.3rem; font-weight:900;
+            margin-bottom:22px; padding-bottom:12px;
+            border-bottom:1px solid rgba(255,255,255,0.3);
+        }
+
+        /* ══ Form ══ */
+        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+        .form-group { display:flex; flex-direction:column; gap:6px; }
+        .form-group.full { grid-column:1/-1; }
+        label { color:rgba(255,255,255,0.9); font-size:0.85rem; font-weight:700; }
+        input[type=text], input[type=number], select, textarea {
+            padding:11px 16px; border-radius:12px;
+            border:1.5px solid rgba(255,255,255,0.4);
+            background:rgba(255,255,255,0.2); color:white;
+            font-family:'Cairo',sans-serif; font-size:0.95rem; outline:none;
+            transition:border 0.2s;
+        }
+        input::placeholder, textarea::placeholder { color:rgba(255,255,255,0.55); }
+        input:focus, select:focus, textarea:focus { border-color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.28); }
+        select option { background:#c45a7a; color:white; }
+        textarea { resize:vertical; min-height:80px; }
+
+        /* ══ File Upload ══ */
+        .file-upload-area {
+            border:2px dashed rgba(255,255,255,0.5); border-radius:14px;
+            padding:22px; text-align:center; cursor:pointer;
+            transition:all 0.25s; position:relative; background:rgba(255,255,255,0.1);
+        }
+        .file-upload-area:hover, .file-upload-area.dragover {
+            border-color:white; background:rgba(255,255,255,0.22);
+        }
+        .file-upload-area input[type=file] {
+            position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
+        }
+        .upload-icon { font-size:2rem; margin-bottom:8px; }
+        .upload-text { color:rgba(255,255,255,0.9); font-size:0.9rem; font-weight:700; }
+        .upload-sub  { color:rgba(255,255,255,0.65); font-size:0.78rem; margin-top:4px; }
+
+        /* معاينة الصورة */
+        .img-preview-wrap {
+            margin-top:14px; display:none; align-items:center; gap:14px;
+            background:rgba(255,255,255,0.15); border-radius:12px; padding:12px;
+        }
+        .img-preview-wrap.visible { display:flex; }
+        #imgPreviewBig {
+            width:80px; height:80px; border-radius:10px; object-fit:cover;
+            border:2px solid rgba(255,255,255,0.6); flex-shrink:0;
+        }
+        .img-preview-info { flex:1; color:white; font-size:0.85rem; }
+        .img-preview-info strong { display:block; margin-bottom:4px; }
+        .img-preview-info span { color:rgba(255,255,255,0.7); font-size:0.78rem; }
+        .btn-remove-img {
+            background:rgba(255,80,80,0.35); border:1px solid rgba(255,100,100,0.5);
+            color:white; padding:6px 14px; border-radius:50px; font-size:0.78rem;
+            font-family:'Cairo',sans-serif; cursor:pointer; font-weight:700;
+            transition:background 0.2s;
+        }
+        .btn-remove-img:hover { background:rgba(255,80,80,0.55); }
+
+        /* حجم التخزين */
+        .storage-bar-wrap { margin-top:14px; }
+        .storage-label { color:rgba(255,255,255,0.8); font-size:0.8rem; margin-bottom:5px; }
+        .storage-bar { height:6px; border-radius:3px; background:rgba(255,255,255,0.2); overflow:hidden; }
+        .storage-fill { height:100%; border-radius:3px; background:white; transition:width 0.4s; }
+
+        .form-actions { display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
+        .btn-save {
+            flex:1; padding:13px; border-radius:50px; border:none;
+            background:white; color:var(--pink-deep);
+            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:900;
+            cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
+            box-shadow:0 4px 16px rgba(255,255,255,0.3);
+        }
+        .btn-save:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(255,255,255,0.4); }
+        .btn-cancel {
+            padding:13px 28px; border-radius:50px;
+            border:2px solid rgba(255,255,255,0.6);
+            background:transparent; color:white;
+            font-family:'Cairo',sans-serif; font-size:0.95rem; font-weight:700;
+            cursor:pointer; transition:all 0.2s; display:none;
+        }
+        .btn-cancel:hover { background:rgba(255,255,255,0.15); }
+
+        /* ══ قائمة العطور ══ */
+        .perfume-list { display:flex; flex-direction:column; gap:12px; }
+        .perfume-item {
+            display:flex; align-items:center; justify-content:space-between;
+            background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4);
+            border-radius:14px; padding:14px 18px; gap:12px; transition:background 0.2s;
+        }
+        .perfume-item:hover { background:rgba(255,255,255,0.3); }
+        .item-thumb {
+            width:58px; height:58px; border-radius:10px; object-fit:cover;
+            border:2px solid rgba(255,255,255,0.5); flex-shrink:0; background:rgba(255,255,255,0.1);
+            display:flex; align-items:center; justify-content:center; font-size:1.4rem;
+        }
+        .item-thumb img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
+        .perfume-info { flex:1; }
+        .perfume-info .pname { color:white; font-weight:900; font-size:1rem; }
+        .perfume-info .pmeta { color:rgba(255,255,255,0.75); font-size:0.82rem; margin-top:3px; }
+        .item-actions { display:flex; gap:8px; flex-shrink:0; }
+        .btn-edit {
+            padding:8px 18px; border-radius:50px; border:none;
+            background:white; color:var(--pink-deep);
+            font-family:'Cairo',sans-serif; font-size:0.82rem; font-weight:700;
+            cursor:pointer; transition:transform 0.2s;
+        }
+        .btn-edit:hover { transform:translateY(-2px); }
+        .btn-delete {
+            padding:8px 16px; border-radius:50px;
+            border:2px solid rgba(255,255,255,0.5);
+            background:transparent; color:white;
+            font-family:'Cairo',sans-serif; font-size:0.82rem; font-weight:700;
+            cursor:pointer; transition:all 0.2s;
+        }
+        .btn-delete:hover { background:rgba(255,0,0,0.25); }
+        .btn-move {
+            width:34px; height:34px; border-radius:50%;
+            border:1.5px solid rgba(255,255,255,0.6);
+            background:rgba(255,255,255,0.16); color:white;
+            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:900;
+            cursor:pointer; transition:all 0.2s;
+        }
+        .btn-move:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
+        .btn-move:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
+        .empty-msg { text-align:center; color:rgba(255,255,255,0.7); padding:30px 0; }
+
+        #toast {
+            position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px);
+            background:rgba(30,30,30,0.92); color:white;
+            padding:12px 30px; border-radius:50px; font-size:0.9rem; font-weight:700;
+            z-index:9999; transition:transform 0.4s ease; pointer-events:none;
+        }
+        #toast.show { transform:translateX(-50%) translateY(0); }
+
+        @media(max-width:600px){
+            .form-grid{grid-template-columns:1fr}
+            .perfume-item{flex-direction:column;align-items:flex-start}
+        }
+    
+        /* ══ إحصائيات ══ */
+        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px; }
+        .stat-card {
+            background:rgba(255,255,255,0.25); border:1.5px solid rgba(255,255,255,0.5);
+            border-radius:18px; padding:22px 18px; text-align:center;
+        }
+        .stat-icon  { font-size:2rem; margin-bottom:8px; }
+        .stat-num   { font-size:2rem; font-weight:900; color:white; line-height:1; }
+        .stat-label { color:rgba(255,255,255,0.75); font-size:0.83rem; margin-top:5px; }
+
+        /* ══ فلتر الطلبات ══ */
+        .filter-bar { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
+        .filter-btn {
+            padding:8px 20px; border-radius:50px; border:1.5px solid rgba(255,255,255,0.5);
+            background:transparent; color:white;
+            font-family:'Cairo',sans-serif; font-size:.85rem; font-weight:700;
+            cursor:pointer; transition:all .2s;
+        }
+        .filter-btn.active, .filter-btn:hover { background:white; color:#c45a7a; }
+
+        /* ══ بطاقة طلب ══ */
+        .order-card {
+            background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4);
+            border-radius:16px; padding:18px; margin-bottom:12px;
+            transition:background .2s;
+        }
+        .order-card:hover { background:rgba(255,255,255,0.28); }
+        .order-top {
+            display:flex; align-items:center; justify-content:space-between;
+            margin-bottom:12px; flex-wrap:wrap; gap:8px;
+        }
+        .order-id    { color:rgba(255,255,255,0.55); font-size:.78rem; }
+        .order-cust  { color:white; font-weight:900; font-size:1rem; }
+        .order-phone { color:rgba(255,255,255,0.75); font-size:.85rem; }
+        .order-address { color:rgba(255,255,255,0.75); font-size:.85rem; }
+        .order-date  { color:rgba(255,255,255,0.6); font-size:.78rem; }
+        .status-badge {
+            padding:5px 14px; border-radius:20px; font-size:.78rem; font-weight:800;
+            border:none; cursor:pointer; font-family:'Cairo',sans-serif; transition:all .2s;
+        }
+        .status-pending   { background:rgba(255,193,7,0.35); color:#ffe566; border:1px solid rgba(255,193,7,0.5); }
+        .status-delivered { background:rgba(37,211,102,0.3); color:#5fffaa; border:1px solid rgba(37,211,102,0.5); }
+        .order-items-list { margin:10px 0; padding:10px; background:rgba(0,0,0,0.1); border-radius:10px; }
+        .order-item-row   { color:rgba(255,255,255,0.85); font-size:.85rem; padding:3px 0; }
+        .order-total-row  {
+            display:flex; justify-content:space-between; align-items:center;
+            padding-top:10px; border-top:1px solid rgba(255,255,255,0.2);
+            margin-top:8px;
+        }
+        .order-total-label { color:rgba(255,255,255,0.7); font-size:.85rem; }
+        .order-total-val   { color:white; font-weight:900; font-size:1.1rem; }
+        .order-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
+        .btn-deliver {
+            padding:8px 18px; border-radius:50px; border:none;
+            background:rgba(37,211,102,0.3); color:#5fffaa;
+            border:1px solid rgba(37,211,102,0.5);
+            font-family:'Cairo',sans-serif; font-size:.82rem; font-weight:700;
+            cursor:pointer; transition:all .2s;
+        }
+        .btn-deliver:hover { background:rgba(37,211,102,0.5); }
+        .btn-del-order {
+            padding:8px 16px; border-radius:50px;
+            border:1px solid rgba(255,100,100,0.4);
+            background:rgba(255,80,80,0.15); color:rgba(255,180,180,.9);
+            font-family:'Cairo',sans-serif; font-size:.82rem; font-weight:700;
+            cursor:pointer; transition:all .2s;
+        }
+        .btn-del-order:hover { background:rgba(255,80,80,0.3); }
+        .btn-wa-resend {
+            padding:8px 16px; border-radius:50px;
+            border:1px solid rgba(37,211,102,0.4);
+            background:rgba(37,211,102,0.15); color:rgba(100,255,150,.9);
+            font-family:'Cairo',sans-serif; font-size:.82rem; font-weight:700;
+            cursor:pointer; transition:all .2s;
+        }
+        .btn-wa-resend:hover { background:rgba(37,211,102,0.3); }
+        .no-orders { text-align:center; color:rgba(255,255,255,0.65); padding:40px 0; }
+        
+        /* ══ قسم الزبائن ══ */
+        .cust-grid { display:flex; flex-direction:column; gap:10px; }
+        .cust-item {
+            display:flex; align-items:center; gap:14px;
+            background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.38);
+            border-radius:14px; padding:13px 16px; transition:background .2s;
+        }
+        .cust-item:hover { background:rgba(255,255,255,0.28); }
+        .cust-num {
+            width:34px; height:34px; border-radius:50%; flex-shrink:0;
+            background:rgba(255,255,255,0.3); color:white;
+            font-weight:900; font-size:.95rem;
+            display:flex; align-items:center; justify-content:center;
+        }
+        .cust-info { flex:1; }
+        .cust-name  { color:white; font-weight:800; font-size:.97rem; }
+        .cust-phone { color:rgba(255,255,255,0.7); font-size:.83rem; margin-top:2px; }
+        .cust-address { color:rgba(255,255,255,0.7); font-size:.83rem; margin-top:2px; }
+        .cust-orders-count {
+            background:rgba(255,255,255,0.2); color:white;
+            padding:4px 12px; border-radius:20px; font-size:.78rem; font-weight:700;
+            white-space:nowrap;
+        }
+        .no-custs { text-align:center; color:rgba(255,255,255,0.6); padding:30px 0; }
+        
+        /* ══ قسم أكواد الخصم ══ */
+        .coupon-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+        .coupon-item {
+            display:flex; align-items:center; justify-content:space-between;
+            flex-wrap:wrap; gap:10px;
+            background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.38);
+            border-radius:14px; padding:14px 18px; transition:background .2s;
+        }
+        .coupon-item:hover { background:rgba(255,255,255,0.26); }
+        .coupon-inactive { opacity:.5; }
+        .coupon-code-big {
+            font-size:1.15rem; font-weight:900; color:white;
+            letter-spacing:2px; font-family:monospace;
+            background:rgba(255,255,255,0.15); padding:4px 14px;
+            border-radius:8px; border:1px dashed rgba(255,255,255,0.4);
+        }
+        .coupon-meta { color:rgba(255,255,255,0.75); font-size:.83rem; flex:1; padding:0 10px; line-height:1.7; }
+        .coupon-meta strong { color:white; }
+        .coupon-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+        .uses-bar-wrap { margin-top:4px; }
+        .uses-bar { height:5px; border-radius:3px; background:rgba(255,255,255,0.15); overflow:hidden; width:120px; }
+        .uses-fill { height:100%; background:white; border-radius:3px; transition:width .4s; }
+        .backup-actions { display:flex; gap:10px; flex-wrap:wrap; }
+        .backup-btn { flex:1; min-width:180px; padding:12px 18px; border-radius:50px; border:1.5px solid rgba(255,255,255,0.55); background:rgba(255,255,255,0.18); color:white; font-family:'Cairo',sans-serif; font-size:.9rem; font-weight:800; cursor:pointer; transition:all .2s; }
+        .backup-btn:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
+        .backup-note { color:rgba(255,255,255,0.72); font-size:.82rem; margin-top:10px; line-height:1.7; }
+        </style>
+</head>
+<body>
+
+<!-- شاشة كلمة السر -->
+<div id="lockScreen">
+    <div class="lock-box">
+        <div class="lock-icon">🔐</div>
+        <h2>لوحة التحكم</h2>
+        <p>ديراز للعطور — الدخول للمشرف فقط</p>
+        <input type="password" id="passInput" class="lock-input" placeholder="كلمة السر"
+               onkeydown="if(event.key==='Enter')checkPass()">
+        <button class="lock-btn" onclick="checkPass()">دخول</button>
+        <div class="lock-error" id="lockError">❌ كلمة السر غلط، حاول مرة ثانية</div>
+    </div>
+</div>
+
+<!-- لوحة التحكم -->
+<div id="adminPanel">
+    <header>
+        <img src="images/logo.jpg" alt="Logo" class="logo">
+        <div class="header-title">⚙️ لوحة التحكم — ديراز للعطور</div>
+        <button class="logout-btn" onclick="logout()">خروج 🚪</button>
+    </header>
+
+    <main>
+        <!-- ══ إحصائيات ══ -->
+        <div class="stats-grid" id="statsGrid"></div>
+
+        <!-- ══ النسخ الاحتياطي ══ -->
+        <div class="section-card">
+            <h2>💾 النسخ الاحتياطي</h2>
+            <div class="backup-actions">
+                <button class="backup-btn" onclick="downloadBackup()">⬇️ تنزيل نسخة كاملة</button>
+                <button class="backup-btn" onclick="document.getElementById('backupFile').click()">⬆️ استرجاع نسخة</button>
+                <button class="backup-btn" onclick="restoreLastBackup()">↩️ تراجع عن آخر حذف</button>
+            </div>
+            <input type="file" id="backupFile" accept="application/json,.json" hidden onchange="importBackup(this)">
+            <div class="backup-note">يتم حفظ نسخة تلقائياً قبل الحذف، وتحديثها بعد الإضافة أو التعديل أو تغيير الترتيب. احتفظ بملف النسخة خارج المتصفح.</div>
+        </div>
+
+        <!-- ══ أكواد الخصم ══ -->
+        <div class="section-card">
+            <h2>🏷️ أكواد الخصم</h2>
+            <div class="coupon-form-grid">
+                <div class="form-group">
+                    <label>الكود * (عربي أو إنجليزي وأرقام)</label>
+                    <input type="text" id="cp_code" placeholder="مثال: DIRAZ20 أو خصم20">
+                </div>
+                <div class="form-group">
+                    <label>نوع الخصم *</label>
+                    <select id="cp_type">
+                        <option value="percent">نسبة مئوية (%)</option>
+                        <option value="fixed">مبلغ ثابت (دينار)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>قيمة الخصم *</label>
+                    <input type="number" id="cp_value" placeholder="مثال: 20">
+                </div>
+                <div class="form-group">
+                    <label>إجمالي عدد استخدامات الكود</label>
+                    <input type="number" id="cp_maxUses" placeholder="1" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>طريقة الاستخدام</label>
+                    <select id="cp_usagePolicy">
+                        <option value="once">مرة واحدة لكل زبون</option>
+                        <option value="multiple">عدة مرات للزبون نفسه</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-actions" style="margin-top:14px">
+                <button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button>
+            </div>
+            <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;" id="couponsList"></div>
+        </div>
+
+        <!-- ══ قسم الزبائن ══ -->
+        <div class="section-card">
+            <h2>👥 قائمة الزبائن (<span id="custCount">0</span>)</h2>
+            <div class="cust-grid" id="custList"></div>
+        </div>
+
+        <!-- ══ قسم الطلبات ══ -->
+        <div class="section-card">
+            <h2>📦 إدارة الطلبات</h2>
+            <div class="filter-bar">
+                <button class="filter-btn active" onclick="filterOrders('all',this)">الكل</button>
+                <button class="filter-btn" onclick="filterOrders('pending',this)">🟡 قيد الانتظار</button>
+                <button class="filter-btn" onclick="filterOrders('delivered',this)">🟢 تم التسليم</button>
+            </div>
+            <div id="ordersList"></div>
+        </div>
+
+        <!-- نموذج الإضافة / التعديل -->
+        <div class="section-card" id="perfumeFormSection">
+            <h2 id="formTitle">➕ إضافة عطر جديد</h2>
+            <div class="form-grid">
+
+                <div class="form-group">
+                    <label>اسم العطر بالعربي *</label>
+                    <input type="text" id="f_name" placeholder="مثال: ورد الليل">
+                </div>
+                <div class="form-group">
+                    <label>الاسم بالإنجليزي</label>
+                    <input type="text" id="f_nameEn" placeholder="Night Rose">
+                </div>
+                <div class="form-group">
+                    <label>النوع *</label>
+                    <select id="f_type">
+                        <option value="نسائي">نسائي</option>
+                        <option value="رجالي">رجالي</option>
+                        <option value="للجنسين">للجنسين</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>الحجم الثابت</label>
+                    <input type="text" id="f_size" value="50ml" readonly>
+                </div>
+                <div class="form-group">
+                    <label>السعر الحالي (بعد الخصم) *</label>
+                    <input type="number" id="f_price" value="20000" placeholder="20000" min="0">
+                </div>
+                <div class="form-group">
+                    <label>السعر القديم قبل الخصم <span style="opacity:0.6;font-weight:400">(اختياري — اتركه فارغاً إذا لا يوجد خصم)</span></label>
+                    <input type="number" id="f_oldPrice" placeholder="35000">
+                </div>
+                <div class="form-group">
+                    <label>العملة</label>
+                    <select id="f_currency">
+                        <option value="دينار">دينار</option>
+                        <option value="ريال">ريال</option>
+                        <option value="درهم">درهم</option>
+                        <option value="دولار">دولار</option>
+                    </select>
+                </div>
+
+                <!-- حقل الصورة — رفع ملف -->
+                <div class="form-group full">
+                    <label>صورة العطر</label>
+                    <div class="file-upload-area" id="uploadArea"
+                         ondragover="event.preventDefault();this.classList.add('dragover')"
+                         ondragleave="this.classList.remove('dragover')"
+                         ondrop="handleDrop(event)">
+                        <input type="file" id="f_image" accept="image/*" onchange="handleFile(this)">
+                        <div class="upload-icon">🖼️</div>
+                        <div class="upload-text">اضغط لاختيار صورة أو اسحبها هنا</div>
+                        <div class="upload-sub">JPG · PNG · WEBP — الصورة تُحفظ مباشرة في المتصفح</div>
+                    </div>
+
+                    <!-- معاينة الصورة بعد الاختيار -->
+                    <div class="img-preview-wrap" id="previewWrap">
+                        <img id="imgPreviewBig" src="" alt="معاينة">
+                        <div class="img-preview-info">
+                            <strong id="previewName">صورة محددة</strong>
+                            <span id="previewSize">—</span>
+                        </div>
+                        <button class="btn-remove-img" onclick="removeImage()">✕ إزالة</button>
+                    </div>
+
+                    <!-- شريط حجم التخزين -->
+                    <div class="storage-bar-wrap">
+                        <div class="storage-label" id="storageLabel">💾 التخزين المستخدم: يتم الحساب...</div>
+                        <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+                    </div>
+                </div>
+
+                <div class="form-group full">
+                    <label>وصف مختصر (اختياري)</label>
+                    <textarea id="f_desc" placeholder="رائحة زهرية ناعمة..."></textarea>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button class="btn-save"   onclick="savePerfume()">💾 حفظ العطر</button>
+                <button class="btn-cancel" id="cancelBtn" onclick="resetForm()">إلغاء التعديل</button>
+            </div>
+        </div>
+
+        <!-- قائمة العطور الحالية -->
+        <div class="section-card">
+            <h2>🌺 العطور الحالية (<span id="countBadge">0</span>)</h2>
+            <div class="perfume-list" id="perfumeList"></div>
+        </div>
+    </main>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  🔐 كلمة السر — غيّرها من هنا
+// ═══════════════════════════════════════
+const ADMIN_PASSWORD = 'diraz@2026/admin';
+const STORAGE_KEY    = 'diraz_perfumes';
+const BACKUP_KEY     = 'diraz_full_backup';
+const LAST_BACKUP_KEY= 'diraz_last_before_delete';
+
+function collectBackup() {
+    const data = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key !== BACKUP_KEY && key !== LAST_BACKUP_KEY) data[key] = localStorage.getItem(key);
+    }
+    return { version: 1, savedAt: new Date().toISOString(), data };
+}
+function saveAutomaticBackup() {
+    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(collectBackup())); } catch(e) { showToast('⚠️ تعذر حفظ النسخة تلقائياً'); }
+}
+function saveBeforeDelete() {
+    try {
+        saveAutomaticBackup();
+        localStorage.setItem(LAST_BACKUP_KEY, localStorage.getItem(BACKUP_KEY) || JSON.stringify(collectBackup()));
+    } catch(e) {}
+}
+function downloadBackup() {
+    saveAutomaticBackup();
+    const blob = new Blob([localStorage.getItem(BACKUP_KEY)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = `diraz-backup-${new Date().toISOString().slice(0,10)}.json`;
+    link.click(); URL.revokeObjectURL(url);
+    showToast('✅ تم تنزيل النسخة الاحتياطية');
+}
+function applyBackup(snapshot) {
+    if (!snapshot || typeof snapshot.data !== 'object') throw new Error('invalid backup');
+    Object.keys(snapshot.data).forEach(key => localStorage.setItem(key, snapshot.data[key]));
+    saveAutomaticBackup();
+    renderList(); updateStorageBar();
+    showToast('✅ تم استرجاع النسخة الاحتياطية');
+}
+function importBackup(input) {
+    const file = input.files[0]; if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function() {
+        try {
+            if (!confirm('سيتم استبدال البيانات الحالية بمحتوى النسخة. هل تريد المتابعة؟')) return;
+            saveBeforeDelete();
+            applyBackup(JSON.parse(reader.result));
+        } catch(e) { showToast('❌ ملف النسخة غير صالح'); }
+        input.value = '';
+    };
+    reader.readAsText(file);
+}
+function restoreLastBackup() {
+    const raw = localStorage.getItem(LAST_BACKUP_KEY);
+    if (!raw) { showToast('ℹ️ لا توجد نسخة قبل حذف سابق'); return; }
+    if (!confirm('استرجاع النسخة السابقة سيعيد آخر شيء تم حذفه. هل تريد المتابعة؟')) return;
+    try { applyBackup(JSON.parse(raw)); showToast('✅ تم التراجع عن آخر حذف'); }
+    catch(e) { showToast('❌ النسخة السابقة غير صالحة'); }
+}
+
+// ── تحقق من كلمة السر ──
+function checkPass() {
+    if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
+        document.getElementById('lockScreen').style.display = 'none';
+        document.getElementById('adminPanel').style.display  = 'block';
+        renderList(); updateStorageBar();
+        saveAutomaticBackup();
+    } else {
+        const err = document.getElementById('lockError');
+        err.style.display = 'block';
+        document.getElementById('passInput').value = '';
+        setTimeout(() => err.style.display='none', 3000);
+    }
+}
+function logout() {
+    document.getElementById('lockScreen').style.display = 'flex';
+    document.getElementById('adminPanel').style.display  = 'none';
+    document.getElementById('passInput').value = '';
+}
+
+// ── localStorage ──
+function loadPerfumes() {
+    const d = localStorage.getItem(STORAGE_KEY);
+    return d ? JSON.parse(d) : [];
+}
+function storePerfumes(arr) {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
+    } catch(e) {
+        showToast('⚠️ التخزين ممتلئ! احذف بعض الصور أو قلّل جودتها');
+    }
+    saveAutomaticBackup();
+    updateStorageBar();
+}
+
+// ── شريط التخزين (max ~5MB) ──
+function updateStorageBar() {
+    const used = new Blob(Object.values(localStorage)).size;
+    const max  = 5 * 1024 * 1024; // 5MB تقريبي
+    const pct  = Math.min((used / max) * 100, 100).toFixed(1);
+    const kb   = (used / 1024).toFixed(0);
+    document.getElementById('storageLabel').textContent = `💾 التخزين المستخدم: ${kb} KB من ~5120 KB (${pct}%)`;
+    document.getElementById('storageFill').style.width  = pct + '%';
+    document.getElementById('storageFill').style.background = pct > 80 ? '#ff8080' : 'white';
+}
+
+// ═══════════════════════════════════════
+//  📷 رفع الصورة وضغطها
+// ═══════════════════════════════════════
+let selectedBase64 = '';     // Base64 للصورة الحالية المختارة
+let keepOldImage   = false;  // عند التعديل: إبقاء الصورة القديمة
+
+function handleFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+    compressAndPreview(file);
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('uploadArea').classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) compressAndPreview(file);
+}
+
+function compressAndPreview(file) {
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+        const img = new Image();
+        img.onload = function() {
+            // ── ضغط الصورة بـ Canvas (max 600px) ──
+            const MAX = 600;
+            let w = img.width, h = img.height;
+            if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
+            else if (h > MAX)     { w = Math.round(w * MAX / h); h = MAX; }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+
+            // جودة JPEG 0.82
+            const base64 = canvas.toDataURL('image/jpeg', 0.82);
+            selectedBase64 = base64;
+            keepOldImage   = false;
+
+            // عرض المعاينة
+            const sizeKB = Math.round(base64.length * 0.75 / 1024);
+            document.getElementById('imgPreviewBig').src = base64;
+            document.getElementById('previewName').textContent = file.name;
+            document.getElementById('previewSize').textContent = `${w}×${h} px — حجم تقريبي: ${sizeKB} KB`;
+            document.getElementById('previewWrap').classList.add('visible');
+            updateStorageBar();
+        };
+        img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeImage() {
+    selectedBase64 = '';
+    keepOldImage   = false;
+    document.getElementById('previewWrap').classList.remove('visible');
+    document.getElementById('f_image').value = '';
+}
+
+// ═══════════════════════════════════════
+//  قائمة العطور
+// ═══════════════════════════════════════
+function renderList() {
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    const perfumes = loadPerfumes();
+    const list = document.getElementById('perfumeList');
+    document.getElementById('countBadge').textContent = perfumes.length;
+
+    if (!perfumes.length) {
+        list.innerHTML = '<p class="empty-msg">لا توجد عطور بعد — أضف أول عطر! 🌸</p>';
+        return;
+    }
+
+    list.innerHTML = perfumes.map((p, i) => `
+        <div class="perfume-item">
+            <div class="item-thumb">
+                ${p.image
+                    ? `<img src="${p.image}" alt="${p.name}" onerror="this.parentElement.textContent='🌸'">`
+                    : '🌸'}
+            </div>
+            <div class="perfume-info">
+                <div class="pname">${p.name}${p.nameEn ? ' — ' + p.nameEn : ''}</div>
+                <div class="pmeta">${p.type} &bull; ${p.size} &bull; ${p.price} ${p.currency}</div>
+            </div>
+            <div class="item-actions">
+                <button class="btn-move" onclick="movePerfume(${i},-1)" ${i === 0 ? 'disabled' : ''} title="رفع العطر">↑</button>
+                <button class="btn-move" onclick="movePerfume(${i},1)" ${i === perfumes.length - 1 ? 'disabled' : ''} title="تنزيل العطر">↓</button>
+                <button class="btn-edit"   onclick="editPerfume(${i})">✏️ تعديل</button>
+                <button class="btn-delete" onclick="deletePerfume(${i})">🗑️ حذف</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+// ═══════════════════════════════════════
+//  إضافة / تعديل / حذف
+// ═══════════════════════════════════════
+let editIndex = -1;
+
+function savePerfume() {
+    const name  = (document.getElementById('f_name').value  || '').trim();
+    const price = (document.getElementById('f_price').value || '').trim();
+    const size  = '50ml';
+    // فقط الاسم إلزامي — باقي الحقول اختيارية
+    if (!name) { showToast('❗ اسم العطر مطلوب فقط'); return; }
+
+    // حدّد الصورة المستخدمة
+    let imageToSave = selectedBase64;
+    if (!imageToSave && keepOldImage && editIndex >= 0) {
+        imageToSave = loadPerfumes()[editIndex].image || '';
+    }
+
+    const p = {
+        name,
+        nameEn:      document.getElementById('f_nameEn').value.trim(),
+        type:        document.getElementById('f_type').value,
+        size,
+        price,
+        currency:    document.getElementById('f_currency').value,
+        oldPrice:    (document.getElementById('f_oldPrice').value || '').trim(),
+        image:       imageToSave,
+        description: document.getElementById('f_desc').value.trim()
+    };
+
+    const perfumes = loadPerfumes();
+    if (editIndex >= 0) {
+        perfumes[editIndex] = p;
+        showToast('✅ تم تعديل العطر بنجاح');
+    } else {
+        perfumes.push(p);
+        showToast('✅ تمت إضافة العطر بنجاح');
+    }
+    storePerfumes(perfumes);
+    resetForm();
+    renderList();
+}
+
+function editPerfume(i) {
+    const p = loadPerfumes()[i];
+    document.getElementById('f_name').value     = p.name     || '';
+    document.getElementById('f_nameEn').value   = p.nameEn   || '';
+    document.getElementById('f_type').value     = p.type     || 'نسائي';
+    document.getElementById('f_size').value     = '50ml';
+    document.getElementById('f_price').value    = p.price    || '';
+    document.getElementById('f_currency').value = p.currency || 'دينار';
+    document.getElementById('f_oldPrice').value    = p.oldPrice    || '';
+    document.getElementById('f_desc').value     = p.description || '';
+
+    // إذا كان عنده صورة قديمة: اعرضها
+    if (p.image) {
+        document.getElementById('imgPreviewBig').src     = p.image;
+        document.getElementById('previewName').textContent = 'الصورة الحالية';
+        document.getElementById('previewSize').textContent = '— يمكنك تغييرها باختيار صورة جديدة';
+        document.getElementById('previewWrap').classList.add('visible');
+        keepOldImage   = true;
+        selectedBase64 = '';
+    }
+
+    editIndex = i;
+    document.getElementById('formTitle').textContent = '✏️ تعديل العطر';
+    document.getElementById('cancelBtn').style.display = 'inline-block';
+    document.getElementById('perfumeFormSection').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function deletePerfume(i) {
+    if (!confirm('هل أنت متأكد من حذف هذا العطر؟')) return;
+    saveBeforeDelete();
+    const perfumes = loadPerfumes();
+    perfumes.splice(i, 1);
+    storePerfumes(perfumes);
+    renderList();
+    showToast('🗑️ تم حذف العطر');
+}
+
+function movePerfume(index, direction) {
+    const perfumes = loadPerfumes();
+    const targetIndex = index + direction;
+    if (index < 0 || targetIndex < 0 || targetIndex >= perfumes.length) return;
+    [perfumes[index], perfumes[targetIndex]] = [perfumes[targetIndex], perfumes[index]];
+    storePerfumes(perfumes);
+    renderList();
+}
+
+function resetForm() {
+    ['f_name','f_nameEn','f_oldPrice','f_desc'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('f_price').value = '20000';
+    document.getElementById('f_size').value = '50ml';
+    document.getElementById('f_type').value     = 'نسائي';
+    document.getElementById('f_currency').value = 'دينار';
+    document.getElementById('f_image').value    = '';
+    document.getElementById('previewWrap').classList.remove('visible');
+    document.getElementById('formTitle').textContent     = '➕ إضافة عطر جديد';
+    document.getElementById('cancelBtn').style.display   = 'none';
+    selectedBase64 = ''; keepOldImage = false; editIndex = -1;
+}
+
+// ── Toast ──
+function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ════════════════════════════════════════
+//  نظام الطلبات
+// ════════════════════════════════════════
+const ORDERS_KEY = 'diraz_orders';
+const WA_NUM     = '9647747474014';
+let   currentFilter = 'all';
+
+function loadOrders() {
+    try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]'); }
+    catch(e){ return []; }
+}
+function saveOrders(arr) { localStorage.setItem(ORDERS_KEY, JSON.stringify(arr)); saveAutomaticBackup(); }
+
+// ── إحصائيات ──
+function renderStats() {
+    const orders   = loadOrders();
+    const pending  = orders.filter(o => o.status === 'pending').length;
+    const delivered= orders.filter(o => o.status === 'delivered').length;
+    const registeredCustomers = loadRegisteredCustomers();
+    const customerPhones = new Set(registeredCustomers.map(customer => customer.phone));
+    orders.forEach(order => { if (order.customer?.phone) customerPhones.add(order.customer.phone); });
+    const customers=customerPhones.size;
+
+    document.getElementById('statsGrid').innerHTML = `
+        <div class="stat-card">
+            <div class="stat-icon">📦</div>
+            <div class="stat-num">${orders.length}</div>
+            <div class="stat-label">إجمالي الطلبات</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🟡</div>
+            <div class="stat-num">${pending}</div>
+            <div class="stat-label">قيد الانتظار</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">🟢</div>
+            <div class="stat-num">${delivered}</div>
+            <div class="stat-label">تم التسليم</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-num">${customers}</div>
+            <div class="stat-label">عدد الزبائن</div>
+        </div>
+    `;
+}
+
+// ── عرض الطلبات ──
+function renderOrders() {
+    const orders = loadOrders();
+    const list   = document.getElementById('ordersList');
+    if (!list) return;
+
+    const filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
+
+    if (!filtered.length) {
+        list.innerHTML = '<div class="no-orders">📭 لا توجد طلبات ' + (currentFilter === 'pending' ? 'قيد الانتظار' : currentFilter === 'delivered' ? 'مسلّمة' : 'بعد') + '</div>';
+        return;
+    }
+
+    list.innerHTML = filtered.map((order, fi) => {
+        const realIdx  = orders.indexOf(order);
+        const dateStr  = new Date(order.date).toLocaleString('ar', { dateStyle:'medium', timeStyle:'short' });
+        const isPending= order.status === 'pending';
+        const itemsHTML= (order.items||[]).map(i =>
+            `<div class="order-item-row">• ${i.name} × ${i.qty} — ${(i.price*i.qty).toLocaleString('en-US')} ${i.currency}</div>`
+        ).join('');
+
+        return `
+        <div class="order-card" id="orderCard_${realIdx}">
+            <div class="order-top">
+                <div>
+                    <div class="order-id"># ${order.id || realIdx+1}</div>
+                    <div class="order-cust">👤 ${order.customer?.name || '—'}</div>
+                    <div class="order-phone">📱 ${order.customer?.phone || '—'}</div>
+                    <div class="order-address">📍 ${order.customer?.address || '—'}</div>
+                </div>
+                <div style="text-align:left">
+                    <div class="order-date">🕐 ${dateStr}</div>
+                    <button class="status-badge ${isPending ? 'status-pending' : 'status-delivered'}"
+                            onclick="toggleStatus('${order.id}')">
+                        ${isPending ? '🟡 قيد الانتظار' : '🟢 تم التسليم'}
+                    </button>
+                </div>
+            </div>
+
+            <div class="order-items-list">${itemsHTML || '<div style="color:rgba(255,255,255,0.5)">—</div>'}</div>
+
+            <div class="order-total-row">
+                <span class="order-total-label">الإجمالي</span>
+                <span class="order-total-val">${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}</span>
+            </div>
+
+            <div class="order-actions">
+                ${isPending ? `<button class="btn-deliver" onclick="toggleStatus('${order.id}')">✅ تحديد كمُسلَّم</button>` : `<button class="btn-deliver" onclick="toggleStatus('${order.id}')">↩️ إرجاع لقيد الانتظار</button>`}
+                <button class="btn-wa-resend" onclick="resendWA('${order.id}')">💬 إعادة إرسال واتساب</button>
+                <button class="btn-del-order" onclick="deleteOrder('${order.id}')">🗑️ حذف</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+
+// ── تبديل الحالة ──
+function findOrderIndex(orders, orderId) {
+    return orders.findIndex(order => String(order.id) === String(orderId));
+}
+
+function toggleStatus(orderId) {
+    const orders = loadOrders();
+    const idx = findOrderIndex(orders, orderId);
+    if (!orders[idx]) return;
+    orders[idx].status = orders[idx].status === 'pending' ? 'delivered' : 'pending';
+    saveOrders(orders);
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    showToast(orders[idx].status === 'delivered' ? '✅ تم تحديده كمُسلَّم' : '↩️ رُجّع لقيد الانتظار');
+}
+
+// ── حذف طلب ──
+function deleteOrder(orderId) {
+    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
+    saveBeforeDelete();
+    const orders = loadOrders();
+    const idx = findOrderIndex(orders, orderId);
+    if (idx < 0) return;
+    orders.splice(idx, 1);
+    saveOrders(orders);
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    showToast('🗑️ تم حذف الطلب');
+}
+
+// ── إعادة إرسال واتساب ──
+function resendWA(orderId) {
+    const orders = loadOrders();
+    const order = orders[findOrderIndex(orders, orderId)];
+    if (!order) return;
+    let msg = `● الاسم: ${order.customer?.name||'—'}\n● الهاتف: ${order.customer?.phone||'—'}\n● العنوان: ${order.customer?.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
+    (order.items||[]).forEach((item,i)=>{
+        msg += `${i+1}. ${item.name} × ${item.qty} ← ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`;
+    });
+    msg += `━━━━━━━━━━━━━━━━━━━━\n● الإجمالي: ${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}`;
+    window.open('https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent(msg), '_blank');
+}
+
+// ── فلتر ──
+function filterOrders(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderOrders();
+}
+
+// ── تهيئة عند الدخول (استدعاء بعد checkPass) ──
+const _origRenderList = typeof renderList !== 'undefined' ? renderList : ()=>{};
+
+// ════════════════════════════════════════
+//  قائمة الزبائن
+// ════════════════════════════════════════
+function renderCustomers() {
+    const orders = loadOrders();
+    const custMap = {};
+    loadRegisteredCustomers().forEach(customer => {
+        const phone = customer.phone || '—';
+        custMap[phone] = { name:customer.name || '—', phone, address:customer.address || '—', count:0 };
+    });
+    orders.forEach(order => {
+        const phone = order.customer?.phone || '—';
+        const name  = order.customer?.name  || '—';
+        const address = order.customer?.address || '—';
+        if (!custMap[phone]) custMap[phone] = { name, phone, address, count: 0 };
+        else if (custMap[phone].address === '—' && address !== '—') custMap[phone].address = address;
+        custMap[phone].count++;
+    });
+
+    const customers = Object.values(custMap);
+    const listEl    = document.getElementById('custList');
+    const countEl   = document.getElementById('custCount');
+    if (countEl) countEl.textContent = customers.length;
+    if (!listEl) return;
+
+    if (!customers.length) {
+        listEl.innerHTML = '<div class="no-custs">📭 لا يوجد زبائن بعد</div>';
+        return;
+    }
+
+    listEl.innerHTML = customers.map((c, i) => `
+        <div class="cust-item">
+            <div class="cust-num">${i + 1}</div>
+            <div class="cust-info">
+                <div class="cust-name">👤 ${c.name}</div>
+                <div class="cust-phone">📱 ${c.phone}</div>
+                <div class="cust-address">📍 ${c.address}</div>
+            </div>
+            <div class="cust-orders-count">${c.count} ${c.count === 1 ? 'طلب' : 'طلبات'}</div>
+        </div>
+    `).join('');
+}
+
+function loadRegisteredCustomers() {
+    let customers=[];
+    try { customers=JSON.parse(localStorage.getItem('diraz_customers') || '[]'); } catch(e) {}
+    const currentCustomer=tryParseAdmin('diraz_customer',null);
+    if(currentCustomer?.phone && !customers.some(customer => customer.phone === currentCustomer.phone)) customers.unshift(currentCustomer);
+    return customers;
+}
+function tryParseAdmin(key, fallback) {
+    try { const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch(e) { return fallback; }
+}
+
+// ════════════════════════════════════════
+//  أكواد الخصم
+// ════════════════════════════════════════
+const COUPONS_KEY = 'diraz_coupons';
+
+function loadCoupons() {
+    try { return JSON.parse(localStorage.getItem(COUPONS_KEY) || '[]'); }
+    catch(e) { return []; }
+}
+function saveCoupons(arr) { localStorage.setItem(COUPONS_KEY, JSON.stringify(arr)); saveAutomaticBackup(); }
+
+function addCoupon() {
+    const code    = (document.getElementById('cp_code').value || '').trim().toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9\u0600-\u06FF\u0660-\u0669]/g,'');
+    const type    = document.getElementById('cp_type').value;
+    const value   = parseFloat(document.getElementById('cp_value').value   || '0');
+    const maxUses = parseInt(document.getElementById('cp_maxUses').value || '1') || 1;
+    const usagePolicy = document.getElementById('cp_usagePolicy').value;
+
+    if (!code)  { showToast('❗ أدخل اسم الكود'); return; }
+    if (!value) { showToast('❗ أدخل قيمة الخصم'); return; }
+    if (type === 'percent' && (value <= 0 || value > 100)) { showToast('❗ النسبة يجب أن تكون بين 1 و100'); return; }
+
+    const coupons = loadCoupons();
+    if (coupons.find(c => c.code === code)) { showToast('❗ هذا الكود موجود مسبقاً'); return; }
+
+    coupons.unshift({ code, type, value, maxUses, usagePolicy, active:true, totalUses:0, createdAt:new Date().toISOString() });
+    saveCoupons(coupons);
+    renderCoupons();
+    document.getElementById('cp_code').value = '';
+    document.getElementById('cp_value').value = '';
+    document.getElementById('cp_maxUses').value = '1';
+    document.getElementById('cp_usagePolicy').value = 'once';
+    showToast('✅ تم إنشاء كود: ' + code);
+}
+
+function toggleCouponActive(idx) {
+    const coupons = loadCoupons();
+    if (!coupons[idx]) return;
+    coupons[idx].active = !coupons[idx].active;
+    saveCoupons(coupons);
+    renderCoupons();
+    showToast(coupons[idx].active ? '✅ الكود مفعّل' : '⏸️ الكود متوقف');
+}
+
+function deleteCoupon(idx) {
+    if (!confirm('هل أنت متأكد من حذف هذا الكود؟')) return;
+    saveBeforeDelete();
+    const coupons = loadCoupons();
+    coupons.splice(idx, 1);
+    saveCoupons(coupons);
+    renderCoupons();
+    showToast('🗑️ تم حذف الكود');
+}
+
+function renderCoupons() {
+    const coupons = loadCoupons();
+    const el = document.getElementById('couponsList');
+    if (!el) return;
+
+    if (!coupons.length) {
+        el.innerHTML = '<div class="no-orders">🏷️ لا توجد أكواد خصم بعد</div>';
+        return;
+    }
+
+    el.innerHTML = coupons.map((c, i) => {
+        const valTxt = c.type === 'percent' ? c.value + '%' : c.value.toLocaleString('en-US') + ' دينار';
+        const usePct = Math.min(c.totalUses / Math.max(c.maxUses,1) * 100, 100).toFixed(0);
+        return `
+        <div class="coupon-item ${!c.active ? 'coupon-inactive' : ''}">
+            <div class="coupon-code-big">${c.code}</div>
+            <div class="coupon-meta">
+                <strong>خصم ${valTxt}</strong><br>
+                إجمالي الاستخدام: ${c.maxUses} مرة &nbsp;•&nbsp; استُخدم ${c.totalUses} مرة<br>
+                ${c.usagePolicy === 'multiple' ? 'للزبون نفسه: عدة مرات' : 'لكل زبون: مرة واحدة'}
+                <div class="uses-bar-wrap">
+                    <div class="uses-bar"><div class="uses-fill" style="width:${usePct}%"></div></div>
+                </div>
+            </div>
+            <div class="coupon-actions">
+                <button class="status-badge ${c.active ? 'status-delivered' : 'status-pending'}"
+                        onclick="toggleCouponActive(${i})">
+                    ${c.active ? '🟢 فعال' : '🔴 متوقف'}
+                </button>
+                <button class="btn-del-order" onclick="deleteCoupon(${i})">🗑️</button>
+            </div>
+        </div>`;
+    }).join('');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,346 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ديراز للعطور | DIRAZ PERFUME</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        /*
+         =====================================================
+          DIRAZ PERFUME - ديراز للعطور
+          لتعديل العطور          >> ابحث عن: PERFUMES DATA
+          لتعديل معلومات التواصل >> ابحث عن: CONTACT INFO
+          لتعديل الالوان         >> ابحث عن: :root
+         =====================================================
+        */
+        :root {
+            --pink:       #f4a7be;
+            --pink-dark:  #e07898;
+            --pink-deep:  #c45a7a;
+            --pink-light: #fce4ef;
+            --white:      #ffffff;
+        }
+        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+        html { scroll-behavior:smooth; }
+
+        body {
+            font-family:'Cairo',sans-serif;
+            direction:rtl;
+            overflow-x:hidden;
+            background-color:var(--pink);
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3Cpath d='M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3Cpath d='M0 5 Q15 -20 30 5 Q45 30 60 5 Q75 -20 90 5 Q105 30 120 5' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat:repeat;
+            background-size:120px 60px;
+            min-height:100vh; max-height:100vh; overflow:hidden;
+        }
+
+        /* ─── HEADER ─── */
+        header {
+            position:fixed; top:0; right:0; left:0; z-index:999;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 24px;
+            background:rgba(244,150,185,0.78);
+            backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+            border-bottom:1px solid rgba(255,255,255,0.35);
+            box-shadow:0 2px 20px rgba(196,90,122,0.15);
+        }
+        .logo {
+            width:54px; height:54px; border-radius:50%; object-fit:cover;
+            border:2.5px solid rgba(255,255,255,0.7);
+            box-shadow:0 3px 12px rgba(196,90,122,0.25); flex-shrink:0;
+        }
+        .header-title { text-align:center; flex:1; padding:0 12px; }
+        .header-title .en {
+            font-family:'Playfair Display',serif; font-size:1.05rem;
+            color:white; letter-spacing:3px;
+            text-shadow:0 1px 4px rgba(196,90,122,0.3);
+        }
+        .header-title .ar {
+            font-size:0.8rem; font-weight:700;
+            color:rgba(255,255,255,0.88); letter-spacing:1px;
+        }
+        .header-spacer { width:54px; flex-shrink:0; }
+
+        /* ─── HERO ─── */
+        /* RTL flex-row: اول عنصر يجي على اليمين، ثاني على اليسار */
+        .hero {
+            min-height:100vh; max-height:100vh; overflow:hidden;
+            display:flex;
+            flex-direction:row;          /* RTL: اول عنصر يمين، ثاني يسار */
+            align-items:center;
+            justify-content:center;
+            gap:50px;
+            padding:100px 60px 60px;
+            position:relative;
+            overflow:hidden;
+            flex-wrap:wrap;
+        }
+
+        /* ── الجانب الايمن: النص والازرار ── */
+        .hero-content {
+            display:flex;
+            flex-direction:column;
+            align-items:flex-end;       /* محاذاة لليمين */
+            justify-content:center;
+            gap:24px;
+            flex:1;
+            min-width:240px;
+            max-width:380px;
+            order:1;                    /* RTL: يذهب لليمين */
+        }
+
+        .hero-brand {
+            text-align:right;
+        }
+        .hero-brand .en {
+            font-family:'Playfair Display',serif;
+            font-size:2.4rem;
+            color:white;
+            letter-spacing:4px;
+            text-shadow:0 2px 12px rgba(196,90,122,0.3);
+            display:block;
+            line-height:1.1;
+        }
+        .hero-brand .ar {
+            font-size:1.1rem;
+            font-weight:700;
+            color:rgba(255,255,255,0.85);
+            letter-spacing:1px;
+            display:block;
+            margin-top:4px;
+        }
+
+        .hero-tagline {
+            font-family:'Playfair Display',serif;
+            font-style:italic;
+            font-size:0.95rem;
+            color:rgba(255,255,255,0.82);
+            letter-spacing:3px;
+            text-transform:uppercase;
+            text-align:right;
+            opacity:0;
+            animation:riseUp 0.55s ease 0.65s forwards;
+        }
+
+        .hero-btns {
+            display:flex;
+            flex-direction:column;
+            gap:14px;
+            align-items:flex-end;
+            opacity:0;
+            animation:riseUp 0.55s ease 0.82s forwards;
+            width:100%;
+        }
+
+        .btn-main {
+            background:white;
+            color:var(--pink-deep);
+            border:none;
+            padding:14px 36px;
+            border-radius:50px;
+            font-family:'Cairo',sans-serif;
+            font-size:1rem;
+            font-weight:800;
+            cursor:pointer;
+            white-space:nowrap;
+            width:220px;
+            transition:transform 0.25s ease,box-shadow 0.25s ease,background 0.25s ease;
+            box-shadow:0 6px 24px rgba(255,255,255,0.35),0 2px 10px rgba(196,90,122,0.18);
+            text-align:center;
+        }
+        .btn-main:hover {
+            transform:translateY(-4px);
+            box-shadow:0 12px 35px rgba(255,255,255,0.45),0 4px 18px rgba(196,90,122,0.2);
+            background:var(--pink-light);
+        }
+        .btn-main:active { transform:translateY(-1px); }
+
+        /* ── الجانب الايسر: الزجاجة ── */
+        .bottle-wrap {
+            flex:1;
+            min-width:220px;
+            max-width:220px;
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            order:2;                    /* RTL: يذهب لليسار */
+            animation:dropBottle 0.65s cubic-bezier(0.22,1,0.36,1) both;
+        }
+
+        .bottle-img {
+            width:300px;
+            max-width:90%;
+            display:block;
+            /* يخلي خلفية الصوره الوردية تختفي وتندمج مع خلفية الموقع */
+            
+            mix-blend-mode:screen;filter:drop-shadow(0 20px 40px rgba(196,90,122,0.25));
+        }
+
+        @keyframes dropBottle {
+            from { transform:translateY(-115vh); opacity:0; }
+            to   { transform:translateY(0);      opacity:1; }
+        }
+
+        /* سهم التمرير */
+        .scroll-arrow {
+            position:absolute;
+            bottom:28px; left:50%;
+            transform:translateX(-50%);
+            opacity:0;
+            animation:riseUp 0.4s ease 1.2s forwards;
+        }
+        .scroll-arrow .mouse {
+            width:26px; height:42px;
+            border:2.5px solid rgba(255,255,255,0.65);
+            border-radius:13px; margin:0 auto; position:relative;
+        }
+        .scroll-arrow .mouse::after {
+            content:''; position:absolute;
+            top:7px; left:50%; transform:translateX(-50%);
+            width:4px; height:9px;
+            background:rgba(255,255,255,0.8); border-radius:2px;
+            animation:scrollPulse 1.6s ease infinite;
+        }
+        @keyframes scrollPulse { 0%{opacity:1;top:7px} 100%{opacity:0;top:24px} }
+        @keyframes riseUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ─── WAVE DIVIDER ─── */
+        .wave-divider { line-height:0; overflow:hidden; }
+        .wave-divider svg { display:block; width:100%; }
+
+        /* ─── PERFUMES SECTION ─── */
+        #perfumes { padding:70px 30px 90px; max-width:1200px; margin:0 auto; }
+        .sec-header { text-align:center; margin-bottom:50px; }
+        .sec-header h2 {
+            font-size:2.3rem; font-weight:900; color:white;
+            text-shadow:0 2px 10px rgba(196,90,122,0.25); letter-spacing:1px;
+        }
+        .sec-header h2::after {
+            content:''; display:block; width:55px; height:3px;
+            background:rgba(255,255,255,0.65); margin:12px auto 0; border-radius:2px;
+        }
+        .sec-header p { color:rgba(255,255,255,0.82); font-size:1rem; margin-top:12px; }
+
+        .perfumes-grid {
+            display:grid;
+            grid-template-columns:repeat(auto-fill,minmax(265px,1fr));
+            gap:24px;
+        }
+
+        .card {
+            background:rgba(255,255,255,0.28);
+            backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+            border:1.5px solid rgba(255,255,255,0.55);
+            border-radius:22px; padding:30px 24px; text-align:center;
+            position:relative; overflow:hidden;
+            transition:transform 0.3s ease,box-shadow 0.3s ease,background 0.3s ease;
+            cursor:default;
+        }
+        .card::before {
+            content:''; position:absolute; top:-60%; right:-30%;
+            width:90%; height:90%;
+            background:radial-gradient(circle,rgba(255,255,255,0.14) 0%,transparent 70%);
+            pointer-events:none;
+        }
+        .card:hover {
+            transform:translateY(-10px) scale(1.01);
+            box-shadow:0 20px 50px rgba(196,90,122,0.22);
+            background:rgba(255,255,255,0.38);
+        }
+        .badge {
+            display:inline-block; background:rgba(255,255,255,0.55);
+            color:var(--pink-deep); font-size:0.72rem; font-weight:800;
+            padding:4px 15px; border-radius:20px; letter-spacing:0.5px; margin-bottom:14px;
+        }
+        .card-name-ar { font-size:1.35rem; font-weight:900; color:white; text-shadow:0 1px 5px rgba(196,90,122,0.2); margin-bottom:5px; }
+        .card-name-en { font-family:'Playfair Display',serif; font-size:0.85rem; font-style:italic; color:rgba(255,255,255,0.78); margin-bottom:14px; }
+        .card-size { font-size:0.82rem; color:rgba(255,255,255,0.72); margin-bottom:16px; }
+        .card-price { font-size:1.7rem; font-weight:900; color:white; line-height:1; }
+        .card-price small { font-size:0.85rem; font-weight:400; opacity:0.8; }
+        .card-desc { font-size:0.84rem; color:rgba(255,255,255,0.78); line-height:1.65; margin-top:15px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.3); }
+
+        /* ─── CONTACT SECTION ─── */
+        #contact { padding:70px 30px 90px; text-align:center; position:relative; }
+        #contact::before { content:''; position:absolute; inset:0; background:rgba(255,255,255,0.08); pointer-events:none; }
+        #contact h2 { font-size:2.1rem; font-weight:900; color:white; text-shadow:0 2px 10px rgba(196,90,122,0.25); margin-bottom:10px; position:relative; }
+        #contact .sub { color:rgba(255,255,255,0.82); font-size:1rem; margin-bottom:38px; position:relative; }
+        .contact-btns { display:flex; gap:18px; justify-content:center; flex-wrap:wrap; position:relative; }
+        .c-btn {
+            display:inline-flex; align-items:center; gap:10px;
+            background:white; color:var(--pink-deep); text-decoration:none;
+            padding:15px 38px; border-radius:50px;
+            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:800;
+            box-shadow:0 5px 22px rgba(196,90,122,0.18);
+            transition:transform 0.25s ease,box-shadow 0.25s ease,background 0.25s ease;
+        }
+        .c-btn:hover { transform:translateY(-5px); box-shadow:0 12px 35px rgba(196,90,122,0.25); background:var(--pink-light); }
+        .c-btn .ico { font-size:1.35rem; }
+
+        /* ─── FOOTER ─── */
+        footer { background:rgba(0,0,0,0.1); padding:22px; text-align:center; color:rgba(255,255,255,0.65); font-size:0.83rem; letter-spacing:0.5px; }
+
+        /* ─── RESPONSIVE ─── */
+        @media(max-width:700px){
+            .hero { flex-direction:column; padding:100px 20px 60px; gap:30px; }
+            .hero-content { order:2; align-items:center; max-width:100%; }
+            .bottle-wrap { order:1; max-width:240px; }
+            .hero-brand .en { font-size:1.8rem; }
+            .hero-btns { align-items:center; }
+            .btn-main { width:200px; }
+            .hero-tagline { text-align:center; }
+            .hero-brand { text-align:center; }
+            .perfumes-grid { grid-template-columns:1fr; }
+            #perfumes { padding:50px 18px 70px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+    <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
+    <div class="header-title">
+        <div class="en">DIRAZ PERFUME</div>
+        <div class="ar">ديراز للعطور</div>
+    </div>
+    <div class="header-spacer"></div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+
+    <!-- الجانب الايمن: النص والازرار (RTL: order:1 = يمين) -->
+    <div class="hero-content">
+        <div class="hero-brand">
+            <span class="en">DIRAZ PERFUME</span>
+            <span class="ar">ديراز للعطور</span>
+        </div>
+        <p class="hero-tagline">Luxury &middot; Elegance &middot; Scent</p>
+        <div class="hero-btns">
+            <button class="btn-main" onclick="window.location.href='perfumes.html'">
+                🌸 تفاصيل العطور
+            </button>
+            <button class="btn-main" onclick="window.location.href='contact.html'">
+                📩 طلب / استفسار
+            </button>
+        </div>
+    </div>
+
+    <!-- الجانب الايسر: الزجاجة تنزل (RTL: order:2 = يسار) -->
+    <div class="bottle-wrap">
+        <img src="images/bottle_main.png" alt="DIRAZ Perfume Bottle" class="bottle-img">
+    </div>
+
+    <!-- سهم التمرير -->
+    <div class="scroll-arrow"><div class="mouse"></div></div>
+
+</section>
+
+
+<footer style="background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.8rem;position:fixed;bottom:0;right:0;left:0;">&#169; 2026 &#1583;&#1610;&#1585;&#1575;&#1586; &#1604;&#1604;&#1593;&#1591;&#1608;&#1585; | DIRAZ PERFUME &mdash; &#1580;&#1605;&#1610;&#1593; &#1575;&#1604;&#1581;&#1602;&#1608;&#1602; &#1605;&#1581;&#1601;&#1608;&#1592;&#1577;</footer>
+
+</body>
+</html>

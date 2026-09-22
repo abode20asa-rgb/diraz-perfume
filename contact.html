@@ -1,0 +1,180 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تواصل معنا | ديراز للعطور</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root { --pink:#f4a7be; --pink-dark:#e07898; --pink-deep:#c45a7a; --pink-light:#fce4ef; }
+        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+        body {
+            font-family:'Cairo',sans-serif; direction:rtl; overflow-x:hidden;
+            background-color:var(--pink);
+            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3Cpath d='M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3Cpath d='M0 5 Q15 -20 30 5 Q45 30 60 5 Q75 -20 90 5 Q105 30 120 5' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat:repeat; background-size:120px 60px; min-height:100vh;
+            display:flex; flex-direction:column;
+        }
+        /* HEADER */
+        header {
+            position:sticky; top:0; z-index:999;
+            display:flex; align-items:center; justify-content:space-between;
+            padding:12px 24px;
+            background:rgba(244,150,185,0.85);
+            backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+            border-bottom:1px solid rgba(255,255,255,0.35);
+            box-shadow:0 2px 20px rgba(196,90,122,0.15);
+        }
+        .logo { width:50px; height:50px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.7); }
+        .header-title { text-align:center; flex:1; padding:0 12px; }
+        .header-title .en { font-family:'Playfair Display',serif; font-size:1rem; color:white; letter-spacing:3px; }
+        .header-title .ar { font-size:0.78rem; font-weight:700; color:rgba(255,255,255,0.88); }
+        .back-btn {
+            display:flex; align-items:center; gap:6px;
+            background:white; color:var(--pink-deep); text-decoration:none;
+            padding:8px 18px; border-radius:50px;
+            font-family:'Cairo',sans-serif; font-size:0.85rem; font-weight:700;
+            box-shadow:0 3px 12px rgba(196,90,122,0.2);
+            transition:transform 0.2s; white-space:nowrap;
+        }
+        .back-btn:hover{transform:translateY(-2px)}
+
+        /* MAIN */
+        main {
+            flex:1; display:flex; flex-direction:column;
+            align-items:center; justify-content:center;
+            padding:60px 24px 80px;
+        }
+
+        .contact-card {
+            background:rgba(255,255,255,0.25);
+            backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+            border:1.5px solid rgba(255,255,255,0.5);
+            border-radius:28px; padding:50px 40px;
+            text-align:center; max-width:480px; width:100%;
+            box-shadow:0 15px 50px rgba(196,90,122,0.18);
+        }
+
+        .contact-logo {
+            width:90px; height:90px; border-radius:50%;
+            object-fit:cover;
+            border:3px solid rgba(255,255,255,0.7);
+            box-shadow:0 5px 20px rgba(196,90,122,0.25);
+            margin-bottom:20px;
+        }
+
+        .contact-card h1 {
+            font-family:'Playfair Display',serif;
+            font-size:1.7rem; color:white;
+            text-shadow:0 2px 8px rgba(196,90,122,0.25);
+            letter-spacing:2px; margin-bottom:6px;
+        }
+        .contact-card .subtitle {
+            font-size:0.9rem; color:rgba(255,255,255,0.8);
+            margin-bottom:36px;
+        }
+
+        .contact-btns { display:flex; flex-direction:column; gap:16px; }
+
+        /* واتساب */
+        .btn-wa {
+            display:flex; align-items:center; justify-content:center; gap:12px;
+            background:#25D366; color:white;
+            text-decoration:none; padding:16px 32px;
+            border-radius:50px; font-family:'Cairo',sans-serif;
+            font-size:1.05rem; font-weight:800;
+            box-shadow:0 5px 20px rgba(37,211,102,0.35);
+            transition:transform 0.25s, box-shadow 0.25s;
+        }
+        .btn-wa:hover { transform:translateY(-4px); box-shadow:0 10px 30px rgba(37,211,102,0.45); }
+        .btn-wa .ico { font-size:1.4rem; }
+
+        /* انستا */
+        .btn-insta {
+            display:flex; align-items:center; justify-content:center; gap:12px;
+            background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);
+            color:white; text-decoration:none; padding:16px 32px;
+            border-radius:50px; font-family:'Cairo',sans-serif;
+            font-size:1.05rem; font-weight:800;
+            box-shadow:0 5px 20px rgba(220,39,67,0.35);
+            transition:transform 0.25s, box-shadow 0.25s;
+        }
+        .btn-insta:hover { transform:translateY(-4px); box-shadow:0 10px 30px rgba(220,39,67,0.45); }
+        .btn-insta .ico { font-size:1.4rem; }
+
+        /* علامة التوثيق */
+        .verified {
+            display:inline-flex; align-items:center; gap:5px;
+        }
+        .verified-badge {
+            display:inline-flex; align-items:center; justify-content:center;
+            width:20px; height:20px; border-radius:50%;
+            background:#1877F2; flex-shrink:0;
+            box-shadow:0 1px 4px rgba(0,0,0,0.2);
+        }
+        .verified-badge svg { width:12px; height:12px; }
+
+        .divider {
+            height:1px; background:rgba(255,255,255,0.3);
+            margin:28px 0; border-radius:1px;
+        }
+        .contact-note { font-size:0.83rem; color:rgba(255,255,255,0.75); line-height:1.6; }
+
+        footer { background:rgba(0,0,0,0.1); padding:18px; text-align:center; color:rgba(255,255,255,0.6); font-size:0.8rem; }
+    </style>
+</head>
+<body>
+
+<header>
+    <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
+    <div class="header-title">
+        <div class="en">DIRAZ PERFUME</div>
+        <div class="ar">ديراز للعطور</div>
+    </div>
+    <a href="index.html" class="back-btn">&#8594; رجوع</a>
+</header>
+
+<main>
+    <div class="contact-card">
+        <img src="images/logo.jpg" alt="Diraz Logo" class="contact-logo">
+        <h1>DIRAZ PERFUME</h1>
+        <p class="subtitle">نحن هنا لمساعدتك! تواصل معنا</p>
+
+        <div class="contact-btns">
+
+            <!-- واتساب -->
+            <a href="https://wa.me/9647747474014" target="_blank" class="btn-wa">
+                <span class="ico">💬</span>
+                تواصل عبر واتساب
+            </a>
+
+            <!-- انستغرام مع علامة التوثيق -->
+            <a href="https://instagram.com/diraz.iq" target="_blank" class="btn-insta">
+                <span class="ico">📸</span>
+                <span class="verified">
+                    diraz.iq
+                    <span class="verified-badge" title="حساب موثق">
+                        <svg viewBox="0 0 24 24" fill="white" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+                        </svg>
+                    </span>
+                </span>
+            </a>
+
+        </div>
+
+        <div class="divider"></div>
+        <p class="contact-note">
+            &#128338; أوقات الرد: يومياً من الساعة 9 صباحاً حتى 10 مساءً
+        </p>
+    </div>
+</main>
+
+<footer>
+    &copy; 2026 ديراز للعطور | DIRAZ PERFUME &mdash; جميع الحقوق محفوظة
+</footer>
+
+</body>
+</html>

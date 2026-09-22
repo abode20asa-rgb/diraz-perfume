@@ -1,0 +1,477 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>عطورنا | ديراز للعطور</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root{--pink:#f4a7be;--pink-dark:#e07898;--pink-deep:#c45a7a;--pink-light:#fce4ef}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Cairo',sans-serif;direction:rtl;overflow-x:hidden;background-color:var(--pink);
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3Cpath d='M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+background-repeat:repeat;background-size:120px 60px;min-height:100vh}
+
+/* ══ Popup ══ */
+.popup-overlay{position:fixed;inset:0;z-index:9999;background:rgba(180,60,100,0.93);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;padding:20px}
+.popup-box{background:rgba(255,255,255,0.22);border:1.5px solid rgba(255,255,255,0.5);border-radius:26px;padding:44px 36px;max-width:420px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:popIn .35s cubic-bezier(.34,1.56,.64,1) both}
+@keyframes popIn{from{transform:scale(.8);opacity:0}to{transform:scale(1);opacity:1}}
+.popup-box .pop-icon{font-size:2.8rem;margin-bottom:12px}
+.popup-box h2{color:white;font-size:1.6rem;font-weight:900;margin-bottom:6px}
+.popup-box p{color:rgba(255,255,255,0.8);font-size:.9rem;margin-bottom:26px}
+.popup-input{width:100%;padding:13px 18px;border-radius:50px;margin-bottom:12px;border:1.5px solid rgba(255,255,255,0.45);background:rgba(255,255,255,0.18);color:white;font-family:'Cairo',sans-serif;font-size:1rem;outline:none;text-align:right}
+.popup-input::placeholder{color:rgba(255,255,255,0.55)}
+.popup-input:focus{border-color:white;background:rgba(255,255,255,0.28)}
+.popup-btn{width:100%;padding:14px;border:none;border-radius:50px;margin-top:6px;background:white;color:#c45a7a;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 20px rgba(255,255,255,0.25)}
+.popup-btn:hover{transform:translateY(-3px)}
+.popup-error{color:#ffd0d0;font-size:.84rem;margin-top:8px;display:none}
+
+/* ══ Header ══ */
+header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(244,150,185,0.9);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.35);box-shadow:0 2px 20px rgba(196,90,122,0.2)}
+.logo{width:50px;height:50px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.7)}
+.header-title{text-align:center;flex:1;padding:0 12px}
+.header-title .en{font-family:'Playfair Display',serif;font-size:1rem;color:white;letter-spacing:3px}
+.header-title .ar{font-size:.78rem;font-weight:700;color:rgba(255,255,255,0.88)}
+.header-actions{display:flex;gap:8px;align-items:center}
+.cart-icon-btn{position:relative;background:white;color:#c45a7a;border:none;padding:8px 16px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:transform .2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.cart-icon-btn:hover{transform:translateY(-2px)}
+.cart-badge{position:absolute;top:-7px;left:-7px;background:#ff4757;color:white;font-size:.7rem;font-weight:900;width:20px;height:20px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid white}
+.cart-badge.visible{display:flex}
+.back-btn{display:flex;align-items:center;gap:6px;background:white;color:var(--pink-deep);text-decoration:none;padding:8px 18px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;box-shadow:0 3px 12px rgba(196,90,122,0.2);transition:transform .2s;white-space:nowrap}
+.back-btn:hover{transform:translateY(-2px)}
+
+/* ══ Grid ══ */
+main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
+.page-title{text-align:center;margin-bottom:50px}
+.page-title h1{font-size:2.2rem;font-weight:900;color:white;text-shadow:0 2px 10px rgba(196,90,122,0.25)}
+.page-title h1::after{content:'';display:block;width:55px;height:3px;background:rgba(255,255,255,0.65);margin:12px auto 0;border-radius:2px}
+.page-title p{color:rgba(255,255,255,0.82);font-size:1rem;margin-top:12px}
+.perfumes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(265px,1fr));gap:24px}
+
+/* ══ Card ══ */
+.card{background:rgba(255,255,255,0.28);backdrop-filter:blur(18px);border:1.5px solid rgba(255,255,255,0.55);border-radius:22px;padding:24px;text-align:center;position:relative;overflow:hidden;transition:transform .3s ease,box-shadow .3s ease}
+.card:hover{transform:translateY(-10px);box-shadow:0 20px 50px rgba(196,90,122,0.22)}
+.card-img-wrap{width:100%;height:190px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;overflow:hidden;border-radius:14px;background:rgba(255,255,255,0.12)}
+.card-img-wrap img{max-width:100%;max-height:100%;width:auto;height:auto;object-fit:contain;border-radius:10px;transition:transform .4s ease}
+.card:hover .card-img-wrap img{transform:scale(1.05)}
+.badge{display:inline-block;background:rgba(255,255,255,0.5);color:#c45a7a;font-size:.72rem;font-weight:800;padding:4px 15px;border-radius:20px;margin-bottom:10px}
+.card-name-ar{font-size:1.3rem;font-weight:900;color:white;text-shadow:0 1px 5px rgba(196,90,122,0.2);margin:10px 0 5px;line-height:1.3}
+.card-name-en{font-family:'Playfair Display',serif;font-size:.87rem;font-style:italic;color:rgba(255,255,255,0.75);margin-bottom:12px}
+.card-size{font-size:.84rem;color:rgba(255,255,255,0.7);margin-bottom:4px}
+.card-desc{font-size:.83rem;color:rgba(255,255,255,0.75);line-height:1.7;margin-top:12px}
+
+/* ══ Price ══ */
+.card-price-wrap{margin:14px 0 8px;padding:12px 14px 10px;border-radius:12px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);text-align:right}
+.price-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.card-price-label{font-size:.72rem;font-weight:800;letter-spacing:1.5px;color:rgba(255,255,255,0.6);text-transform:uppercase}
+.discount-badge{background:linear-gradient(135deg,#ff6b6b,#ee5a24);color:white;font-size:.72rem;font-weight:900;padding:3px 10px;border-radius:20px;box-shadow:0 2px 8px rgba(238,90,36,0.4);animation:pulse-badge 2s infinite}
+@keyframes pulse-badge{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.price-old-row{display:flex;align-items:center;gap:6px;margin-bottom:5px}
+.price-tag-label{font-size:.72rem;color:rgba(255,255,255,0.5);font-weight:600;min-width:26px}
+.price-old-amount{text-decoration:line-through;text-decoration-color:rgba(255,255,255,0.5);text-decoration-thickness:1.5px;color:rgba(255,255,255,0.45);font-size:1rem;font-weight:600}
+.price-old-cur{font-size:.75rem;color:rgba(255,255,255,0.4);font-weight:500}
+.price-new-row{display:flex;align-items:baseline;gap:6px}
+.price-new-amount,.price-normal{font-size:1.75rem;font-weight:900;color:white;line-height:1.1}
+.price-new-cur,.price-normal-cur{font-size:.88rem;font-weight:600;color:rgba(255,255,255,0.8)}
+
+/* ══ Add to Cart btn ══ */
+.btn-add-cart{width:100%;padding:11px;border:none;border-radius:50px;margin-top:12px;background:rgba(255,255,255,0.3);border:1.5px solid rgba(255,255,255,0.55);color:white;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:all .25s}
+.btn-add-cart:hover{background:rgba(255,255,255,0.5);transform:translateY(-2px)}
+.btn-add-cart.added{background:rgba(37,211,102,0.35);border-color:rgba(37,211,102,0.6)}
+.card-qty{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px}
+.card-qty-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.65);background:rgba(255,255,255,0.2);color:white;font-size:1.1rem;font-weight:900;cursor:pointer}
+.card-qty-btn:hover{background:rgba(255,255,255,0.4)}
+.card-qty-num{min-width:28px;text-align:center;color:white;font-size:1rem;font-weight:900}
+
+/* ══ Cart Sidebar ══ */
+.cart-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.45);opacity:0;pointer-events:none;transition:opacity .3s}
+.cart-overlay.open{opacity:1;pointer-events:all}
+.cart-sidebar{position:fixed;top:0;left:0;bottom:0;z-index:1001;width:min(380px,95vw);background:#f4a7be;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.25)' stroke-width='2' fill='none'/%3E%3C/svg%3E");display:flex;flex-direction:column;transform:translateX(-100%);transition:transform .35s cubic-bezier(.4,0,.2,1);box-shadow:5px 0 30px rgba(0,0,0,0.2)}
+.cart-sidebar.open{transform:translateX(0)}
+.cart-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.15);flex-shrink:0}
+.cart-head h3{color:white;font-size:1.1rem;font-weight:900}
+.cart-close{background:rgba(255,255,255,0.25);border:none;color:white;width:34px;height:34px;border-radius:50%;font-size:1.1rem;cursor:pointer;transition:background .2s}
+.cart-close:hover{background:rgba(255,255,255,0.4)}
+.cart-items{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:10px}
+.cart-empty{text-align:center;color:rgba(255,255,255,0.8);padding:50px 20px;font-size:.95rem}
+.cart-item{background:rgba(255,255,255,0.25);border:1px solid rgba(255,255,255,0.45);border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:12px}
+.ci-info{flex:1}
+.ci-name{color:white;font-weight:800;font-size:.95rem}
+.ci-price{color:rgba(255,255,255,0.75);font-size:.8rem;margin-top:2px}
+.ci-qty{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.qty-btn{width:28px;height:28px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.6);background:transparent;color:white;font-size:1rem;font-weight:700;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center}
+.qty-btn:hover{background:rgba(255,255,255,0.25)}
+.qty-num{color:white;font-weight:900;font-size:1rem;min-width:20px;text-align:center}
+.ci-remove{background:none;border:none;color:rgba(255,255,255,0.55);font-size:1.1rem;cursor:pointer;padding:4px;transition:color .2s}
+.ci-remove:hover{color:white}
+
+/* ══ Coupon ══ */
+.coupon-section{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.25)}
+.coupon-toggle-btn{width:100%;background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.45);border-radius:50px;color:white;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:700;padding:10px;cursor:pointer;transition:all .2s;text-align:center}
+.coupon-toggle-btn:hover{background:rgba(255,255,255,0.25)}
+.coupon-input-area{display:none;margin-top:10px}
+.coupon-input-area.open{display:block}
+.coupon-row{display:flex;gap:8px}
+.coupon-field{flex:1;padding:10px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,0.45);background:rgba(255,255,255,0.18);color:white;font-family:'Cairo',sans-serif;font-size:.9rem;outline:none;text-transform:uppercase}
+.coupon-field::placeholder{color:rgba(255,255,255,0.5);text-transform:none}
+.coupon-field:focus{border-color:white}
+.coupon-apply-btn{padding:10px 18px;border-radius:50px;border:none;background:white;color:#c45a7a;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:900;cursor:pointer;white-space:nowrap;transition:transform .2s}
+.coupon-apply-btn:hover{transform:translateY(-2px)}
+.coupon-msg{font-size:.82rem;margin-top:8px;padding:8px 12px;border-radius:10px;display:none}
+.coupon-msg.success{background:rgba(37,211,102,0.25);color:#5fffaa;display:block}
+.coupon-msg.error{background:rgba(255,80,80,0.25);color:#ffaaaa;display:block}
+.coupon-msg.info{background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.85);display:block}
+.discount-line{display:flex;justify-content:space-between;color:rgba(255,255,255,0.8);font-size:.9rem;padding:8px 0;margin-top:6px;border-top:1px dashed rgba(255,255,255,0.3)}
+.discount-line .amt{color:#5fffaa;font-weight:800}
+.btn-remove-coup{background:none;border:none;color:rgba(255,150,150,.8);font-size:.8rem;cursor:pointer;margin-right:6px}
+
+/* ══ Cart Footer ══ */
+.cart-foot{flex-shrink:0;padding:16px 20px;border-top:1px solid rgba(255,255,255,0.35);background:rgba(255,255,255,0.12)}
+.cart-total-row{display:flex;justify-content:space-between;align-items:center;color:white;font-size:1rem;font-weight:800;margin-bottom:14px}
+.cart-total-amount{font-size:1.3rem;font-weight:900}
+.btn-checkout{width:100%;padding:14px;border:none;border-radius:50px;background:#25D366;color:white;font-family:'Cairo',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 18px rgba(37,211,102,0.4)}
+.btn-checkout:hover{transform:translateY(-3px);box-shadow:0 8px 26px rgba(37,211,102,0.5)}
+.btn-checkout:disabled{background:rgba(255,255,255,0.3);box-shadow:none;cursor:not-allowed;transform:none}
+
+/* ══ Order Bar Bottom ══ */
+.order-bar{position:fixed;bottom:0;right:0;left:0;padding:16px 24px;background:rgba(244,150,185,0.92);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,0.35);text-align:center;z-index:90}
+.order-btn{display:inline-flex;align-items:center;gap:10px;background:white;color:#c45a7a;text-decoration:none;padding:14px 50px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:1rem;font-weight:800;box-shadow:0 5px 22px rgba(196,90,122,0.25);transition:transform .25s}
+.order-btn:hover{transform:translateY(-3px)}
+
+/* ══ Toast ══ */
+#cartToast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(40px);background:rgba(30,30,30,0.92);color:white;padding:10px 26px;border-radius:50px;font-size:.88rem;font-weight:700;z-index:9000;opacity:0;transition:all .35s;pointer-events:none}
+#cartToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.65);font-size:.82rem;padding-bottom:90px}
+
+@media(max-width:600px){
+  .perfumes-grid{grid-template-columns:1fr}
+  main{padding:40px 16px 70px}
+  .page-title h1{font-size:1.8rem}
+  .coupon-row{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<!-- نافذة بيانات الزبون -->
+<div class="popup-overlay" id="customerPopup">
+  <div class="popup-box">
+    <div class="pop-icon">🌸</div>
+    <h2>أهلاً وسهلاً!</h2>
+    <p>أدخل بياناتك لتتمكن من إتمام طلبك بسهولة</p>
+    <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
+    <input type="tel"  id="popPhone" class="popup-input" placeholder="رقم الهاتف *">
+    <input type="text" id="popAddress" class="popup-input" placeholder="العنوان بالتفصيل *">
+    <button class="popup-btn" onclick="saveCustomer()">تصفح العطور ←</button>
+    <div class="popup-error" id="popError">❗ يرجى إدخال الاسم ورقم الهاتف</div>
+  </div>
+</div>
+
+<!-- السلة الجانبية -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-sidebar" id="cartSidebar">
+  <div class="cart-head">
+    <h3>🛒 سلة المشتريات</h3>
+    <button class="cart-close" onclick="closeCart()">✕</button>
+  </div>
+  <div class="cart-items" id="cartItems"></div>
+  <div class="coupon-section">
+    <button class="coupon-toggle-btn" onclick="toggleCouponInput()">🏷️ هل لديك كود خصم؟</button>
+    <div class="coupon-input-area" id="couponArea">
+      <div class="coupon-row">
+        <input type="text" id="couponInput" class="coupon-field" placeholder="أدخل الكود هنا">
+        <button class="coupon-apply-btn" onclick="applyCoupon()">تطبيق</button>
+      </div>
+      <div class="coupon-msg" id="couponMsg"></div>
+      <div class="discount-line" id="discountLine" style="display:none">
+        <span><button class="btn-remove-coup" onclick="removeCoupon()">✕</button>الخصم المطبّق</span>
+        <span class="amt" id="discountAmt">—</span>
+      </div>
+    </div>
+  </div>
+  <div class="cart-foot">
+    <div class="cart-total-row">
+      <span>الإجمالي</span>
+      <span class="cart-total-amount" id="cartTotalAmt">0 دينار</span>
+    </div>
+    <button class="btn-checkout" id="checkoutBtn" onclick="sendOrder()" disabled>
+      💬 تأكيد الطلب عبر واتساب
+    </button>
+  </div>
+</div>
+
+<div id="cartToast"></div>
+
+<header>
+  <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
+  <div class="header-title">
+    <div class="en">DIRAZ PERFUME</div>
+    <div class="ar">ديراز للعطور</div>
+  </div>
+  <div class="header-actions">
+    <button class="cart-icon-btn" onclick="openCart()">
+      🛒 السلة
+      <span class="cart-badge" id="cartBadge">0</span>
+    </button>
+    <a href="index.html" class="back-btn">&#8594; رجوع</a>
+  </div>
+</header>
+
+<main>
+  <div class="page-title">
+    <h1>🌺 عطورنا</h1>
+    <p>اكتشف مجموعتنا المميزة من العطور الفاخرة</p>
+  </div>
+  <div class="perfumes-grid" id="perfumesGrid"></div>
+</main>
+
+<footer>&#169; 2026 &#1583;&#1610;&#1585;&#1575;&#1586; &#1604;&#1604;&#1593;&#1591;&#1608;&#1585; | DIRAZ PERFUME &mdash; &#1580;&#1605;&#1610;&#1593; &#1575;&#1604;&#1581;&#1602;&#1608;&#1602; &#1605;&#1581;&#1601;&#1608;&#1592;&#1577;</footer>
+
+<div class="order-bar">
+  <a href="contact.html" class="order-btn">&#128235; &#1591;&#1604;&#1576; &#1571;&#1608; &#1575;&#1587;&#1578;&#1601;&#1587;&#1575;&#1585;</a>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+const STORAGE_KEY  = 'diraz_perfumes';
+const CART_KEY     = 'diraz_cart';
+const CUSTOMER_KEY = 'diraz_customer';
+const CUSTOMERS_KEY= 'diraz_customers';
+const COUPONS_KEY  = 'diraz_coupons';
+const USAGE_KEY    = 'diraz_coupon_usage';
+const ORDERS_KEY   = 'diraz_orders';
+const WA_NUMBER    = '9647747474014';
+
+const defaultPerfumes = [
+  {name:"ورد الليل",nameEn:"Night Rose",type:"نسائي",size:"50ml",price:"20000",oldPrice:"25000",currency:"دينار",description:"رائحة زهرية ناعمة تمتزج مع المسك الأبيض الدافئ"},
+  {name:"عود الملك",nameEn:"Royal Oud",type:"رجالي",size:"50ml",price:"35000",oldPrice:"",currency:"دينار",description:"عود فاخر مع لمسة عنبر ذهبية تدوم طويلاً"},
+  {name:"نسيم الفجر",nameEn:"Dawn Breeze",type:"للجنسين",size:"50ml",price:"18000",oldPrice:"22000",currency:"دينار",description:"توليفة فريدة من الزهور الشرقية والخشب الدافئ"}
+];
+
+// ── Helpers ──
+function tryParse(key, fallback){ try{ const d=localStorage.getItem(key); return d?JSON.parse(d):fallback; }catch(e){return fallback;} }
+function loadPerfumes(){ return tryParse(STORAGE_KEY, defaultPerfumes); }
+
+function fmtPrice(val){
+  if(!val && val!==0) return null;
+  const n=parseInt(String(val).replace(/[^0-9]/g,''));
+  return isNaN(n)?null:n.toLocaleString('en-US');
+}
+function buildPriceBlock(price, oldPrice, currency){
+  const cur=currency||'دينار', nF=fmtPrice(price), oF=fmtPrice(oldPrice);
+  const hasDis=oF&&nF;
+  const pct=hasDis?Math.round((1-parseInt(String(price).replace(/[^0-9]/g,''))/parseInt(String(oldPrice).replace(/[^0-9]/g,'')))*100):0;
+  if(hasDis) return `<div class="card-price-wrap"><div class="price-header"><div class="card-price-label">السعر</div>${pct>0?`<div class="discount-badge">خصم ${pct}%</div>`:''}</div><div class="price-old-row"><span class="price-tag-label">قبل</span><span class="price-old-amount">${oF}</span><span class="price-old-cur">${cur}</span></div><div class="price-new-row"><span class="price-tag-label">بعد</span><span class="price-new-amount">${nF}</span><span class="price-new-cur">${cur}</span></div></div>`;
+  if(nF) return `<div class="card-price-wrap"><div class="price-header"><div class="card-price-label">السعر</div></div><div class="price-new-row"><span class="price-normal">${nF}</span><span class="price-normal-cur">${cur}</span></div></div>`;
+  return '';
+}
+
+// ── Customer Popup ──
+function checkCustomer(){
+  const c=tryParse(CUSTOMER_KEY,null);
+  if(c){
+    document.getElementById('popName').value=c.name||'';
+    document.getElementById('popPhone').value=c.phone||'';
+    document.getElementById('popAddress').value=c.address||'';
+  }
+  document.getElementById('customerPopup').style.display = c?.address?'none':'flex';
+}
+function saveCustomer(){
+  const nameInput=(document.getElementById('popName').value||'').trim();
+  const phone=(document.getElementById('popPhone').value||'').trim();
+  const address=(document.getElementById('popAddress').value||'').trim();
+  const name=nameInput.split(/\s+/)[0]||'';
+  const phoneDigits=phone.replace(/\D/g,'');
+  if(!name||phoneDigits.length<7||!address){ document.getElementById('popError').textContent='❗ يرجى إدخال الاسم الأول والهاتف والعنوان'; document.getElementById('popError').style.display='block'; setTimeout(()=>document.getElementById('popError').style.display='none',2500); return; }
+  const customer={name,phone,address};
+  localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
+  const customers=tryParse(CUSTOMERS_KEY,[]);
+  const phoneKey=phoneDigits;
+  const existing=customers.findIndex(item=>(item.phone||'').replace(/\D/g,'')===phoneKey);
+  if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
+  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+  document.getElementById('customerPopup').style.display='none';
+}
+
+// ── Cart ──
+let cart=[];
+function loadCart(){ cart=tryParse(CART_KEY,[]); }
+function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
+
+function addToCart(idx){
+  const p=loadPerfumes()[idx]; if(!p) return;
+  const ex=cart.find(i=>i.idx===idx);
+  if(ex) return;
+  const qtyEl=document.getElementById('cardQty_'+idx);
+  const qty=Math.max(parseInt(qtyEl?.textContent||'1',10)||1,1);
+  cart.push({idx,name:p.name,price:parseInt((p.price||'0').replace(/[^0-9]/g,'')),currency:p.currency||'دينار',qty});
+  saveCart(); updateCartUI(); renderCards();
+  showToast(`🛍️ تمت إضافة ${qty} من ${p.name}`);
+}
+function adjustCardQty(idx,d){
+  const item=cart.find(i=>i.idx===idx);
+  if(item){ changeQty(idx,d); return; }
+  const el=document.getElementById('cardQty_'+idx); if(!el) return;
+  el.textContent=Math.max(1,Math.min(99,(parseInt(el.textContent,10)||1)+d));
+}
+function changeQty(idx,d){
+  const item=cart.find(i=>i.idx===idx); if(!item) return;
+  item.qty+=d; if(item.qty<=0) cart=cart.filter(i=>i.idx!==idx);
+  saveCart(); updateCartUI(); renderCards();
+}
+function removeFromCart(idx){ cart=cart.filter(i=>i.idx!==idx); saveCart(); updateCartUI(); renderCards(); }
+function openCart(){ document.getElementById('cartSidebar').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); }
+function closeCart(){ document.getElementById('cartSidebar').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
+
+function updateCartUI(){
+  const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const total=Math.max(rawTotal-discountAmount,0);
+  const count=cart.reduce((s,i)=>s+i.qty,0);
+  const cur=cart.length?cart[0].currency:'دينار';
+
+  const badge=document.getElementById('cartBadge');
+  if(badge){badge.textContent=count;badge.classList.toggle('visible',count>0);}
+
+  const totEl=document.getElementById('cartTotalAmt');
+  if(totEl) totEl.textContent=total.toLocaleString('en-US')+' '+cur;
+
+  const btn=document.getElementById('checkoutBtn');
+  if(btn) btn.disabled=cart.length===0;
+
+  const dLine=document.getElementById('discountLine');
+  const dAmt=document.getElementById('discountAmt');
+  if(dLine&&dAmt){
+    if(appliedCoupon&&discountAmount>0){
+      dLine.style.display='flex';
+      dAmt.textContent='- '+discountAmount.toLocaleString('en-US')+' '+cur;
+    } else { dLine.style.display='none'; }
+  }
+
+  const itemsEl=document.getElementById('cartItems'); if(!itemsEl) return;
+  if(!cart.length){ itemsEl.innerHTML='<div class="cart-empty">السلة فارغة 🛒<br><small>أضف عطوراً لتبدأ طلبك</small></div>'; return; }
+  itemsEl.innerHTML=cart.map(item=>`
+    <div class="cart-item">
+      <div class="ci-info">
+        <div class="ci-name">${item.name}</div>
+        <div class="ci-price">${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}</div>
+      </div>
+      <div class="ci-qty">
+        <button class="qty-btn" onclick="changeQty(${item.idx},-1)">−</button>
+        <span class="qty-num">${item.qty}</span>
+        <button class="qty-btn" onclick="changeQty(${item.idx},1)">+</button>
+      </div>
+      <button class="ci-remove" onclick="removeFromCart(${item.idx})">🗑️</button>
+    </div>`).join('');
+}
+
+// ── Coupon ──
+let appliedCoupon=null, discountAmount=0;
+function toggleCouponInput(){ document.getElementById('couponArea').classList.toggle('open'); }
+function showCouponMsg(msg,type){ const el=document.getElementById('couponMsg'); el.textContent=msg; el.className='coupon-msg '+type; }
+function applyCoupon(){
+  const code=(document.getElementById('couponInput').value||'').trim().toUpperCase();
+  if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
+  const coupons=tryParse(COUPONS_KEY,[]);
+  const coupon=coupons.find(c=>c.code===code);
+  if(!coupon){showCouponMsg('❌ الكود غير صحيح','error');return;}
+  if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
+  const usageData=tryParse(USAGE_KEY,{});
+  const customer=tryParse(CUSTOMER_KEY,{});
+  const customerKey=customer.phone ? customer.phone.replace(/\D/g,'') : 'device';
+  const codeUsage=usageData[code];
+  const myUsage=codeUsage && typeof codeUsage==='object' ? (codeUsage[customerKey]||0) : 0;
+  const totalUses=Number(coupon.totalUses)||0;
+  if(totalUses>=coupon.maxUses){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
+  if((coupon.usagePolicy||'once')==='once'&&myUsage>=1){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
+  const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  discountAmount=coupon.type==='percent'?Math.round(rawTotal*coupon.value/100):Math.min(coupon.value,rawTotal);
+  appliedCoupon=coupon;
+  const remaining=coupon.maxUses-totalUses-1;
+  const valTxt=coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
+  const policyTxt=(coupon.usagePolicy||'once')==='multiple'?'يمكنك استخدامه عدة مرات':'مرة واحدة لكل زبون';
+  showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt}) — ${policyTxt} — متبقي للكود ${remaining} ${remaining===1?'استخدام':'استخدامات'}`,'success');
+  updateCartUI();
+}
+function removeCoupon(){
+  appliedCoupon=null; discountAmount=0;
+  document.getElementById('couponInput').value='';
+  showCouponMsg('تم إزالة الكود','info');
+  updateCartUI();
+}
+
+// ── Send Order ──
+function sendOrder(){
+  if(!cart.length) return;
+  const cust=tryParse(CUSTOMER_KEY,{});
+  const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  const total=Math.max(rawTotal-discountAmount,0);
+  const cur=cart[0].currency;
+
+  // حفظ الطلب
+  if(appliedCoupon){
+    try{
+      const usage=tryParse(USAGE_KEY,{});
+      const customerKey=cust.phone ? cust.phone.replace(/\D/g,'') : 'device';
+      if(typeof usage[appliedCoupon.code]!=='object' || usage[appliedCoupon.code]===null) usage[appliedCoupon.code]={};
+      usage[appliedCoupon.code][customerKey]=(usage[appliedCoupon.code][customerKey]||0)+1;
+      localStorage.setItem(USAGE_KEY,JSON.stringify(usage));
+      const coupons=tryParse(COUPONS_KEY,[]);
+      const ci=coupons.findIndex(c=>c.code===appliedCoupon.code);
+      if(ci>=0){coupons[ci].totalUses=(Number(coupons[ci].totalUses)||0)+1;localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));}
+    }catch(e){}
+  }
+  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—'},items:JSON.parse(JSON.stringify(cart)),total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
+
+  // رسالة واتساب
+  let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
+  cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
+  msg+='━━━━━━━━━━━━━━━━━━━━\n';
+  if(appliedCoupon) msg+=`كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n`;
+  msg+=`● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
+
+  window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ── Toast ──
+function showToast(msg){ const t=document.getElementById('cartToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+// ── Render Cards ──
+function renderCards(){
+  const grid=document.getElementById('perfumesGrid'); if(!grid) return;
+  const perfumes=loadPerfumes();
+  if(!perfumes.length){ grid.innerHTML='<p style="text-align:center;color:rgba(255,255,255,0.8);padding:40px;grid-column:1/-1">لا توجد عطور حتى الآن 🌸</p>'; return; }
+  grid.innerHTML=perfumes.map((p,idx)=>{
+    const item=cart.find(i=>i.idx===idx);
+    const inCart=Boolean(item);
+    const qty=item?.qty||1;
+    return `<div class="card">
+      ${p.image?`<div class="card-img-wrap"><img src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
+      ${p.type?`<div class="badge">${p.type}</div>`:''}
+      ${p.name?`<div class="card-name-ar">${p.name}</div>`:''}
+      ${p.nameEn?`<div class="card-name-en">${p.nameEn}</div>`:''}
+      ${p.size?`<div class="card-size">📦 ${p.size}</div>`:''}
+      ${buildPriceBlock(p.price,p.oldPrice,p.currency)}
+      ${p.description?`<div class="card-desc">${p.description}</div>`:''}
+      <div class="card-qty">
+        <button class="card-qty-btn" onclick="adjustCardQty(${idx},-1)" aria-label="إنقاص الكمية">−</button>
+        <span class="card-qty-num" id="cardQty_${idx}">${qty}</span>
+        <button class="card-qty-btn" onclick="adjustCardQty(${idx},1)" aria-label="زيادة الكمية">+</button>
+      </div>
+      <button class="btn-add-cart${inCart?' added':''}" id="cartBtn_${idx}" onclick="${inCart?`removeFromCart(${idx})`:`addToCart(${idx})`}">
+        ${inCart?'🗑️ إزالة من السلة':'🛍️ أضف إلى السلة'}
+      </button>
+    </div>`;
+  }).join('');
+}
+
+// ── Init ──
+loadCart();
+checkCustomer();
+renderCards();
+updateCartUI();
+</script>
+</body>
+</html>
