@@ -1081,7 +1081,7 @@ const _origRenderList = typeof renderList !== 'undefined' ? renderList : ()=>{};
 function renderCustomers() {
     const orders = loadOrders();
     const custMap = {};
-    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []));
+    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(phone => String(phone).replace(/\D/g, '')));
     loadRegisteredCustomers().forEach(customer => {
         const phone = customer.phone || '—';
         if (deletedPhones.has(phone)) return;
@@ -1128,18 +1128,22 @@ function renderCustomers() {
                 </details>
             </div>
             <div class="cust-orders-count">${c.count} ${c.count === 1 ? 'طلب' : 'طلبات'}</div>
-            <button class="cust-delete" onclick="deleteCustomer(${JSON.stringify(c.phone)})">🗑️ حذف الحساب</button>
+            <button type="button" class="cust-delete" data-phone="${String(c.phone).replace(/"/g, '&quot;')}">🗑️ حذف الحساب</button>
         </div>
     `).join('');
+    listEl.querySelectorAll('.cust-delete').forEach(button => {
+        button.addEventListener('click', () => deleteCustomer(button.dataset.phone || ''));
+    });
 }
 
 function deleteCustomer(phone) {
+    phone = String(phone || '').replace(/\D/g, '');
     if (!phone || phone === '—') return;
     if (!confirm('سيتم حذف حساب هذا الزبون من قائمة الحسابات. ستبقى طلباته السابقة محفوظة. هل تريد المتابعة؟')) return;
     saveBeforeDelete();
-    const customers = loadRegisteredCustomers().filter(customer => customer.phone !== phone);
+    const customers = loadRegisteredCustomers().filter(customer => String(customer.phone || '').replace(/\D/g, '') !== phone);
     localStorage.setItem('diraz_customers', JSON.stringify(customers));
-    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []));
+    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(value => String(value).replace(/\D/g, '')));
     deletedPhones.add(phone);
     localStorage.setItem('diraz_deleted_customers', JSON.stringify([...deletedPhones]));
     const currentCustomer = tryParseAdmin('diraz_customer', null);
