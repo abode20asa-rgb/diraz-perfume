@@ -294,8 +294,8 @@ function saveCustomer(){
   const existing=customers.findIndex(item=>(item.phone||'').replace(/\D/g,'')===phoneKey);
   if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
   localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
-  DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
   document.getElementById('customerPopup').style.display='none';
+  if(window.DirazCloud) DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
 }
 
 // ── Cart ──
