@@ -233,6 +233,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
   <a href="contact.html" class="order-btn">&#128235; &#1591;&#1604;&#1576; &#1571;&#1608; &#1575;&#1587;&#1578;&#1601;&#1587;&#1575;&#1585;</a>
 </div>
 
+<script src="perfumes-data.js"></script>
 <script>
 // ══════════════════════════════════════════
 const STORAGE_KEY  = 'diraz_perfumes';
@@ -244,7 +245,7 @@ const USAGE_KEY    = 'diraz_coupon_usage';
 const ORDERS_KEY   = 'diraz_orders';
 const WA_NUMBER    = '9647747474014';
 
-const defaultPerfumes = [
+const defaultPerfumes = window.DIRAZ_DEFAULT_PERFUMES || [
   {name:"ورد الليل",nameEn:"Night Rose",type:"نسائي",size:"50ml",price:"20000",oldPrice:"25000",currency:"دينار",description:"رائحة زهرية ناعمة تمتزج مع المسك الأبيض الدافئ"},
   {name:"عود الملك",nameEn:"Royal Oud",type:"رجالي",size:"50ml",price:"35000",oldPrice:"",currency:"دينار",description:"عود فاخر مع لمسة عنبر ذهبية تدوم طويلاً"},
   {name:"نسيم الفجر",nameEn:"Dawn Breeze",type:"للجنسين",size:"50ml",price:"18000",oldPrice:"22000",currency:"دينار",description:"توليفة فريدة من الزهور الشرقية والخشب الدافئ"}

@@ -533,6 +533,7 @@
 
 <div id="toast"></div>
 
+<script src="perfumes-data.js"></script>
 <script>
 // ═══════════════════════════════════════
 //  🔐 كلمة السر — غيّرها من هنا
@@ -619,7 +620,7 @@ function logout() {
 // ── localStorage ──
 function loadPerfumes() {
     const d = localStorage.getItem(STORAGE_KEY);
-    return d ? JSON.parse(d) : [];
+    return d ? JSON.parse(d) : (window.DIRAZ_DEFAULT_PERFUMES || []);
 }
 function storePerfumes(arr) {
     try {
