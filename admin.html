@@ -1133,7 +1133,7 @@ function renderCustomers() {
     `).join('');
 }
 
-async function deleteCustomer(phone) {
+function deleteCustomer(phone) {
     if (!phone || phone === '—') return;
     if (!confirm('سيتم حذف حساب هذا الزبون من قائمة الحسابات. ستبقى طلباته السابقة محفوظة. هل تريد المتابعة؟')) return;
     saveBeforeDelete();
@@ -1144,9 +1144,12 @@ async function deleteCustomer(phone) {
     localStorage.setItem('diraz_deleted_customers', JSON.stringify([...deletedPhones]));
     const currentCustomer = tryParseAdmin('diraz_customer', null);
     if (currentCustomer?.phone === phone) localStorage.removeItem('diraz_customer');
-    try { await DirazCloud.remove('customers', 'phone=eq.' + encodeURIComponent(phone)); } catch(e) {}
     renderStats(); renderCustomers();
     showToast('✅ تم حذف حساب الزبون');
+    if (window.DirazCloud) {
+        DirazCloud.remove('customers', 'phone=eq.' + encodeURIComponent(phone))
+            .catch(() => showToast('⚠️ تم الحذف من هذا الجهاز، وتعذر تحديث السحابة'));
+    }
 }
 
 function loadRegisteredCustomers() {
