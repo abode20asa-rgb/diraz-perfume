@@ -534,6 +534,7 @@
 <div id="toast"></div>
 
 <script src="perfumes-data.js"></script>
+<script src="supabase-config.js"></script>
 <script>
 // ═══════════════════════════════════════
 //  🔐 كلمة السر — غيّرها من هنا
@@ -604,12 +605,27 @@ function checkPass() {
         document.getElementById('adminPanel').style.display  = 'block';
         renderList(); updateStorageBar();
         saveAutomaticBackup();
+        hydrateCloudData();
     } else {
         const err = document.getElementById('lockError');
         err.style.display = 'block';
         document.getElementById('passInput').value = '';
         setTimeout(() => err.style.display='none', 3000);
     }
+}
+
+async function hydrateCloudData() {
+    try {
+        const [cloudOrders, cloudCoupons, cloudCustomers] = await Promise.all([
+            DirazCloud.list('orders','&order=updated_at.desc'),
+            DirazCloud.list('coupons','&order=updated_at.desc'),
+            DirazCloud.list('customers','&order=updated_at.desc')
+        ]);
+        if (cloudOrders.length) localStorage.setItem('diraz_orders', JSON.stringify(cloudOrders.map(row=>row.data)));
+        if (cloudCoupons.length) localStorage.setItem('diraz_coupons', JSON.stringify(cloudCoupons.map(row=>row.data)));
+        if (cloudCustomers.length) localStorage.setItem('diraz_customers', JSON.stringify(cloudCustomers.map(row=>row.data)));
+        renderList(); saveAutomaticBackup();
+    } catch(e) { showToast('ℹ️ تعذر الاتصال السحابي، تم استخدام التخزين المحلي'); }
 }
 function logout() {
     document.getElementById('lockScreen').style.display = 'flex';
@@ -857,7 +873,11 @@ function loadOrders() {
     try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]'); }
     catch(e){ return []; }
 }
-function saveOrders(arr) { localStorage.setItem(ORDERS_KEY, JSON.stringify(arr)); saveAutomaticBackup(); }
+function saveOrders(arr) {
+    localStorage.setItem(ORDERS_KEY, JSON.stringify(arr));
+    arr.forEach(order => DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{}));
+    saveAutomaticBackup();
+}
 
 // ── إحصائيات ──
 function renderStats() {
@@ -1063,7 +1083,11 @@ function loadCoupons() {
     try { return JSON.parse(localStorage.getItem(COUPONS_KEY) || '[]'); }
     catch(e) { return []; }
 }
-function saveCoupons(arr) { localStorage.setItem(COUPONS_KEY, JSON.stringify(arr)); saveAutomaticBackup(); }
+function saveCoupons(arr) {
+    localStorage.setItem(COUPONS_KEY, JSON.stringify(arr));
+    arr.forEach(coupon => DirazCloud.upsert('coupons', [{code:coupon.code, data:coupon, total_uses:Number(coupon.totalUses)||0, updated_at:new Date().toISOString()}]).catch(()=>{}));
+    saveAutomaticBackup();
+}
 
 function addCoupon() {
     const code    = (document.getElementById('cp_code').value || '').trim().toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9\u0600-\u06FF\u0660-\u0669]/g,'');

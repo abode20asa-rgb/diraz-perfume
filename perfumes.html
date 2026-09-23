@@ -234,6 +234,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 </div>
 
 <script src="perfumes-data.js"></script>
+<script src="supabase-config.js"></script>
 <script>
 // ══════════════════════════════════════════
 const STORAGE_KEY  = 'diraz_perfumes';
@@ -293,6 +294,7 @@ function saveCustomer(){
   const existing=customers.findIndex(item=>(item.phone||'').replace(/\D/g,'')===phoneKey);
   if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
   localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+  DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
   document.getElementById('customerPopup').style.display='none';
 }
 
@@ -371,10 +373,14 @@ function updateCartUI(){
 let appliedCoupon=null, discountAmount=0;
 function toggleCouponInput(){ document.getElementById('couponArea').classList.toggle('open'); }
 function showCouponMsg(msg,type){ const el=document.getElementById('couponMsg'); el.textContent=msg; el.className='coupon-msg '+type; }
-function applyCoupon(){
+async function applyCoupon(){
   const code=(document.getElementById('couponInput').value||'').trim().toUpperCase();
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
-  const coupons=tryParse(COUPONS_KEY,[]);
+  let coupons=tryParse(COUPONS_KEY,[]);
+  try {
+    const cloudCoupons=await DirazCloud.list('coupons','&active=eq.true&order=updated_at.desc');
+    if(cloudCoupons.length) coupons=cloudCoupons.map(row=>row.data);
+  } catch(e) {}
   const coupon=coupons.find(c=>c.code===code);
   if(!coupon){showCouponMsg('❌ الكود غير صحيح','error');return;}
   if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
@@ -418,13 +424,16 @@ function sendOrder(){
       if(typeof usage[appliedCoupon.code]!=='object' || usage[appliedCoupon.code]===null) usage[appliedCoupon.code]={};
       usage[appliedCoupon.code][customerKey]=(usage[appliedCoupon.code][customerKey]||0)+1;
       localStorage.setItem(USAGE_KEY,JSON.stringify(usage));
+      await DirazCloud.upsert('coupon_usage', [{code:appliedCoupon.code, customer_key:customerKey, uses:usage[appliedCoupon.code][customerKey]}]).catch(()=>{});
       const coupons=tryParse(COUPONS_KEY,[]);
       const ci=coupons.findIndex(c=>c.code===appliedCoupon.code);
       if(ci>=0){coupons[ci].totalUses=(Number(coupons[ci].totalUses)||0)+1;localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));}
+      await DirazCloud.update('coupons','code=eq.'+encodeURIComponent(appliedCoupon.code),{data:appliedCoupon,total_uses:(Number(appliedCoupon.totalUses)||0)+1,updated_at:new Date().toISOString()}).catch(()=>{});
     }catch(e){}
   }
   const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—'},items:JSON.parse(JSON.stringify(cart)),total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
+  DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{});
 
   // رسالة واتساب
   let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
