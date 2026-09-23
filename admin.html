@@ -1082,6 +1082,8 @@ function deleteOrder(orderId) {
     if (idx < 0) return;
     orders.splice(idx, 1);
     saveOrders(orders);
+    DirazCloud.remove('orders', 'id=eq.' + encodeURIComponent(String(orderId)))
+        .catch(() => showToast('⚠️ حُذف الطلب من هذا الجهاز، وتعذر حذفه من السحابة'));
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
     showToast('🗑️ تم حذف الطلب');
 }
