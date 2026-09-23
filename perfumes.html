@@ -554,6 +554,8 @@ function showCouponMsg(msg,type){ const el=document.getElementById('couponMsg');
 async function applyCoupon(){
   const code=(document.getElementById('couponInput').value||'').trim().toUpperCase();
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
+  const itemCount=cart.reduce((total,item)=>total+item.qty,0);
+  if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو أكثر أولاً','error');return;}
   let coupons=tryParse(COUPONS_KEY,[]);
   if(window.DirazCloud){
     try {
@@ -691,7 +693,6 @@ function renderCards(){
 
 // ── Init ──
 loadCart();
-checkCustomer();
 renderCards();
 updateCartUI();
 </script>
