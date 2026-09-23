@@ -26,6 +26,10 @@ background-repeat:repeat;background-size:120px 60px;min-height:100vh}
 .popup-btn{width:100%;padding:14px;border:none;border-radius:50px;margin-top:6px;background:white;color:#c45a7a;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 20px rgba(255,255,255,0.25)}
 .popup-btn:hover{transform:translateY(-3px)}
 .popup-error{color:#ffd0d0;font-size:.84rem;margin-top:8px;display:none}
+.delivery-box{background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.5);border-radius:26px;padding:28px 24px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.delivery-box h2{color:white;font-size:1.35rem;margin-bottom:8px}.delivery-box p{color:rgba(255,255,255,.82);font-size:.86rem;margin-bottom:18px}
+.delivery-field{width:100%;padding:13px 16px;border-radius:50px;margin-bottom:11px;border:1.5px solid rgba(255,255,255,.45);background:rgba(255,255,255,.18);color:white;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none}
+.delivery-field option{background:#c45a7a;color:white}.delivery-summary{color:white;background:rgba(255,255,255,.14);border-radius:14px;padding:12px;margin:8px 0 14px;line-height:1.9}
 
 /* ══ Header ══ */
 header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(244,150,185,0.9);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.35);box-shadow:0 2px 20px rgba(196,90,122,0.2)}
@@ -163,9 +167,24 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
     <p>أدخل بياناتك لتتمكن من إتمام طلبك بسهولة</p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
     <input type="tel"  id="popPhone" class="popup-input" placeholder="رقم الهاتف *">
-    <input type="text" id="popAddress" class="popup-input" placeholder="العنوان بالتفصيل *">
     <button class="popup-btn" onclick="saveCustomer()">تصفح العطور ←</button>
     <div class="popup-error" id="popError">❗ يرجى إدخال الاسم ورقم الهاتف</div>
+  </div>
+</div>
+
+<div class="popup-overlay" id="deliveryPopup" style="display:none">
+  <div class="delivery-box">
+    <div class="pop-icon">📍</div><h2>بيانات التوصيل</h2>
+    <p>اختر المحافظة والمنطقة ليظهر سعر التوصيل</p>
+    <select id="deliveryProvince" class="delivery-field" onchange="updateDeliveryAreas()">
+      <option value="">اختر المحافظة *</option>
+      <option>بغداد</option><option>البصرة</option><option>نينوى</option><option>أربيل</option><option>السليمانية</option><option>دهوك</option><option>كركوك</option><option>الأنبار</option><option>ديالى</option><option>بابل</option><option>كربلاء</option><option>النجف</option><option>واسط</option><option>صلاح الدين</option><option>القادسية</option><option>المثنى</option><option>ذي قار</option><option>ميسان</option>
+    </select>
+    <select id="deliveryArea" class="delivery-field" onchange="updateDeliverySummary()"><option value="">اختر مركز المحافظة أو القضاء/الناحية *</option><option value="center">مركز المحافظة</option><option value="district">قضاء أو ناحية</option></select>
+    <input type="text" id="deliveryAddress" class="delivery-field" placeholder="العنوان بالتفصيل *">
+    <div class="delivery-summary" id="deliverySummary">اختر المحافظة والمنطقة لحساب التوصيل</div>
+    <button class="popup-btn" onclick="confirmDelivery()">تأكيد الطلب ←</button>
+    <div class="popup-error" id="deliveryError">❗ أكمل بيانات التوصيل</div>
   </div>
 </div>
 
@@ -196,8 +215,8 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
       <span>الإجمالي</span>
       <span class="cart-total-amount" id="cartTotalAmt">0 دينار</span>
     </div>
-    <button class="btn-checkout" id="checkoutBtn" onclick="sendOrder()" disabled>
-      💬 تأكيد الطلب عبر واتساب
+    <button class="btn-checkout" id="checkoutBtn" onclick="openDelivery()" disabled>
+      💬 متابعة بيانات التوصيل
     </button>
   </div>
 </div>
@@ -276,25 +295,26 @@ function checkCustomer(){
   if(c){
     document.getElementById('popName').value=c.name||'';
     document.getElementById('popPhone').value=c.phone||'';
-    document.getElementById('popAddress').value=c.address||'';
   }
-  document.getElementById('customerPopup').style.display = c?.address?'none':'flex';
+  document.getElementById('customerPopup').style.display = c?.phone?'none':'flex';
 }
 function saveCustomer(){
   const nameInput=(document.getElementById('popName').value||'').trim();
   const phone=(document.getElementById('popPhone').value||'').trim();
-  const address=(document.getElementById('popAddress').value||'').trim();
   const name=nameInput.split(/\s+/)[0]||'';
   const phoneDigits=phone.replace(/\D/g,'');
-  if(!name||phoneDigits.length<7||!address){ document.getElementById('popError').textContent='❗ يرجى إدخال الاسم الأول والهاتف والعنوان'; document.getElementById('popError').style.display='block'; setTimeout(()=>document.getElementById('popError').style.display='none',2500); return; }
-  const customer={name,phone,address};
-  localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
-  const customers=tryParse(CUSTOMERS_KEY,[]);
-  const phoneKey=phoneDigits;
-  const existing=customers.findIndex(item=>(item.phone||'').replace(/\D/g,'')===phoneKey);
-  if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
-  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+  if(!name||phoneDigits.length<7){ document.getElementById('popError').textContent='❗ يرجى إدخال الاسم الأول ورقم هاتف صحيح'; document.getElementById('popError').style.display='block'; setTimeout(()=>document.getElementById('popError').style.display='none',2500); return; }
+  const oldCustomer=tryParse(CUSTOMER_KEY,{});
+  const customer={...oldCustomer,name,phone};
   document.getElementById('customerPopup').style.display='none';
+  try {
+    localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
+    const customers=tryParse(CUSTOMERS_KEY,[]);
+    const phoneKey=phoneDigits;
+    const existing=customers.findIndex(item=>(item.phone||'').replace(/\D/g,'')===phoneKey);
+    if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
+    localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+  } catch(e) {}
   if(window.DirazCloud) DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
 }
 
@@ -378,7 +398,7 @@ async function applyCoupon(){
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
   let coupons=tryParse(COUPONS_KEY,[]);
   try {
-    const cloudCoupons=await DirazCloud.list('coupons','&active=eq.true&order=updated_at.desc');
+    const cloudCoupons=await DirazCloud.list('coupons','&data->>active=eq.true&order=updated_at.desc');
     if(cloudCoupons.length) coupons=cloudCoupons.map(row=>row.data);
   } catch(e) {}
   const coupon=coupons.find(c=>c.code===code);
@@ -409,11 +429,42 @@ function removeCoupon(){
 }
 
 // ── Send Order ──
-function sendOrder(){
+function updateDeliveryAreas(){
+  const province=document.getElementById('deliveryProvince').value;
+  const area=document.getElementById('deliveryArea');
+  area.innerHTML='<option value="">اختر مركز المحافظة أو القضاء/الناحية *</option><option value="center">مركز المحافظة</option><option value="district">قضاء أو ناحية</option>';
+  const fee=province==='ميسان' ? 2000 : (province ? 5000 : 0);
+  updateDeliverySummary();
+}
+function updateDeliverySummary(){
+  const province=document.getElementById('deliveryProvince').value;
+  const area=document.getElementById('deliveryArea').value;
+  let fee=0;
+  if(province) fee=province==='ميسان' ? (area==='district'?3000:2000) : 5000;
+  document.getElementById('deliverySummary').textContent=fee ? `سعر التوصيل: ${fee.toLocaleString('en-US')} دينار` : 'اختر المحافظة والمنطقة لحساب التوصيل';
+}
+function openDelivery(){
   if(!cart.length) return;
-  const cust=tryParse(CUSTOMER_KEY,{});
+  document.getElementById('deliveryPopup').style.display='flex';
+}
+function confirmDelivery(){
+  const province=document.getElementById('deliveryProvince').value;
+  const area=document.getElementById('deliveryArea').value;
+  const address=(document.getElementById('deliveryAddress').value||'').trim();
+  if(!province||!area||!address){const e=document.getElementById('deliveryError');e.style.display='block';return;}
+  const fee=province==='ميسان' ? (area==='center'?2000:3000) : 5000;
+  const customer=tryParse(CUSTOMER_KEY,{});
+  const updated={...customer,address,province,area};
+  localStorage.setItem(CUSTOMER_KEY,JSON.stringify(updated));
+  document.getElementById('deliveryPopup').style.display='none';
+  sendOrder(fee,updated);
+}
+async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{})){
+  if(!cart.length) return;
+  const cust=deliveryCustomer;
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
-  const total=Math.max(rawTotal-discountAmount,0);
+  const subtotal=Math.max(rawTotal-discountAmount,0);
+  const total=subtotal+deliveryFee;
   const cur=cart[0].currency;
 
   // حفظ الطلب
@@ -431,7 +482,7 @@ function sendOrder(){
       await DirazCloud.update('coupons','code=eq.'+encodeURIComponent(appliedCoupon.code),{data:appliedCoupon,total_uses:(Number(appliedCoupon.totalUses)||0)+1,updated_at:new Date().toISOString()}).catch(()=>{});
     }catch(e){}
   }
-  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—'},items:JSON.parse(JSON.stringify(cart)),total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—'},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
   DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{});
 
@@ -440,7 +491,7 @@ function sendOrder(){
   cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
   msg+='━━━━━━━━━━━━━━━━━━━━\n';
   if(appliedCoupon) msg+=`كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n`;
-  msg+=`● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
+  msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
 
   window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg),'_blank');
 }

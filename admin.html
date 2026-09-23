@@ -942,6 +942,7 @@ function renderOrders() {
                     <div class="order-cust">👤 ${order.customer?.name || '—'}</div>
                     <div class="order-phone">📱 ${order.customer?.phone || '—'}</div>
                     <div class="order-address">📍 ${order.customer?.address || '—'}</div>
+                    <div class="order-address">🚚 ${order.customer?.province || '—'} — ${order.customer?.area === 'district' ? 'قضاء/ناحية' : order.customer?.area === 'center' ? 'مركز المحافظة' : '—'}</div>
                 </div>
                 <div style="text-align:left">
                     <div class="order-date">🕐 ${dateStr}</div>
@@ -955,7 +956,7 @@ function renderOrders() {
             <div class="order-items-list">${itemsHTML || '<div style="color:rgba(255,255,255,0.5)">—</div>'}</div>
 
             <div class="order-total-row">
-                <span class="order-total-label">الإجمالي</span>
+                <span class="order-total-label">العطور ${(order.subtotal||order.total||0).toLocaleString('en-US')} + التوصيل ${(order.deliveryFee||0).toLocaleString('en-US')}</span>
                 <span class="order-total-val">${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}</span>
             </div>
 
@@ -1001,11 +1002,11 @@ function resendWA(orderId) {
     const orders = loadOrders();
     const order = orders[findOrderIndex(orders, orderId)];
     if (!order) return;
-    let msg = `● الاسم: ${order.customer?.name||'—'}\n● الهاتف: ${order.customer?.phone||'—'}\n● العنوان: ${order.customer?.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
+    let msg = `● الاسم: ${order.customer?.name||'—'}\n● الهاتف: ${order.customer?.phone||'—'}\n● العنوان: ${order.customer?.address||'—'}\n● المحافظة: ${order.customer?.province||'—'}\n● المنطقة: ${order.customer?.area === 'district' ? 'قضاء/ناحية' : order.customer?.area === 'center' ? 'مركز المحافظة' : '—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
     (order.items||[]).forEach((item,i)=>{
         msg += `${i+1}. ${item.name} × ${item.qty} ← ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`;
     });
-    msg += `━━━━━━━━━━━━━━━━━━━━\n● الإجمالي: ${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}`;
+    msg += `━━━━━━━━━━━━━━━━━━━━\n● سعر العطور: ${(order.subtotal||order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}\n● التوصيل: ${(order.deliveryFee||0).toLocaleString('en-US')} ${order.currency||'دينار'}\n● الإجمالي: ${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}`;
     window.open('https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent(msg), '_blank');
 }
 
