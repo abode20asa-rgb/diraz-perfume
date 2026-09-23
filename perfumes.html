@@ -93,10 +93,12 @@ main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 
 /* ══ Add to Cart btn ══ */
 .btn-add-cart{width:100%;padding:11px;border:none;border-radius:50px;margin-top:12px;background:rgba(255,255,255,0.3);border:1.5px solid rgba(255,255,255,0.55);color:white;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;transition:all .25s}
+.btn-add-cart:disabled{background:rgba(229,57,53,.72);border-color:rgba(255,150,150,.75);cursor:not-allowed;opacity:1}
 .btn-add-cart:hover{background:rgba(255,255,255,0.5);transform:translateY(-2px)}
 .btn-add-cart.added{background:rgba(37,211,102,0.35);border-color:rgba(37,211,102,0.6)}
 .card-qty{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:12px}
 .card-qty-btn{width:32px;height:32px;border-radius:50%;border:1.5px solid rgba(255,255,255,0.65);background:rgba(255,255,255,0.2);color:white;font-size:1.1rem;font-weight:900;cursor:pointer}
+.card-qty-btn:disabled{opacity:.45;cursor:not-allowed}
 .card-qty-btn:hover{background:rgba(255,255,255,0.4)}
 .card-qty-num{min-width:28px;text-align:center;color:white;font-size:1rem;font-weight:900}
 
@@ -414,6 +416,7 @@ async function hydrateCloudPerfumes(){
     if(rows.length&&Array.isArray(rows[0].data)){
       localStorage.setItem(STORAGE_KEY,JSON.stringify(rows[0].data));
       renderCards();
+      updateCartUI();
     }
   }catch(e){}
 }
@@ -503,6 +506,7 @@ function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
 
 function addToCart(idx){
   const p=loadPerfumes()[idx]; if(!p) return;
+  if(p.badge==='soldout'){showToast('❌ هذا العطر نافذ وغير متوفر حاليًا');return;}
   const ex=cart.find(i=>i.idx===idx);
   if(ex) return;
   const qtyEl=document.getElementById('cardQty_'+idx);
@@ -535,6 +539,11 @@ function openCart(){
 function closeCart(){ document.getElementById('cartSidebar').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
 
 function updateCartUI(){
+  const unavailable=new Set(loadPerfumes().map((item,index)=>item.badge==='soldout'?index:-1).filter(index=>index>=0));
+  if(unavailable.size){
+    const filteredCart=cart.filter(item=>!unavailable.has(item.idx));
+    if(filteredCart.length!==cart.length){cart=filteredCart;saveCart();}
+  }
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const total=Math.max(rawTotal-discountAmount,0);
   const count=cart.reduce((s,i)=>s+i.qty,0);
@@ -713,6 +722,7 @@ function renderCards(){
   grid.innerHTML=perfumes.map((p,idx)=>{
     const item=cart.find(i=>i.idx===idx);
     const inCart=Boolean(item);
+    const isSoldOut=p.badge==='soldout';
     const qty=item?.qty||1;
     return `<div class="card">
       ${p.image?`<div class="card-img-wrap"><img class="zoomable-perfume-image" src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
@@ -724,12 +734,12 @@ function renderCards(){
       ${buildPriceBlock(p.price,p.oldPrice,p.currency)}
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
       <div class="card-qty">
-        <button class="card-qty-btn" onclick="adjustCardQty(${idx},-1)" aria-label="إنقاص الكمية">−</button>
+        <button class="card-qty-btn" onclick="adjustCardQty(${idx},-1)" aria-label="إنقاص الكمية" ${isSoldOut?'disabled':''}>−</button>
         <span class="card-qty-num" id="cardQty_${idx}">${qty}</span>
-        <button class="card-qty-btn" onclick="adjustCardQty(${idx},1)" aria-label="زيادة الكمية">+</button>
+        <button class="card-qty-btn" onclick="adjustCardQty(${idx},1)" aria-label="زيادة الكمية" ${isSoldOut?'disabled':''}>+</button>
       </div>
-      <button class="btn-add-cart${inCart?' added':''}" id="cartBtn_${idx}" onclick="${inCart?`removeFromCart(${idx})`:`addToCart(${idx})`}">
-        ${inCart?'🗑️ إزالة من السلة':'🛍️ أضف إلى السلة'}
+      <button class="btn-add-cart${inCart?' added':''}" id="cartBtn_${idx}" onclick="${isSoldOut?'showToast(\'❌ هذا العطر نافذ وغير متوفر حاليًا\')':inCart?`removeFromCart(${idx})`:`addToCart(${idx})`}" ${isSoldOut?'disabled':''}>
+        ${isSoldOut?'🚫 غير متوفر':inCart?'🗑️ إزالة من السلة':'🛍️ أضف إلى السلة'}
       </button>
     </div>`;
   }).join('');
