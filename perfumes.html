@@ -174,9 +174,9 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
     <h2>مرحباً بك!</h2>
     <p>أنشئ حسابك بإدخال الاسم الأول ورقم الهاتف لتتمكن من إتمام طلبك</p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
-    <input type="tel"  id="popPhone" class="popup-input" placeholder="رقم الهاتف *">
+    <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
     <button class="popup-btn" onclick="saveCustomer()">إنشاء الحساب والمتابعة ←</button>
-    <div class="popup-error" id="popError">❗ يرجى إدخال الاسم الأول ورقم الهاتف</div>
+    <div class="popup-error" id="popError">❗ يرجى إدخال الاسم الأول ورقم هاتف صحيح</div>
   </div>
 </div>
 
@@ -318,9 +318,16 @@ function saveCustomer(){
   const phone=(document.getElementById('popPhone').value||'').trim();
   const name=nameInput.split(/\s+/)[0]||'';
   const phoneDigits=phone.replace(/\D/g,'');
-  if(!name||phoneDigits.length<7){ document.getElementById('popError').textContent='❗ يرجى إدخال الاسم الأول ورقم هاتف صحيح'; document.getElementById('popError').style.display='block'; setTimeout(()=>document.getElementById('popError').style.display='none',2500); return; }
+
+  if(!name || !/^07\d{9}$/.test(phoneDigits)){
+    document.getElementById('popError').textContent='❗ يجب أن يبدأ رقم الهاتف بـ 07 ويكون 11 رقمًا فقط';
+    document.getElementById('popError').style.display='block';
+    setTimeout(()=>document.getElementById('popError').style.display='none',2500);
+    return;
+  }
+
   const oldCustomer=tryParse(CUSTOMER_KEY,{});
-  const customer={...oldCustomer,name,phone};
+  const customer={...oldCustomer,name,phone:phoneDigits};
   document.getElementById('customerPopup').style.display='none';
   try {
     localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
