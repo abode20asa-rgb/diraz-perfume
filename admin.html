@@ -176,6 +176,10 @@
         .perfume-info { flex:1; }
         .perfume-info .pname { color:white; font-weight:900; font-size:1rem; }
         .perfume-info .pmeta { color:rgba(255,255,255,0.75); font-size:0.82rem; margin-top:3px; }
+        .perfume-badge { display:inline-block; margin-top:6px; padding:3px 10px; border-radius:20px; color:white; font-size:.72rem; font-weight:800; }
+        .perfume-badge.soldout { background:#e53935; }
+        .perfume-badge.bestseller { background:#22a447; }
+        .perfume-badge.limited { background:#1976d2; }
         .item-actions { display:flex; gap:8px; flex-shrink:0; }
         .btn-edit {
             padding:8px 18px; border-radius:50px; border:none;
@@ -514,6 +518,15 @@
                     </select>
                 </div>
                 <div class="form-group">
+                    <label>علامة العطر</label>
+                    <select id="f_badge">
+                        <option value="none">لا شيء</option>
+                        <option value="soldout">نفذ</option>
+                        <option value="bestseller">الأكثر مبيعًا</option>
+                        <option value="limited">محدود</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label>الحجم الثابت</label>
                     <input type="text" id="f_size" value="50ml" readonly>
                 </div>
@@ -796,6 +809,7 @@ function renderList() {
             <div class="perfume-info">
                 <div class="pname">${p.name}${p.nameEn ? ' — ' + p.nameEn : ''}</div>
                 <div class="pmeta">${p.type} &bull; ${p.size} &bull; ${p.price} ${p.currency}</div>
+                ${p.badge && p.badge !== 'none' ? `<span class="perfume-badge ${p.badge}">${p.badge === 'soldout' ? 'نفذ' : p.badge === 'bestseller' ? 'الأكثر مبيعًا' : 'محدود'}</span>` : ''}
             </div>
             <div class="item-actions">
                 <button class="btn-move" onclick="movePerfume(${i},-1)" ${i === 0 ? 'disabled' : ''} title="رفع العطر">↑</button>
@@ -832,6 +846,7 @@ function savePerfume() {
         size,
         price,
         currency:    document.getElementById('f_currency').value,
+        badge:       document.getElementById('f_badge').value,
         oldPrice:    (document.getElementById('f_oldPrice').value || '').trim(),
         image:       imageToSave,
         description: document.getElementById('f_desc').value.trim()
@@ -855,6 +870,7 @@ function editPerfume(i) {
     document.getElementById('f_name').value     = p.name     || '';
     document.getElementById('f_nameEn').value   = p.nameEn   || '';
     document.getElementById('f_type').value     = p.type     || 'نسائي';
+    document.getElementById('f_badge').value    = p.badge    || 'none';
     document.getElementById('f_size').value     = '50ml';
     document.getElementById('f_price').value    = p.price    || '';
     document.getElementById('f_currency').value = p.currency || 'دينار';
@@ -901,6 +917,7 @@ function resetForm() {
     document.getElementById('f_price').value = '20000';
     document.getElementById('f_size').value = '50ml';
     document.getElementById('f_type').value     = 'نسائي';
+    document.getElementById('f_badge').value    = 'none';
     document.getElementById('f_currency').value = 'دينار';
     document.getElementById('f_image').value    = '';
     document.getElementById('previewWrap').classList.remove('visible');
