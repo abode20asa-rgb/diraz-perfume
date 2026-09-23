@@ -229,6 +229,13 @@
         .stat-icon  { font-size:2rem; margin-bottom:8px; }
         .stat-num   { font-size:2rem; font-weight:900; color:white; line-height:1; }
         .stat-label { color:rgba(255,255,255,0.75); font-size:0.83rem; margin-top:5px; }
+        .login-list { display:flex; flex-direction:column; gap:10px; }
+        .login-item { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35); border-radius:12px; padding:11px 14px; color:white; }
+        .login-num { width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-weight:900; flex-shrink:0; }
+        .login-info { flex:1; min-width:0; }
+        .login-device { font-weight:800; font-size:.9rem; }
+        .login-meta { color:rgba(255,255,255,.7); font-size:.78rem; margin-top:3px; }
+        .no-logins { text-align:center; color:rgba(255,255,255,.65); padding:20px 0; }
 
         /* ══ فلتر الطلبات ══ */
         .filter-bar { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
@@ -432,6 +439,12 @@
 
         <!-- ══ النسخ الاحتياطي ══ -->
         <div class="section-card">
+            <h2>🕘 سجل دخول لوحة التحكم</h2>
+            <div class="login-list" id="adminLoginList"></div>
+        </div>
+
+        <!-- ══ النسخ الاحتياطي ══ -->
+        <div class="section-card">
             <h2>💾 النسخ الاحتياطي</h2>
             <div class="backup-actions">
                 <button class="backup-btn" onclick="downloadBackup()">⬇️ تنزيل نسخة كاملة</button>
@@ -608,6 +621,7 @@
 // ═══════════════════════════════════════
 const ADMIN_PASSWORD = 'diraz@2026/admin';
 const STORAGE_KEY    = 'diraz_perfumes';
+const ADMIN_LOGINS_KEY = 'diraz_admin_logins';
 const BACKUP_KEY     = 'diraz_full_backup';
 const LAST_BACKUP_KEY= 'diraz_last_before_delete';
 
@@ -670,6 +684,7 @@ function checkPass() {
     if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
         document.getElementById('lockScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display  = 'block';
+        recordAdminLogin();
         renderList(); updateStorageBar();
         saveAutomaticBackup();
         hydrateCloudData();
@@ -683,27 +698,79 @@ function checkPass() {
 
 async function hydrateCloudData() {
     try {
-        const [cloudOrders, cloudCoupons, cloudCustomers, cloudPerfumes] = await Promise.all([
+        const [cloudOrders, cloudCoupons, cloudCustomers, cloudPerfumes, cloudLogins] = await Promise.all([
             DirazCloud.list('orders','&order=updated_at.desc'),
             DirazCloud.list('coupons','&order=updated_at.desc'),
             DirazCloud.list('customers','&order=updated_at.desc'),
-            DirazCloud.list('perfumes','&order=updated_at.desc')
+            DirazCloud.list('perfumes','&order=updated_at.desc'),
+            DirazCloud.list('admin_logins','&order=created_at.desc&limit=100')
         ]);
         if (cloudOrders.length) localStorage.setItem('diraz_orders', JSON.stringify(cloudOrders.map(row=>row.data)));
         if (cloudCoupons.length) localStorage.setItem('diraz_coupons', JSON.stringify(cloudCoupons.map(row=>row.data)));
         if (cloudCustomers.length) localStorage.setItem('diraz_customers', JSON.stringify(cloudCustomers.map(row=>row.data)));
+        if (cloudLogins.length) {
+            const localLogins = tryParseAdmin(ADMIN_LOGINS_KEY, []);
+            const mergedLogins = [...localLogins, ...cloudLogins.map(row=>row.data)]
+                .filter((login, index, all) => all.findIndex(item => String(item.id) === String(login.id)) === index)
+                .sort((a,b) => new Date(b.date) - new Date(a.date))
+                .slice(0,100);
+            localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(mergedLogins));
+        }
         if (cloudPerfumes.length && Array.isArray(cloudPerfumes[0].data)) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudPerfumes[0].data));
         } else {
             await DirazCloud.upsert('perfumes', [{id:1, data:loadPerfumes(), updated_at:new Date().toISOString()}]);
         }
-        renderList(); saveAutomaticBackup();
+        renderList(); renderAdminLogins(); saveAutomaticBackup();
     } catch(e) { showToast('ℹ️ تعذر الاتصال السحابي، تم استخدام التخزين المحلي'); }
 }
 function logout() {
     document.getElementById('lockScreen').style.display = 'flex';
     document.getElementById('adminPanel').style.display  = 'none';
     document.getElementById('passInput').value = '';
+}
+
+function getDeviceName() {
+    const ua = navigator.userAgent || '';
+    if (/Android/i.test(ua)) return 'هاتف Android';
+    if (/iPhone|iPad|iPod/i.test(ua)) return 'هاتف iPhone/iPad';
+    if (/Windows/i.test(ua)) return 'جهاز Windows';
+    if (/Macintosh|Mac OS/i.test(ua)) return 'جهاز Mac';
+    return navigator.platform || 'جهاز غير معروف';
+}
+function getBrowserName() {
+    const ua = navigator.userAgent || '';
+    if (/Edg\//i.test(ua)) return 'Microsoft Edge';
+    if (/Chrome\//i.test(ua)) return 'Google Chrome';
+    if (/Firefox\//i.test(ua)) return 'Mozilla Firefox';
+    if (/Safari\//i.test(ua)) return 'Safari';
+    return 'متصفح غير معروف';
+}
+function renderAdminLogins() {
+    const list = document.getElementById('adminLoginList');
+    if (!list) return;
+    let logins = [];
+    try { logins = JSON.parse(localStorage.getItem(ADMIN_LOGINS_KEY) || '[]'); } catch(e) {}
+    if (!logins.length) { list.innerHTML = '<div class="no-logins">📭 لا توجد تسجيلات دخول بعد</div>'; return; }
+    list.innerHTML = logins.slice(0,100).map((login,index) => `
+        <div class="login-item">
+            <div class="login-num">${index + 1}</div>
+            <div class="login-info">
+                <div class="login-device">📱 ${login.device || 'جهاز غير معروف'}</div>
+                <div class="login-meta">🕐 ${new Date(login.date).toLocaleString('ar-IQ', {dateStyle:'medium', timeStyle:'short'})} · ${login.browser || 'متصفح غير معروف'}</div>
+            </div>
+        </div>`).join('');
+}
+function recordAdminLogin() {
+    const login = { id:Date.now(), date:new Date().toISOString(), device:getDeviceName(), browser:getBrowserName() };
+    let logins = [];
+    try { logins = JSON.parse(localStorage.getItem(ADMIN_LOGINS_KEY) || '[]'); } catch(e) {}
+    logins.unshift(login);
+    localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(logins.slice(0,100)));
+    renderAdminLogins();
+    if (window.DirazCloud) {
+        DirazCloud.insert('admin_logins', [{id:String(login.id), data:login, created_at:login.date}]).catch(()=>{});
+    }
 }
 
 // ── localStorage ──
