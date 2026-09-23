@@ -164,12 +164,12 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 <div class="popup-overlay" id="customerPopup">
   <div class="popup-box">
     <div class="pop-icon">🌸</div>
-    <h2>أهلاً وسهلاً!</h2>
-    <p>أدخل بياناتك لتتمكن من إتمام طلبك بسهولة</p>
+    <h2>مرحباً بك!</h2>
+    <p>أنشئ حسابك بإدخال الاسم الأول ورقم الهاتف لتتمكن من إتمام طلبك</p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
     <input type="tel"  id="popPhone" class="popup-input" placeholder="رقم الهاتف *">
-    <button class="popup-btn" onclick="saveCustomer()">تصفح العطور ←</button>
-    <div class="popup-error" id="popError">❗ يرجى إدخال الاسم ورقم الهاتف</div>
+    <button class="popup-btn" onclick="saveCustomer()">إنشاء الحساب والمتابعة ←</button>
+    <div class="popup-error" id="popError">❗ يرجى إدخال الاسم الأول ورقم الهاتف</div>
   </div>
 </div>
 
@@ -324,10 +324,15 @@ function saveCustomer(){
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
   } catch(e) {}
   if(window.DirazCloud) DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
+  if(pendingCartOpen){
+    pendingCartOpen=false;
+    openCart();
+  }
 }
 
 // ── Cart ──
 let cart=[];
+let pendingCartOpen=false;
 function loadCart(){ cart=tryParse(CART_KEY,[]); }
 function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
 
@@ -353,7 +358,15 @@ function changeQty(idx,d){
   saveCart(); updateCartUI(); renderCards();
 }
 function removeFromCart(idx){ cart=cart.filter(i=>i.idx!==idx); saveCart(); updateCartUI(); renderCards(); }
-function openCart(){ document.getElementById('cartSidebar').classList.add('open'); document.getElementById('cartOverlay').classList.add('open'); }
+function openCart(){
+  const customer=tryParse(CUSTOMER_KEY,null);
+  if(!customer?.name||!customer?.phone){
+    pendingCartOpen=true;
+    editCustomer();
+    return;
+  }
+  document.getElementById('cartSidebar').classList.add('open'); document.getElementById('cartOverlay').classList.add('open');
+}
 function closeCart(){ document.getElementById('cartSidebar').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
 
 function updateCartUI(){
