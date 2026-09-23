@@ -298,7 +298,7 @@ function checkCustomer(){
     document.getElementById('popName').value=c.name||'';
     document.getElementById('popPhone').value=c.phone||'';
   }
-  document.getElementById('customerPopup').style.display = c?.phone?'none':'flex';
+  document.getElementById('customerPopup').style.display='none';
 }
 function editCustomer(){
   const c=tryParse(CUSTOMER_KEY,{});
