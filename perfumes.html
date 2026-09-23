@@ -44,6 +44,7 @@ header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify
 .cart-badge.visible{display:flex}
 .back-btn{display:flex;align-items:center;gap:6px;background:white;color:var(--pink-deep);text-decoration:none;padding:8px 18px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;box-shadow:0 3px 12px rgba(196,90,122,0.2);transition:transform .2s;white-space:nowrap}
 .back-btn:hover{transform:translateY(-2px)}
+.customer-btn{background:rgba(255,255,255,.25);color:white;border:1px solid rgba(255,255,255,.55);padding:8px 14px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer}
 
 /* ══ Grid ══ */
 main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
@@ -230,6 +231,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
     <div class="ar">ديراز للعطور</div>
   </div>
   <div class="header-actions">
+    <button class="customer-btn" onclick="editCustomer()">👤 بياناتي</button>
     <button class="cart-icon-btn" onclick="openCart()">
       🛒 السلة
       <span class="cart-badge" id="cartBadge">0</span>
@@ -297,6 +299,12 @@ function checkCustomer(){
     document.getElementById('popPhone').value=c.phone||'';
   }
   document.getElementById('customerPopup').style.display = c?.phone?'none':'flex';
+}
+function editCustomer(){
+  const c=tryParse(CUSTOMER_KEY,{});
+  document.getElementById('popName').value=c.name||'';
+  document.getElementById('popPhone').value=c.phone||'';
+  document.getElementById('customerPopup').style.display='flex';
 }
 function saveCustomer(){
   const nameInput=(document.getElementById('popName').value||'').trim();
