@@ -8,8 +8,8 @@
 <style>
 :root{--pink:#f4a7be;--pink-dark:#e07898;--pink-deep:#c45a7a;--pink-light:#fce4ef}
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{font-family:'Cairo',sans-serif;direction:rtl;overflow-x:hidden;background-color:var(--pink);
+html{scroll-behavior:smooth;overflow-x:clip;width:100%;max-width:100vw;overscroll-behavior-x:none}
+body{font-family:'Cairo',sans-serif;direction:rtl;overflow-x:clip;width:100%;max-width:100vw;overscroll-behavior-x:none;touch-action:pan-y;background-color:var(--pink);
 background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3Cpath d='M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
 background-repeat:repeat;background-size:120px 60px;min-height:100vh}
 
@@ -47,6 +47,7 @@ header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify
 .customer-btn{background:rgba(255,255,255,.25);color:white;border:1px solid rgba(255,255,255,.55);padding:8px 14px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer}
 
 /* ══ Grid ══ */
+header,main,footer,.order-bar{max-width:100vw;min-width:0;overflow-x:clip}
 main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 .page-title{text-align:center;margin-bottom:50px}
 .page-title h1{font-size:2.2rem;font-weight:900;color:white;text-shadow:0 2px 10px rgba(196,90,122,0.25)}
@@ -151,6 +152,12 @@ main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.65);font-size:.82rem;padding-bottom:90px}
 
 @media(max-width:600px){
+  header{padding:10px 8px}
+  .header-actions{gap:4px;min-width:0}
+  .header-title{padding:0 4px;min-width:0}
+  .header-title .en{font-size:.78rem;letter-spacing:1px}
+  .header-title .ar{font-size:.65rem}
+  .customer-btn,.back-btn,.cart-icon-btn{padding:7px 8px;font-size:.7rem}
   .perfumes-grid{grid-template-columns:1fr}
   main{padding:40px 16px 70px}
   .page-title h1{font-size:1.8rem}
@@ -418,10 +425,13 @@ async function applyCoupon(){
   const code=(document.getElementById('couponInput').value||'').trim().toUpperCase();
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
   let coupons=tryParse(COUPONS_KEY,[]);
-  try {
-    const cloudCoupons=await DirazCloud.list('coupons','&data->>active=eq.true&order=updated_at.desc');
-    if(cloudCoupons.length) coupons=cloudCoupons.map(row=>row.data);
-  } catch(e) {}
+  if(window.DirazCloud){
+    try {
+      const cloudCoupons=await DirazCloud.list('coupons','&order=updated_at.desc');
+      const activeCloudCoupons=cloudCoupons.map(row=>row.data).filter(coupon=>coupon&&coupon.active);
+      if(activeCloudCoupons.length) coupons=activeCloudCoupons;
+    } catch(e) {}
+  }
   const coupon=coupons.find(c=>c.code===code);
   if(!coupon){showCouponMsg('❌ الكود غير صحيح','error');return;}
   if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
