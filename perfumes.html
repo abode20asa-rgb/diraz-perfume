@@ -154,6 +154,10 @@ main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 /* ══ Toast ══ */
 #cartToast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(40px);background:rgba(30,30,30,0.92);color:white;padding:10px 26px;border-radius:50px;font-size:.88rem;font-weight:700;z-index:9000;opacity:0;transition:all .35s;pointer-events:none}
 #cartToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.image-lightbox{position:fixed;inset:0;z-index:5000;background:rgba(70,20,40,.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:22px;cursor:zoom-out}
+.image-lightbox.open{display:flex}
+.image-lightbox img{max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:14px;box-shadow:0 15px 50px rgba(0,0,0,.35);cursor:default}
+.image-lightbox-close{position:absolute;top:18px;right:18px;width:42px;height:42px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(255,255,255,.2);color:white;font-size:1.4rem;cursor:pointer}
 
 footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.65);font-size:.82rem;padding-bottom:90px}
 
@@ -341,6 +345,11 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 </div>
 
 <div id="cartToast"></div>
+
+<div class="image-lightbox" id="imageLightbox" onclick="closeImageLightbox()">
+  <button class="image-lightbox-close" type="button" onclick="event.stopPropagation();closeImageLightbox()">✕</button>
+  <img id="lightboxImage" src="" alt="صورة العطر المكبرة" onclick="event.stopPropagation()">
+</div>
 
 <header>
   <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
@@ -663,6 +672,21 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
 // ── Toast ──
 function showToast(msg){ const t=document.getElementById('cartToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
+function openImageLightbox(src){
+  const lightbox=document.getElementById('imageLightbox');
+  const image=document.getElementById('lightboxImage');
+  if(!lightbox||!image||!src) return;
+  image.src=src;
+  lightbox.classList.add('open');
+}
+function closeImageLightbox(){
+  const lightbox=document.getElementById('imageLightbox');
+  if(lightbox) lightbox.classList.remove('open');
+}
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape') closeImageLightbox();
+});
+
 // ── Render Cards ──
 function renderCards(){
   const grid=document.getElementById('perfumesGrid'); if(!grid) return;
@@ -673,7 +697,7 @@ function renderCards(){
     const inCart=Boolean(item);
     const qty=item?.qty||1;
     return `<div class="card">
-      ${p.image?`<div class="card-img-wrap"><img src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
+      ${p.image?`<div class="card-img-wrap"><img class="zoomable-perfume-image" src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
       ${p.type?`<div class="badge">${p.type}</div>`:''}
       ${p.name?`<div class="card-name-ar">${p.name}</div>`:''}
       ${p.nameEn?`<div class="card-name-en">${p.nameEn}</div>`:''}
@@ -690,6 +714,9 @@ function renderCards(){
       </button>
     </div>`;
   }).join('');
+  grid.querySelectorAll('.zoomable-perfume-image').forEach(image=>{
+    image.addEventListener('click',()=>openImageLightbox(image.src));
+  });
 }
 
 // ── Init ──
