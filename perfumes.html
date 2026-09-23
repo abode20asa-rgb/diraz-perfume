@@ -407,6 +407,16 @@ const defaultPerfumes = window.DIRAZ_DEFAULT_PERFUMES || [
 // ── Helpers ──
 function tryParse(key, fallback){ try{ const d=localStorage.getItem(key); return d?JSON.parse(d):fallback; }catch(e){return fallback;} }
 function loadPerfumes(){ return tryParse(STORAGE_KEY, defaultPerfumes); }
+async function hydrateCloudPerfumes(){
+  if(!window.DirazCloud) return;
+  try{
+    const rows=await DirazCloud.list('perfumes','&order=updated_at.desc');
+    if(rows.length&&Array.isArray(rows[0].data)){
+      localStorage.setItem(STORAGE_KEY,JSON.stringify(rows[0].data));
+      renderCards();
+    }
+  }catch(e){}
+}
 
 function fmtPrice(val){
   if(!val && val!==0) return null;
@@ -732,6 +742,7 @@ function renderCards(){
 loadCart();
 renderCards();
 updateCartUI();
+hydrateCloudPerfumes();
 </script>
 </body>
 </html>

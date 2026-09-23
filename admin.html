@@ -683,14 +683,20 @@ function checkPass() {
 
 async function hydrateCloudData() {
     try {
-        const [cloudOrders, cloudCoupons, cloudCustomers] = await Promise.all([
+        const [cloudOrders, cloudCoupons, cloudCustomers, cloudPerfumes] = await Promise.all([
             DirazCloud.list('orders','&order=updated_at.desc'),
             DirazCloud.list('coupons','&order=updated_at.desc'),
-            DirazCloud.list('customers','&order=updated_at.desc')
+            DirazCloud.list('customers','&order=updated_at.desc'),
+            DirazCloud.list('perfumes','&order=updated_at.desc')
         ]);
         if (cloudOrders.length) localStorage.setItem('diraz_orders', JSON.stringify(cloudOrders.map(row=>row.data)));
         if (cloudCoupons.length) localStorage.setItem('diraz_coupons', JSON.stringify(cloudCoupons.map(row=>row.data)));
         if (cloudCustomers.length) localStorage.setItem('diraz_customers', JSON.stringify(cloudCustomers.map(row=>row.data)));
+        if (cloudPerfumes.length && Array.isArray(cloudPerfumes[0].data)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudPerfumes[0].data));
+        } else {
+            await DirazCloud.upsert('perfumes', [{id:1, data:loadPerfumes(), updated_at:new Date().toISOString()}]);
+        }
         renderList(); saveAutomaticBackup();
     } catch(e) { showToast('ℹ️ تعذر الاتصال السحابي، تم استخدام التخزين المحلي'); }
 }
@@ -710,6 +716,10 @@ function storePerfumes(arr) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
     } catch(e) {
         showToast('⚠️ التخزين ممتلئ! احذف بعض الصور أو قلّل جودتها');
+    }
+    if (window.DirazCloud) {
+        DirazCloud.upsert('perfumes', [{id:1, data:arr, updated_at:new Date().toISOString()}])
+            .catch(() => showToast('⚠️ تم حفظ العطر محليًا، وتعذر تحديث السحابة'));
     }
     saveAutomaticBackup();
     updateStorageBar();
