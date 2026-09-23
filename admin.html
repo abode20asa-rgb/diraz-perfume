@@ -312,6 +312,10 @@
         .cust-name  { color:white; font-weight:800; font-size:.97rem; }
         .cust-phone { color:rgba(255,255,255,0.7); font-size:.83rem; margin-top:2px; }
         .cust-address { color:rgba(255,255,255,0.7); font-size:.83rem; margin-top:2px; }
+        .cust-details { margin-top:8px; color:rgba(255,255,255,0.82); font-size:.82rem; line-height:1.8; }
+        .cust-details summary { cursor:pointer; color:white; font-weight:700; }
+        .cust-delete { padding:7px 13px; border-radius:50px; border:1px solid rgba(255,100,100,.45); background:rgba(255,80,80,.16); color:#ffd0d0; font-family:'Cairo',sans-serif; font-size:.76rem; font-weight:700; cursor:pointer; }
+        .cust-delete:hover { background:rgba(255,80,80,.3); }
         .cust-orders-count {
             background:rgba(255,255,255,0.2); color:white;
             padding:4px 12px; border-radius:20px; font-size:.78rem; font-weight:700;
@@ -1077,16 +1081,25 @@ const _origRenderList = typeof renderList !== 'undefined' ? renderList : ()=>{};
 function renderCustomers() {
     const orders = loadOrders();
     const custMap = {};
+    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []));
     loadRegisteredCustomers().forEach(customer => {
         const phone = customer.phone || '—';
-        custMap[phone] = { name:customer.name || '—', phone, address:customer.address || '—', count:0 };
+        if (deletedPhones.has(phone)) return;
+        custMap[phone] = { name:customer.name || '—', phone, address:customer.address || '—', province:customer.province || '—', area:customer.area || '—', count:0 };
     });
     orders.forEach(order => {
         const phone = order.customer?.phone || '—';
+        if (deletedPhones.has(phone)) return;
         const name  = order.customer?.name  || '—';
         const address = order.customer?.address || '—';
-        if (!custMap[phone]) custMap[phone] = { name, phone, address, count: 0 };
-        else if (custMap[phone].address === '—' && address !== '—') custMap[phone].address = address;
+        const province = order.customer?.province || '—';
+        const area = order.customer?.area || '—';
+        if (!custMap[phone]) custMap[phone] = { name, phone, address, province, area, count: 0 };
+        else {
+            if (custMap[phone].address === '—' && address !== '—') custMap[phone].address = address;
+            if (custMap[phone].province === '—' && province !== '—') custMap[phone].province = province;
+            if (custMap[phone].area === '—' && area !== '—') custMap[phone].area = area;
+        }
         custMap[phone].count++;
     });
 
@@ -1107,11 +1120,33 @@ function renderCustomers() {
             <div class="cust-info">
                 <div class="cust-name">👤 ${c.name}</div>
                 <div class="cust-phone">📱 ${c.phone}</div>
-                <div class="cust-address">📍 ${c.address}</div>
+                <details class="cust-details">
+                    <summary>عرض بيانات العنوان</summary>
+                    <div>المحافظة: ${c.province}</div>
+                    <div>المنطقة: ${c.area === 'district' ? 'داخل المحافظة - قضاء/ناحية' : c.area === 'center' ? 'داخل المحافظة - مركز المحافظة' : c.area}</div>
+                    <div>العنوان: ${c.address}</div>
+                </details>
             </div>
             <div class="cust-orders-count">${c.count} ${c.count === 1 ? 'طلب' : 'طلبات'}</div>
+            <button class="cust-delete" onclick="deleteCustomer(${JSON.stringify(c.phone)})">🗑️ حذف الحساب</button>
         </div>
     `).join('');
+}
+
+async function deleteCustomer(phone) {
+    if (!phone || phone === '—') return;
+    if (!confirm('سيتم حذف حساب هذا الزبون من قائمة الحسابات. ستبقى طلباته السابقة محفوظة. هل تريد المتابعة؟')) return;
+    saveBeforeDelete();
+    const customers = loadRegisteredCustomers().filter(customer => customer.phone !== phone);
+    localStorage.setItem('diraz_customers', JSON.stringify(customers));
+    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []));
+    deletedPhones.add(phone);
+    localStorage.setItem('diraz_deleted_customers', JSON.stringify([...deletedPhones]));
+    const currentCustomer = tryParseAdmin('diraz_customer', null);
+    if (currentCustomer?.phone === phone) localStorage.removeItem('diraz_customer');
+    try { await DirazCloud.remove('customers', 'phone=eq.' + encodeURIComponent(phone)); } catch(e) {}
+    renderStats(); renderCustomers();
+    showToast('✅ تم حذف حساب الزبون');
 }
 
 function loadRegisteredCustomers() {

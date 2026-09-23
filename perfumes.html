@@ -409,8 +409,17 @@ function buildPriceBlock(price, oldPrice, currency){
 }
 
 // ── Customer Popup ──
-function checkCustomer(){
-  const c=tryParse(CUSTOMER_KEY,null);
+async function checkCustomer(){
+  let c=tryParse(CUSTOMER_KEY,null);
+  if(c?.phone&&window.DirazCloud){
+    try{
+      const remote=await DirazCloud.list('customers','&phone=eq.'+encodeURIComponent(c.phone));
+      if(!remote.length){
+        localStorage.removeItem(CUSTOMER_KEY);
+        c=null;
+      }
+    }catch(e){}
+  }
   if(c){
     document.getElementById('popName').value=c.name||'';
     document.getElementById('popPhone').value=c.phone||'';
@@ -444,6 +453,8 @@ function saveCustomer(){
   try {
     localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
     const customers=tryParse(CUSTOMERS_KEY,[]);
+    const deletedPhones=tryParse('diraz_deleted_customers',[]).filter(item=>item!==phoneDigits);
+    localStorage.setItem('diraz_deleted_customers',JSON.stringify(deletedPhones));
     const phoneKey=phoneDigits;
     const existing=customers.findIndex(item=>(item.phone||'').replace(/\D/g,'')===phoneKey);
     if(existing>=0) customers[existing]=customer; else customers.unshift(customer);

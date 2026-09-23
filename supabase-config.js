@@ -26,5 +26,8 @@ window.DirazCloud = {
   },
   update(table, query, values) {
     return this.request(table + '?' + query, { method: 'PATCH', body: JSON.stringify(values), headers: { Prefer: 'return=representation' } });
+  },
+  remove(table, query) {
+    return this.request(table + '?' + query, { method: 'DELETE', headers: { Prefer: 'return=minimal' } });
   }
 };
