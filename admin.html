@@ -965,9 +965,17 @@ function renderStats() {
     const orders   = loadOrders();
     const pending  = orders.filter(o => o.status === 'pending').length;
     const delivered= orders.filter(o => o.status === 'delivered').length;
+    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(phone => String(phone).replace(/\D/g, '')));
     const registeredCustomers = loadRegisteredCustomers();
-    const customerPhones = new Set(registeredCustomers.map(customer => customer.phone));
-    orders.forEach(order => { if (order.customer?.phone) customerPhones.add(order.customer.phone); });
+    const customerPhones = new Set();
+    registeredCustomers.forEach(customer => {
+        const phone = String(customer.phone || '').replace(/\D/g, '');
+        if (phone && !deletedPhones.has(phone)) customerPhones.add(phone);
+    });
+    orders.forEach(order => {
+        const phone = String(order.customer?.phone || '').replace(/\D/g, '');
+        if (phone && !deletedPhones.has(phone)) customerPhones.add(phone);
+    });
     const customers=customerPhones.size;
 
     document.getElementById('statsGrid').innerHTML = `
