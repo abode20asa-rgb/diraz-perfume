@@ -318,6 +318,54 @@
             white-space:nowrap;
         }
         .no-custs { text-align:center; color:rgba(255,255,255,0.6); padding:30px 0; }
+
+        @media (max-width: 900px) {
+            main { padding: 24px 16px 40px; }
+            .form-grid, .coupon-form-grid { grid-template-columns: 1fr; }
+            .stats-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+            .order-top { align-items: flex-start; }
+            .order-card { padding: 16px 14px; }
+            .order-actions { flex-direction: column; }
+            .btn-deliver, .btn-del-order, .btn-wa-resend { width: 100%; }
+            .section-card { padding: 20px 16px; }
+            .backup-actions { flex-direction: column; }
+        }
+
+        @media (max-width: 640px) {
+            header {
+                padding: 10px 12px;
+                gap: 8px;
+            }
+            .logo { width: 42px; height: 42px; }
+            .header-title { font-size: .82rem; }
+            .logout-btn { padding: 8px 12px; font-size: .75rem; }
+
+            .stats-grid { grid-template-columns: 1fr 1fr; }
+            .stat-num { font-size: 1.5rem; }
+            .stat-label { font-size: .75rem; }
+
+            .filter-bar { display: grid; grid-template-columns: 1fr; }
+            .filter-btn { width: 100%; }
+            .order-total-row { flex-direction: column; align-items: flex-start; gap: 6px; }
+            .cust-item { flex-wrap: wrap; }
+            .cust-orders-count { width: 100%; text-align: center; }
+            .coupon-item { flex-direction: column; align-items: flex-start; }
+            .coupon-meta { padding: 0; width: 100%; }
+            .coupon-actions { width: 100%; }
+            .status-badge, .btn-deliver, .btn-del-order, .btn-wa-resend { width: 100%; }
+        }
+
+        @media (max-width: 480px) {
+            .lock-box { padding: 30px 18px; }
+            .lock-box h2 { font-size: 1.25rem; }
+            .lock-input, .lock-btn { font-size: .9rem; }
+            .stats-grid { grid-template-columns: 1fr; }
+            .header-title { font-size: .7rem; }
+            .section-card h2 { font-size: 1.1rem; }
+            .form-group label { font-size: .78rem; }
+            input[type=text], input[type=number], select, textarea { font-size: .88rem; }
+            .btn-save, .backup-btn { font-size: .85rem; }
+        }
         
         /* ══ قسم أكواد الخصم ══ */
         .coupon-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }

@@ -157,17 +157,121 @@ main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 
 footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.65);font-size:.82rem;padding-bottom:90px}
 
-@media(max-width:600px){
-  header{padding:10px 8px}
-  .header-actions{gap:4px;min-width:0}
-  .header-title{padding:0 4px;min-width:0}
-  .header-title .en{font-size:.78rem;letter-spacing:1px}
-  .header-title .ar{font-size:.65rem}
-  .customer-btn,.back-btn,.cart-icon-btn{padding:7px 8px;font-size:.7rem}
-  .perfumes-grid{grid-template-columns:1fr}
-  main{padding:40px 16px 70px}
-  .page-title h1{font-size:1.8rem}
-  .coupon-row{flex-direction:column}
+@media (max-width: 900px) {
+  main { padding-inline: 18px; }
+  .perfumes-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+  .header-title .en { font-size: .9rem; letter-spacing: 2px; }
+  .header-actions { gap: 6px; }
+  .customer-btn, .back-btn, .cart-icon-btn { padding: 7px 10px; font-size: .72rem; }
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .logo { width: 42px; height: 42px; }
+  .header-title { padding: 0 6px; }
+  .header-title .en { font-size: .75rem; letter-spacing: 1px; }
+  .header-title .ar { font-size: .62rem; }
+  .header-actions {
+    flex-wrap: nowrap;
+    gap: 4px;
+    min-width: 0;
+  }
+  .customer-btn { display: none; }
+  .cart-icon-btn {
+    padding: 8px 12px;
+    font-size: .72rem;
+    min-width: 0;
+  }
+  .back-btn { padding: 8px 10px; }
+
+  .page-title { margin-bottom: 28px; }
+  .page-title h1 { font-size: 1.8rem; }
+  .page-title p { font-size: .9rem; }
+  .perfumes-grid { grid-template-columns: 1fr; gap: 18px; }
+
+  .card {
+    padding: 18px 14px;
+    border-radius: 18px;
+  }
+  .card-img-wrap { height: 180px; }
+  .card-name-ar { font-size: 1.2rem; }
+  .card-name-en { font-size: .82rem; }
+  .card-price-wrap { padding: 10px 12px; }
+  .price-new-amount, .price-normal { font-size: 1.4rem; }
+
+  .popup-overlay { padding: 16px; }
+  .popup-box, .delivery-box {
+    max-width: 92vw;
+    padding: 28px 18px;
+    border-radius: 20px;
+  }
+  .popup-box h2 { font-size: 1.35rem; }
+  .popup-box p { font-size: .82rem; }
+  .popup-input, .delivery-field { font-size: .9rem; padding: 12px 14px; }
+  .popup-btn { font-size: .95rem; }
+
+  .cart-sidebar {
+    width: min(100vw, 420px);
+    left: 0;
+    right: auto;
+    transform: translateX(-105%);
+  }
+  .cart-sidebar.open { transform: translateX(0); }
+  .cart-item {
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    flex-wrap: wrap;
+  }
+  .ci-info { flex: 1 1 100%; }
+  .ci-qty { margin-inline-start: auto; }
+  .coupon-row { flex-direction: column; }
+  .coupon-apply-btn { width: 100%; }
+  .cart-total-row { font-size: .9rem; }
+  .cart-total-amount { font-size: 1.1rem; }
+
+  .order-bar {
+    padding: 12px 14px;
+  }
+  .order-btn {
+    width: 100%;
+    padding: 12px 18px;
+    font-size: .9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  header { padding: 8px 10px; }
+  .logo { width: 38px; height: 38px; }
+  .header-title { min-width: 0; }
+  .header-title .en { font-size: .65rem; letter-spacing: .7px; }
+  .header-title .ar { font-size: .55rem; }
+  .header-actions { gap: 2px; }
+  .back-btn { font-size: .62rem; }
+  .cart-icon-btn { padding: 7px 9px; font-size: .65rem; }
+  .cart-badge { width: 18px; height: 18px; font-size: .6rem; top: -5px; left: -5px; }
+
+  main { padding: 28px 12px 70px; }
+  .page-title h1 { font-size: 1.55rem; }
+  .page-title p { font-size: .8rem; }
+
+  .card-img-wrap { height: 150px; }
+  .card-name-ar { font-size: 1.1rem; }
+  .badge { font-size: .66rem; }
+  .card-desc { font-size: .78rem; }
+  .price-header { flex-direction: column; align-items: flex-start; gap: 6px; }
+  .discount-badge { font-size: .66rem; }
+  .btn-add-cart { font-size: .82rem; }
+
+  .delivery-summary { font-size: .8rem; }
+  .popup-box .pop-icon { font-size: 2.2rem; }
+
+  .cart-head h3 { font-size: .96rem; }
+  .cart-foot { padding: 14px 14px 16px; }
+  .btn-checkout { font-size: .9rem; }
 }
 </style>
 </head>
