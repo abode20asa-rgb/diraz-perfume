@@ -179,7 +179,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
     gap: 4px;
     min-width: 0;
   }
-  .customer-btn { display: none; }
+  .customer-btn { display: inline-flex; align-items: center; padding: 7px 8px; font-size: .68rem; white-space: nowrap; }
   .cart-icon-btn {
     padding: 8px 12px;
     font-size: .72rem;
@@ -414,8 +414,10 @@ function checkCustomer(){
   if(c){
     document.getElementById('popName').value=c.name||'';
     document.getElementById('popPhone').value=c.phone||'';
+    document.getElementById('customerPopup').style.display='none';
+    return;
   }
-  document.getElementById('customerPopup').style.display='none';
+  document.getElementById('customerPopup').style.display='flex';
 }
 function editCustomer(){
   const c=tryParse(CUSTOMER_KEY,{});
