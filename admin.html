@@ -1188,23 +1188,25 @@ function renderCustomers() {
     const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(phone => String(phone).replace(/\D/g, '')));
     loadRegisteredCustomers().forEach(customer => {
         const phone = customer.phone || '—';
-        if (deletedPhones.has(phone)) return;
-        custMap[phone] = { name:customer.name || '—', phone, address:customer.address || '—', province:customer.province || '—', area:customer.area || '—', count:0 };
+        const phoneKey = String(phone).replace(/\D/g, '');
+        if (!phoneKey || deletedPhones.has(phoneKey)) return;
+        custMap[phoneKey] = { name:customer.name || '—', phone, address:customer.address || '—', province:customer.province || '—', area:customer.area || '—', count:0 };
     });
     orders.forEach(order => {
         const phone = order.customer?.phone || '—';
-        if (deletedPhones.has(phone)) return;
+        const phoneKey = String(phone).replace(/\D/g, '');
+        if (!phoneKey || deletedPhones.has(phoneKey)) return;
         const name  = order.customer?.name  || '—';
         const address = order.customer?.address || '—';
         const province = order.customer?.province || '—';
         const area = order.customer?.area || '—';
-        if (!custMap[phone]) custMap[phone] = { name, phone, address, province, area, count: 0 };
+        if (!custMap[phoneKey]) custMap[phoneKey] = { name, phone, address, province, area, count: 0 };
         else {
-            if (custMap[phone].address === '—' && address !== '—') custMap[phone].address = address;
-            if (custMap[phone].province === '—' && province !== '—') custMap[phone].province = province;
-            if (custMap[phone].area === '—' && area !== '—') custMap[phone].area = area;
+            if (custMap[phoneKey].address === '—' && address !== '—') custMap[phoneKey].address = address;
+            if (custMap[phoneKey].province === '—' && province !== '—') custMap[phoneKey].province = province;
+            if (custMap[phoneKey].area === '—' && area !== '—') custMap[phoneKey].area = area;
         }
-        custMap[phone].count++;
+        custMap[phoneKey].count++;
     });
 
     const customers = Object.values(custMap);
