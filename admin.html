@@ -727,22 +727,43 @@ async function hydrateCloudData() {
         localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify(mergedDeleted));
     } else failedTables.push('deleted_customers');
 
-    if (ordersResult.status === 'fulfilled' && ordersResult.value.length) {
-        localStorage.setItem('diraz_orders', JSON.stringify(ordersResult.value.map(row=>row.data)));
-    } else if (ordersResult.status === 'rejected') failedTables.push('orders');
+    if (ordersResult.status === 'fulfilled') {
+        const cloudOrders = ordersResult.value.map(row => row.data);
+        const localOrders = tryParseAdmin('diraz_orders', []);
+        const cloudIds = new Set(cloudOrders.map(order => String(order.id)));
+        const localOnly = localOrders.filter(order => !cloudIds.has(String(order.id)));
+        const mergedOrders = [...cloudOrders, ...localOnly].sort((a,b) => new Date(b.date) - new Date(a.date));
+        localStorage.setItem('diraz_orders', JSON.stringify(mergedOrders));
+        localOnly.forEach(order => DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{}));
+    } else failedTables.push('orders');
 
-    if (couponsResult.status === 'fulfilled' && couponsResult.value.length) {
-        localStorage.setItem('diraz_coupons', JSON.stringify(couponsResult.value.map(row=>row.data)));
-    } else if (couponsResult.status === 'rejected') failedTables.push('coupons');
+    if (couponsResult.status === 'fulfilled') {
+        const cloudCoupons = couponsResult.value.map(row => row.data);
+        const localCoupons = tryParseAdmin('diraz_coupons', []);
+        const cloudCodes = new Set(cloudCoupons.map(coupon => coupon.code));
+        const localOnly = localCoupons.filter(coupon => !cloudCodes.has(coupon.code));
+        const mergedCoupons = [...cloudCoupons, ...localOnly];
+        localStorage.setItem('diraz_coupons', JSON.stringify(mergedCoupons));
+        localOnly.forEach(coupon => DirazCloud.upsert('coupons', [{code:coupon.code, data:coupon, total_uses:Number(coupon.totalUses)||0, updated_at:new Date().toISOString()}]).catch(()=>{}));
+    } else failedTables.push('coupons');
 
     if (customersResult.status === 'fulfilled') {
         const deletedPhones = new Set(tryParseAdmin(DELETED_CUSTOMERS_KEY, []));
-        const freshCustomers = customersResult.value
+        const cloudCustomers = customersResult.value
             .map(row => row.data)
             .filter(customer => !deletedPhones.has(String(customer.phone || '').replace(/\D/g, '')));
-        if (freshCustomers.length || customersResult.value.length) {
-            localStorage.setItem('diraz_customers', JSON.stringify(freshCustomers));
-        }
+        const localCustomers = tryParseAdmin('diraz_customers', []);
+        const cloudPhones = new Set(cloudCustomers.map(customer => String(customer.phone || '').replace(/\D/g, '')));
+        const localOnly = localCustomers.filter(customer => {
+            const phoneKey = String(customer.phone || '').replace(/\D/g, '');
+            return phoneKey && !deletedPhones.has(phoneKey) && !cloudPhones.has(phoneKey);
+        });
+        const mergedCustomers = [...cloudCustomers, ...localOnly];
+        localStorage.setItem('diraz_customers', JSON.stringify(mergedCustomers));
+        localOnly.forEach(customer => {
+            const phoneKey = String(customer.phone || '').replace(/\D/g, '');
+            if (phoneKey) DirazCloud.upsert('customers', [{phone:phoneKey, data:customer}]).catch(()=>{});
+        });
     } else failedTables.push('customers');
 
     if (loginsResult.status === 'fulfilled') {
