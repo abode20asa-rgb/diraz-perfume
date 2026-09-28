@@ -622,8 +622,21 @@
 const ADMIN_PASSWORD = 'diraz@2026/admin';
 const STORAGE_KEY    = 'diraz_perfumes';
 const ADMIN_LOGINS_KEY = 'diraz_admin_logins';
+const ADMIN_LOGINS_LIMIT = 5;
+const DELETED_CUSTOMERS_KEY = 'diraz_deleted_customers';
 const BACKUP_KEY     = 'diraz_full_backup';
 const LAST_BACKUP_KEY= 'diraz_last_before_delete';
+
+// يبقي آخر 5 تسجيلات دخول فقط، ويحذف الباقي من السحابة
+function trimAdminLogins(logins) {
+    const sorted = [...logins].sort((a,b) => new Date(b.date) - new Date(a.date));
+    const kept = sorted.slice(0, ADMIN_LOGINS_LIMIT);
+    const removed = sorted.slice(ADMIN_LOGINS_LIMIT);
+    if (window.DirazCloud) {
+        removed.forEach(old => DirazCloud.remove('admin_logins', 'id=eq.' + encodeURIComponent(String(old.id))).catch(()=>{}));
+    }
+    return kept;
+}
 
 function collectBackup() {
     const data = {};
@@ -684,10 +697,9 @@ function checkPass() {
     if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
         document.getElementById('lockScreen').style.display = 'none';
         document.getElementById('adminPanel').style.display  = 'block';
-        recordAdminLogin();
         renderList(); updateStorageBar();
         saveAutomaticBackup();
-        hydrateCloudData();
+        hydrateCloudData().then(() => recordAdminLogin());
     } else {
         const err = document.getElementById('lockError');
         err.style.display = 'block';
@@ -702,10 +714,18 @@ async function hydrateCloudData() {
         DirazCloud.list('coupons','&order=updated_at.desc'),
         DirazCloud.list('customers','&order=updated_at.desc'),
         DirazCloud.list('perfumes','&order=updated_at.desc'),
-        DirazCloud.list('admin_logins','&order=created_at.desc&limit=100')
+        DirazCloud.list('admin_logins','&order=created_at.desc&limit=100'),
+        DirazCloud.list('deleted_customers','&order=deleted_at.desc')
     ]);
-    const [ordersResult, couponsResult, customersResult, perfumesResult, loginsResult] = results;
+    const [ordersResult, couponsResult, customersResult, perfumesResult, loginsResult, deletedResult] = results;
     const failedTables = [];
+
+    if (deletedResult.status === 'fulfilled') {
+        const localDeleted = tryParseAdmin(DELETED_CUSTOMERS_KEY, []).map(phone => String(phone).replace(/\D/g, ''));
+        const cloudDeleted = deletedResult.value.map(row => String(row.phone).replace(/\D/g, ''));
+        const mergedDeleted = [...new Set([...localDeleted, ...cloudDeleted])];
+        localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify(mergedDeleted));
+    } else failedTables.push('deleted_customers');
 
     if (ordersResult.status === 'fulfilled' && ordersResult.value.length) {
         localStorage.setItem('diraz_orders', JSON.stringify(ordersResult.value.map(row=>row.data)));
@@ -715,18 +735,22 @@ async function hydrateCloudData() {
         localStorage.setItem('diraz_coupons', JSON.stringify(couponsResult.value.map(row=>row.data)));
     } else if (couponsResult.status === 'rejected') failedTables.push('coupons');
 
-    if (customersResult.status === 'fulfilled' && customersResult.value.length) {
-        localStorage.setItem('diraz_customers', JSON.stringify(customersResult.value.map(row=>row.data)));
-    } else if (customersResult.status === 'rejected') failedTables.push('customers');
+    if (customersResult.status === 'fulfilled') {
+        const deletedPhones = new Set(tryParseAdmin(DELETED_CUSTOMERS_KEY, []));
+        const freshCustomers = customersResult.value
+            .map(row => row.data)
+            .filter(customer => !deletedPhones.has(String(customer.phone || '').replace(/\D/g, '')));
+        if (freshCustomers.length || customersResult.value.length) {
+            localStorage.setItem('diraz_customers', JSON.stringify(freshCustomers));
+        }
+    } else failedTables.push('customers');
 
-    if (loginsResult.status === 'fulfilled' && loginsResult.value.length) {
+    if (loginsResult.status === 'fulfilled') {
         const localLogins = tryParseAdmin(ADMIN_LOGINS_KEY, []);
         const mergedLogins = [...localLogins, ...loginsResult.value.map(row=>row.data)]
-            .filter((login, index, all) => all.findIndex(item => String(item.id) === String(login.id)) === index)
-            .sort((a,b) => new Date(b.date) - new Date(a.date))
-            .slice(0,100);
-        localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(mergedLogins));
-    } else if (loginsResult.status === 'rejected') failedTables.push('admin_logins');
+            .filter((login, index, all) => all.findIndex(item => String(item.id) === String(login.id)) === index);
+        localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(trimAdminLogins(mergedLogins)));
+    } else failedTables.push('admin_logins');
 
     if (perfumesResult.status === 'fulfilled') {
         if (perfumesResult.value.length && Array.isArray(perfumesResult.value[0].data)) {
@@ -767,7 +791,7 @@ function renderAdminLogins() {
     let logins = [];
     try { logins = JSON.parse(localStorage.getItem(ADMIN_LOGINS_KEY) || '[]'); } catch(e) {}
     if (!logins.length) { list.innerHTML = '<div class="no-logins">📭 لا توجد تسجيلات دخول بعد</div>'; return; }
-    list.innerHTML = logins.slice(0,100).map((login,index) => `
+    list.innerHTML = logins.slice(0,ADMIN_LOGINS_LIMIT).map((login,index) => `
         <div class="login-item">
             <div class="login-num">${index + 1}</div>
             <div class="login-info">
@@ -781,7 +805,7 @@ function recordAdminLogin() {
     let logins = [];
     try { logins = JSON.parse(localStorage.getItem(ADMIN_LOGINS_KEY) || '[]'); } catch(e) {}
     logins.unshift(login);
-    localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(logins.slice(0,100)));
+    localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(trimAdminLogins(logins)));
     renderAdminLogins();
     if (window.DirazCloud) {
         DirazCloud.insert('admin_logins', [{id:String(login.id), data:login, created_at:login.date}]).catch(()=>{});
@@ -1264,9 +1288,9 @@ function deleteCustomer(phone) {
     saveBeforeDelete();
     const customers = loadRegisteredCustomers().filter(customer => String(customer.phone || '').replace(/\D/g, '') !== phone);
     localStorage.setItem('diraz_customers', JSON.stringify(customers));
-    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(value => String(value).replace(/\D/g, '')));
+    const deletedPhones = new Set(tryParseAdmin(DELETED_CUSTOMERS_KEY, []).map(value => String(value).replace(/\D/g, '')));
     deletedPhones.add(phone);
-    localStorage.setItem('diraz_deleted_customers', JSON.stringify([...deletedPhones]));
+    localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify([...deletedPhones]));
     const currentCustomer = tryParseAdmin('diraz_customer', null);
     if (currentCustomer?.phone === phone) localStorage.removeItem('diraz_customer');
     renderStats(); renderCustomers();
@@ -1274,6 +1298,7 @@ function deleteCustomer(phone) {
     if (window.DirazCloud) {
         DirazCloud.remove('customers', 'phone=eq.' + encodeURIComponent(phone))
             .catch(() => showToast('⚠️ تم الحذف من هذا الجهاز، وتعذر تحديث السحابة'));
+        DirazCloud.upsert('deleted_customers', [{phone, deleted_at:new Date().toISOString()}]).catch(()=>{});
     }
 }
 
