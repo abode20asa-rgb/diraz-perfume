@@ -697,32 +697,47 @@ function checkPass() {
 }
 
 async function hydrateCloudData() {
-    try {
-        const [cloudOrders, cloudCoupons, cloudCustomers, cloudPerfumes, cloudLogins] = await Promise.all([
-            DirazCloud.list('orders','&order=updated_at.desc'),
-            DirazCloud.list('coupons','&order=updated_at.desc'),
-            DirazCloud.list('customers','&order=updated_at.desc'),
-            DirazCloud.list('perfumes','&order=updated_at.desc'),
-            DirazCloud.list('admin_logins','&order=created_at.desc&limit=100')
-        ]);
-        if (cloudOrders.length) localStorage.setItem('diraz_orders', JSON.stringify(cloudOrders.map(row=>row.data)));
-        if (cloudCoupons.length) localStorage.setItem('diraz_coupons', JSON.stringify(cloudCoupons.map(row=>row.data)));
-        if (cloudCustomers.length) localStorage.setItem('diraz_customers', JSON.stringify(cloudCustomers.map(row=>row.data)));
-        if (cloudLogins.length) {
-            const localLogins = tryParseAdmin(ADMIN_LOGINS_KEY, []);
-            const mergedLogins = [...localLogins, ...cloudLogins.map(row=>row.data)]
-                .filter((login, index, all) => all.findIndex(item => String(item.id) === String(login.id)) === index)
-                .sort((a,b) => new Date(b.date) - new Date(a.date))
-                .slice(0,100);
-            localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(mergedLogins));
-        }
-        if (cloudPerfumes.length && Array.isArray(cloudPerfumes[0].data)) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudPerfumes[0].data));
+    const results = await Promise.allSettled([
+        DirazCloud.list('orders','&order=updated_at.desc'),
+        DirazCloud.list('coupons','&order=updated_at.desc'),
+        DirazCloud.list('customers','&order=updated_at.desc'),
+        DirazCloud.list('perfumes','&order=updated_at.desc'),
+        DirazCloud.list('admin_logins','&order=created_at.desc&limit=100')
+    ]);
+    const [ordersResult, couponsResult, customersResult, perfumesResult, loginsResult] = results;
+    const failedTables = [];
+
+    if (ordersResult.status === 'fulfilled' && ordersResult.value.length) {
+        localStorage.setItem('diraz_orders', JSON.stringify(ordersResult.value.map(row=>row.data)));
+    } else if (ordersResult.status === 'rejected') failedTables.push('orders');
+
+    if (couponsResult.status === 'fulfilled' && couponsResult.value.length) {
+        localStorage.setItem('diraz_coupons', JSON.stringify(couponsResult.value.map(row=>row.data)));
+    } else if (couponsResult.status === 'rejected') failedTables.push('coupons');
+
+    if (customersResult.status === 'fulfilled' && customersResult.value.length) {
+        localStorage.setItem('diraz_customers', JSON.stringify(customersResult.value.map(row=>row.data)));
+    } else if (customersResult.status === 'rejected') failedTables.push('customers');
+
+    if (loginsResult.status === 'fulfilled' && loginsResult.value.length) {
+        const localLogins = tryParseAdmin(ADMIN_LOGINS_KEY, []);
+        const mergedLogins = [...localLogins, ...loginsResult.value.map(row=>row.data)]
+            .filter((login, index, all) => all.findIndex(item => String(item.id) === String(login.id)) === index)
+            .sort((a,b) => new Date(b.date) - new Date(a.date))
+            .slice(0,100);
+        localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(mergedLogins));
+    } else if (loginsResult.status === 'rejected') failedTables.push('admin_logins');
+
+    if (perfumesResult.status === 'fulfilled') {
+        if (perfumesResult.value.length && Array.isArray(perfumesResult.value[0].data)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(perfumesResult.value[0].data));
         } else {
-            await DirazCloud.upsert('perfumes', [{id:1, data:loadPerfumes(), updated_at:new Date().toISOString()}]);
+            await DirazCloud.upsert('perfumes', [{id:1, data:loadPerfumes(), updated_at:new Date().toISOString()}]).catch(()=>{});
         }
-        renderList(); renderAdminLogins(); saveAutomaticBackup();
-    } catch(e) { showToast('ℹ️ تعذر الاتصال السحابي، تم استخدام التخزين المحلي'); }
+    } else failedTables.push('perfumes');
+
+    renderList(); renderAdminLogins(); saveAutomaticBackup();
+    if (failedTables.length) showToast('ℹ️ تعذر مزامنة: ' + failedTables.join('، ') + ' — الباقي اشتغل من السحابة');
 }
 function logout() {
     document.getElementById('lockScreen').style.display = 'flex';
