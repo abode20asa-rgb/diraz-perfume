@@ -1112,7 +1112,7 @@ function renderStats() {
     });
     orders.forEach(order => {
         const phone = String(order.customer?.phone || '').replace(/\D/g, '');
-        if (phone && !deletedPhones.has(phone)) customerPhones.add(phone);
+        if (phone) customerPhones.add(phone);
     });
     const customers=customerPhones.size;
 
@@ -1266,7 +1266,7 @@ function renderCustomers() {
     orders.forEach(order => {
         const phone = order.customer?.phone || '—';
         const phoneKey = String(phone).replace(/\D/g, '');
-        if (!phoneKey || deletedPhones.has(phoneKey)) return;
+        if (!phoneKey) return;
         const name  = order.customer?.name  || '—';
         const address = order.customer?.address || '—';
         const province = order.customer?.province || '—';
