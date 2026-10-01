@@ -627,6 +627,8 @@ const STORAGE_KEY    = 'diraz_perfumes';
 const ADMIN_LOGINS_KEY = 'diraz_admin_logins';
 const ADMIN_LOGINS_LIMIT = 5;
 const DELETED_CUSTOMERS_KEY = 'diraz_deleted_customers';
+const DELETED_ORDERS_KEY = 'diraz_deleted_orders';
+const DELETED_COUPONS_KEY = 'diraz_deleted_coupons';
 const BACKUP_KEY     = 'diraz_full_backup';
 const LAST_BACKUP_KEY= 'diraz_last_before_delete';
 
@@ -726,9 +728,11 @@ async function hydrateCloudData() {
         DirazCloud.list('customers','&order=updated_at.desc'),
         DirazCloud.list('perfumes','&order=updated_at.desc'),
         DirazCloud.list('admin_logins','&order=created_at.desc&limit=100'),
-        DirazCloud.list('deleted_customers','&order=deleted_at.desc')
+        DirazCloud.list('deleted_customers','&order=deleted_at.desc'),
+        DirazCloud.list('deleted_orders','&order=deleted_at.desc'),
+        DirazCloud.list('deleted_coupons','&order=deleted_at.desc')
     ]);
-    const [ordersResult, couponsResult, customersResult, perfumesResult, loginsResult, deletedResult] = results;
+    const [ordersResult, couponsResult, customersResult, perfumesResult, loginsResult, deletedResult, deletedOrdersResult, deletedCouponsResult] = results;
     const failedTables = [];
 
     if (deletedResult.status === 'fulfilled') {
@@ -738,21 +742,35 @@ async function hydrateCloudData() {
         localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify(mergedDeleted));
     } else failedTables.push('deleted_customers');
 
+    let deletedOrderIds = new Set(tryParseAdmin(DELETED_ORDERS_KEY, []).map(String));
+    if (deletedOrdersResult.status === 'fulfilled') {
+        const cloudDeletedOrders = deletedOrdersResult.value.map(row => String(row.id));
+        deletedOrderIds = new Set([...deletedOrderIds, ...cloudDeletedOrders]);
+        localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify([...deletedOrderIds]));
+    } else failedTables.push('deleted_orders');
+
+    let deletedCouponCodes = new Set(tryParseAdmin(DELETED_COUPONS_KEY, []));
+    if (deletedCouponsResult.status === 'fulfilled') {
+        const cloudDeletedCoupons = deletedCouponsResult.value.map(row => row.code);
+        deletedCouponCodes = new Set([...deletedCouponCodes, ...cloudDeletedCoupons]);
+        localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCouponCodes]));
+    } else failedTables.push('deleted_coupons');
+
     if (ordersResult.status === 'fulfilled') {
-        const cloudOrders = ordersResult.value.map(row => row.data);
+        const cloudOrders = ordersResult.value.map(row => row.data).filter(order => !deletedOrderIds.has(String(order.id)));
         const localOrders = tryParseAdmin('diraz_orders', []);
         const cloudIds = new Set(cloudOrders.map(order => String(order.id)));
-        const localOnly = localOrders.filter(order => !cloudIds.has(String(order.id)));
+        const localOnly = localOrders.filter(order => !cloudIds.has(String(order.id)) && !deletedOrderIds.has(String(order.id)));
         const mergedOrders = [...cloudOrders, ...localOnly].sort((a,b) => new Date(b.date) - new Date(a.date));
         localStorage.setItem('diraz_orders', JSON.stringify(mergedOrders));
         localOnly.forEach(order => DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{}));
     } else failedTables.push('orders');
 
     if (couponsResult.status === 'fulfilled') {
-        const cloudCoupons = couponsResult.value.map(row => row.data);
+        const cloudCoupons = couponsResult.value.map(row => row.data).filter(coupon => !deletedCouponCodes.has(coupon.code));
         const localCoupons = tryParseAdmin('diraz_coupons', []);
         const cloudCodes = new Set(cloudCoupons.map(coupon => coupon.code));
-        const localOnly = localCoupons.filter(coupon => !cloudCodes.has(coupon.code));
+        const localOnly = localCoupons.filter(coupon => !cloudCodes.has(coupon.code) && !deletedCouponCodes.has(coupon.code));
         const mergedCoupons = [...cloudCoupons, ...localOnly];
         localStorage.setItem('diraz_coupons', JSON.stringify(mergedCoupons));
         localOnly.forEach(coupon => DirazCloud.upsert('coupons', [{code:coupon.code, data:coupon, total_uses:Number(coupon.totalUses)||0, updated_at:new Date().toISOString()}]).catch(()=>{}));
@@ -1220,8 +1238,14 @@ function deleteOrder(orderId) {
     if (idx < 0) return;
     orders.splice(idx, 1);
     saveOrders(orders);
-    DirazCloud.remove('orders', 'id=eq.' + encodeURIComponent(String(orderId)))
-        .catch(() => showToast('⚠️ حُذف الطلب من هذا الجهاز، وتعذر حذفه من السحابة'));
+    const deletedOrders = new Set(tryParseAdmin(DELETED_ORDERS_KEY, []).map(String));
+    deletedOrders.add(String(orderId));
+    localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify([...deletedOrders]));
+    if (window.DirazCloud) {
+        DirazCloud.remove('orders', 'id=eq.' + encodeURIComponent(String(orderId)))
+            .catch(() => showToast('⚠️ حُذف الطلب من هذا الجهاز، وتعذر حذفه من السحابة'));
+        DirazCloud.upsert('deleted_orders', [{id:String(orderId), deleted_at:new Date().toISOString()}]).catch(()=>{});
+    }
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
     showToast('🗑️ تم حذف الطلب');
 }
@@ -1401,9 +1425,15 @@ function deleteCoupon(idx) {
     saveCoupons(coupons);
     renderCoupons();
     showToast('🗑️ تم حذف الكود');
-    if (removedCoupon && window.DirazCloud) {
-        DirazCloud.remove('coupons', 'code=eq.' + encodeURIComponent(removedCoupon.code))
-            .catch(() => showToast('⚠️ حُذف الكود من هذا الجهاز، وتعذر حذفه من السحابة'));
+    if (removedCoupon) {
+        const deletedCoupons = new Set(tryParseAdmin(DELETED_COUPONS_KEY, []));
+        deletedCoupons.add(removedCoupon.code);
+        localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCoupons]));
+        if (window.DirazCloud) {
+            DirazCloud.remove('coupons', 'code=eq.' + encodeURIComponent(removedCoupon.code))
+                .catch(() => showToast('⚠️ حُذف الكود من هذا الجهاز، وتعذر حذفه من السحابة'));
+            DirazCloud.upsert('deleted_coupons', [{code:removedCoupon.code, deleted_at:new Date().toISOString()}]).catch(()=>{});
+        }
     }
 }
 
