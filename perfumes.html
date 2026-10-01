@@ -494,7 +494,10 @@ function saveCustomer(){
     if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
   } catch(e) {}
-  if(window.DirazCloud) DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
+  if(window.DirazCloud) {
+    DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
+    DirazCloud.remove('deleted_customers', 'phone=eq.'+encodeURIComponent(phoneDigits)).catch(()=>{});
+  }
   if(pendingCartOpen){
     pendingCartOpen=false;
     openCart();
@@ -547,6 +550,11 @@ function updateCartUI(){
     const filteredCart=cart.filter(item=>!unavailable.has(item.idx));
     if(filteredCart.length!==cart.length){cart=filteredCart;saveCart();}
   }
+  const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
+  if(appliedCoupon&&(currentItemCount<2||currentItemCount>3)){
+    appliedCoupon=null; discountAmount=0;
+    showCouponMsg('❌ تم إلغاء الخصم: يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط','error');
+  }
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const total=Math.max(rawTotal-discountAmount,0);
   const count=cart.reduce((s,i)=>s+i.qty,0);
@@ -595,7 +603,8 @@ async function applyCoupon(){
   const code=(document.getElementById('couponInput').value||'').trim().toUpperCase();
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
   const itemCount=cart.reduce((total,item)=>total+item.qty,0);
-  if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو أكثر أولاً','error');return;}
+  if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو ثلاثة عطور أولاً','error');return;}
+  if(itemCount>3){showCouponMsg('❌ الخصم يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط. عند 4 عطور أو أكثر لا يوجد خصم','error');return;}
   let coupons=tryParse(COUPONS_KEY,[]);
   if(window.DirazCloud){
     try {
