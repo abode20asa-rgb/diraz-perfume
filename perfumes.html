@@ -551,11 +551,18 @@ function updateCartUI(){
     if(filteredCart.length!==cart.length){cart=filteredCart;saveCart();}
   }
   const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
-  if(appliedCoupon&&(currentItemCount<2||currentItemCount>3)){
-    appliedCoupon=null; discountAmount=0;
-    showCouponMsg('❌ تم إلغاء الخصم: يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط','error');
-  }
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  if(appliedCoupon){
+    if(currentItemCount<2||currentItemCount>3){
+      appliedCoupon=null; discountAmount=0;
+      showCouponMsg('❌ تم إلغاء الخصم: يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط','error');
+    } else if(String(appliedCoupon.code).toUpperCase()==='ديراز'){
+      const targetTotal=currentItemCount===2?35000:45000;
+      discountAmount=Math.max(rawTotal-targetTotal,0);
+    } else {
+      discountAmount=appliedCoupon.type==='percent'?Math.round(rawTotal*appliedCoupon.value/100):Math.min(appliedCoupon.value,rawTotal);
+    }
+  }
   const total=Math.max(rawTotal-discountAmount,0);
   const count=cart.reduce((s,i)=>s+i.qty,0);
   const cur=cart.length?cart[0].currency:'دينار';
