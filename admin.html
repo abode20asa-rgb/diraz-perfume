@@ -1384,6 +1384,13 @@ function saveCoupons(arr) {
     saveAutomaticBackup();
 }
 
+function reviveCouponCode(code) {
+    const deletedCoupons = new Set(tryParseAdmin(DELETED_COUPONS_KEY, []));
+    deletedCoupons.delete(code);
+    localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCoupons]));
+    if (window.DirazCloud) DirazCloud.remove('deleted_coupons', 'code=eq.' + encodeURIComponent(code)).catch(()=>{});
+}
+
 function addCoupon() {
     const code    = (document.getElementById('cp_code').value || '').trim().toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9\u0600-\u06FF\u0660-\u0669]/g,'');
     const type    = document.getElementById('cp_type').value;
@@ -1398,6 +1405,7 @@ function addCoupon() {
     const coupons = loadCoupons();
     if (coupons.find(c => c.code === code)) { showToast('❗ هذا الكود موجود مسبقاً'); return; }
 
+    reviveCouponCode(code);
     coupons.unshift({ code, type, value, maxUses, usagePolicy, active:true, totalUses:0, createdAt:new Date().toISOString() });
     saveCoupons(coupons);
     renderCoupons();
