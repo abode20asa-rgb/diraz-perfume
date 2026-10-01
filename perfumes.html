@@ -625,10 +625,16 @@ async function applyCoupon(){
   if(totalUses>=coupon.maxUses){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
   if((coupon.usagePolicy||'once')==='once'&&myUsage>=1){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
-  discountAmount=coupon.type==='percent'?Math.round(rawTotal*coupon.value/100):Math.min(coupon.value,rawTotal);
+  const isDirazSpecial=code==='ديراز';
+  if(isDirazSpecial){
+    const targetTotal=itemCount===2?35000:45000;
+    discountAmount=Math.max(rawTotal-targetTotal,0);
+  } else {
+    discountAmount=coupon.type==='percent'?Math.round(rawTotal*coupon.value/100):Math.min(coupon.value,rawTotal);
+  }
   appliedCoupon=coupon;
   const remaining=coupon.maxUses-totalUses-1;
-  const valTxt=coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
+  const valTxt=isDirazSpecial?(itemCount===2?'سعر خاص 35,000 دينار':'سعر خاص 45,000 دينار'):coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
   const policyTxt=(coupon.usagePolicy||'once')==='multiple'?'يمكنك استخدامه عدة مرات':'مرة واحدة لكل زبون';
   showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt}) — ${policyTxt} — متبقي للكود ${remaining} ${remaining===1?'استخدام':'استخدامات'}`,'success');
   updateCartUI();
