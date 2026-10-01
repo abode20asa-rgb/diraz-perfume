@@ -749,10 +749,10 @@ async function hydrateCloudData() {
         localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify([...deletedOrderIds]));
     } else failedTables.push('deleted_orders');
 
-    let deletedCouponCodes = new Set(tryParseAdmin(DELETED_COUPONS_KEY, []));
+    let deletedCouponCodes = new Set();
     if (deletedCouponsResult.status === 'fulfilled') {
         const cloudDeletedCoupons = deletedCouponsResult.value.map(row => row.code);
-        deletedCouponCodes = new Set([...deletedCouponCodes, ...cloudDeletedCoupons]);
+        deletedCouponCodes = new Set(cloudDeletedCoupons);
         localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCouponCodes]));
     } else failedTables.push('deleted_coupons');
 
