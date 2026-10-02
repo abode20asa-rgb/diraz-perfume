@@ -466,6 +466,7 @@
             </label>
         </div>
     </div>
+    <div id='githubInstructions' style='max-width:900px;margin:0 auto;display:none;padding:0 0 10px'></div>
 
     <header>
         <img src="images/logo.jpg" alt="Logo" class="logo">
@@ -654,16 +655,7 @@
 <div id="toast"></div>
 
 <script src="perfumes-data.js">
-// ════════════════════════════════════════
-//  تشغيل / إيقاف الموقع
-// ════════════════════════════════════════
-function initSiteToggle(){
-    const status = localStorage.getItem('diraz_site_status') || 'open';
-    const isOpen = status !== 'closed';
-    const tog = document.getElementById('siteToggle');
-    if(tog) tog.checked = isOpen;
-    updateStatusBar(isOpen);
-}
+
 
 function toggleSite(){
     const tog = document.getElementById('siteToggle');
@@ -689,20 +681,67 @@ function updateStatusBar(isOpen){
         title.textContent = '🔴 الموقع مغلق';
         desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
         label.textContent = 'إيقاف';
+    }
+}
+
+// ════════════════════════════════════════
+//  تشغيل / إيقاف الموقع (config.json)
+// ════════════════════════════════════════
+function initSiteToggle(){
+    fetch('config.json?_='+Date.now(),{cache:'no-store'})
+      .then(r=>r.json())
+      .then(function(cfg){
+        const isOpen = cfg.open !== false && cfg.open !== 'false';
+        const tog = document.getElementById('siteToggle');
+        if(tog) tog.checked = isOpen;
+        updateStatusBar(isOpen);
+      })
+      .catch(function(){ updateStatusBar(true); });
+}
+
+function toggleSite(){
+    const tog    = document.getElementById('siteToggle');
+    const isOpen = tog ? tog.checked : true;
+    updateStatusBar(isOpen);
+    // اعرض تعليمات التغيير على GitHub
+    const instr  = document.getElementById('githubInstructions');
+    const action = isOpen ? 'فتح' : 'إغلاق';
+    const value  = isOpen ? 'true' : 'false';
+    if(instr){
+        instr.style.display='block';
+        instr.innerHTML = `
+        <div style="margin-top:14px;background:rgba(255,255,255,0.2);border-radius:14px;padding:16px;font-size:.88rem;color:white;line-height:1.8">
+            <strong>📋 خطوات ${action} الموقع على GitHub:</strong><br>
+            1. روح لـ GitHub repo → اضغط على <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">config.json</code><br>
+            2. اضغط ✏️ (تعديل)<br>
+            3. غيّر القيمة إلى: <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">{"open": ${value}}</code><br>
+            4. اضغط <strong>Commit changes</strong><br>
+            ✅ الموقع راح ي${isOpen ? 'نفتح' : 'نغلق'} خلال دقيقة لكل الزبائن
+        </div>`;
+    }
+}
+
+function updateStatusBar(isOpen){
+    const bar   = document.getElementById('siteStatusBar');
+    const title = document.getElementById('statusTitle');
+    const desc  = document.getElementById('statusDesc');
+    const label = document.getElementById('toggleLabel');
+    if(!bar) return;
+    if(isOpen){
+        bar.className  = 'site-status-bar on';
+        if(title) title.textContent = '🟢 الموقع يعمل الآن';
+        if(desc)  desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
+        if(label) label.textContent = 'تشغيل';
+    } else {
+        bar.className  = 'site-status-bar off';
+        if(title) title.textContent = '🔴 الموقع مغلق';
+        if(desc)  desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
+        if(label) label.textContent = 'إيقاف';
     }
 }
 </script>
 <script src="supabase-config.js">
-// ════════════════════════════════════════
-//  تشغيل / إيقاف الموقع
-// ════════════════════════════════════════
-function initSiteToggle(){
-    const status = localStorage.getItem('diraz_site_status') || 'open';
-    const isOpen = status !== 'closed';
-    const tog = document.getElementById('siteToggle');
-    if(tog) tog.checked = isOpen;
-    updateStatusBar(isOpen);
-}
+
 
 function toggleSite(){
     const tog = document.getElementById('siteToggle');
@@ -728,881 +767,67 @@ function updateStatusBar(isOpen){
         title.textContent = '🔴 الموقع مغلق';
         desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
         label.textContent = 'إيقاف';
+    }
+}
+
+// ════════════════════════════════════════
+//  تشغيل / إيقاف الموقع (config.json)
+// ════════════════════════════════════════
+function initSiteToggle(){
+    fetch('config.json?_='+Date.now(),{cache:'no-store'})
+      .then(r=>r.json())
+      .then(function(cfg){
+        const isOpen = cfg.open !== false && cfg.open !== 'false';
+        const tog = document.getElementById('siteToggle');
+        if(tog) tog.checked = isOpen;
+        updateStatusBar(isOpen);
+      })
+      .catch(function(){ updateStatusBar(true); });
+}
+
+function toggleSite(){
+    const tog    = document.getElementById('siteToggle');
+    const isOpen = tog ? tog.checked : true;
+    updateStatusBar(isOpen);
+    // اعرض تعليمات التغيير على GitHub
+    const instr  = document.getElementById('githubInstructions');
+    const action = isOpen ? 'فتح' : 'إغلاق';
+    const value  = isOpen ? 'true' : 'false';
+    if(instr){
+        instr.style.display='block';
+        instr.innerHTML = `
+        <div style="margin-top:14px;background:rgba(255,255,255,0.2);border-radius:14px;padding:16px;font-size:.88rem;color:white;line-height:1.8">
+            <strong>📋 خطوات ${action} الموقع على GitHub:</strong><br>
+            1. روح لـ GitHub repo → اضغط على <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">config.json</code><br>
+            2. اضغط ✏️ (تعديل)<br>
+            3. غيّر القيمة إلى: <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">{"open": ${value}}</code><br>
+            4. اضغط <strong>Commit changes</strong><br>
+            ✅ الموقع راح ي${isOpen ? 'نفتح' : 'نغلق'} خلال دقيقة لكل الزبائن
+        </div>`;
+    }
+}
+
+function updateStatusBar(isOpen){
+    const bar   = document.getElementById('siteStatusBar');
+    const title = document.getElementById('statusTitle');
+    const desc  = document.getElementById('statusDesc');
+    const label = document.getElementById('toggleLabel');
+    if(!bar) return;
+    if(isOpen){
+        bar.className  = 'site-status-bar on';
+        if(title) title.textContent = '🟢 الموقع يعمل الآن';
+        if(desc)  desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
+        if(label) label.textContent = 'تشغيل';
+    } else {
+        bar.className  = 'site-status-bar off';
+        if(title) title.textContent = '🔴 الموقع مغلق';
+        if(desc)  desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
+        if(label) label.textContent = 'إيقاف';
     }
 }
 </script>
 <script>
-// ═══════════════════════════════════════
-//  🔐 كلمة السر — غيّرها من هنا
-// ═══════════════════════════════════════
-const ADMIN_PASSWORD = 'diraz@2026/admin';
-const STORAGE_KEY    = 'diraz_perfumes';
-const ADMIN_LOGINS_KEY = 'diraz_admin_logins';
-const ADMIN_LOGINS_LIMIT = 5;
-const DELETED_CUSTOMERS_KEY = 'diraz_deleted_customers';
-const DELETED_ORDERS_KEY = 'diraz_deleted_orders';
-const DELETED_COUPONS_KEY = 'diraz_deleted_coupons';
-const BACKUP_KEY     = 'diraz_full_backup';
-const LAST_BACKUP_KEY= 'diraz_last_before_delete';
 
-// يبقي آخر 5 تسجيلات دخول فقط، ويحذف الباقي من السحابة
-function trimAdminLogins(logins) {
-    const sorted = [...logins].sort((a,b) => new Date(b.date) - new Date(a.date));
-    const kept = sorted.slice(0, ADMIN_LOGINS_LIMIT);
-    const removed = sorted.slice(ADMIN_LOGINS_LIMIT);
-    if (window.DirazCloud) {
-        removed.forEach(old => DirazCloud.remove('admin_logins', 'id=eq.' + encodeURIComponent(String(old.id))).catch(()=>{}));
-    }
-    return kept;
-}
-
-function collectBackup() {
-    const data = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && key !== BACKUP_KEY && key !== LAST_BACKUP_KEY) data[key] = localStorage.getItem(key);
-    }
-    return { version: 1, savedAt: new Date().toISOString(), data };
-}
-function saveAutomaticBackup() {
-    try { localStorage.setItem(BACKUP_KEY, JSON.stringify(collectBackup())); } catch(e) { showToast('⚠️ تعذر حفظ النسخة تلقائياً'); }
-}
-function saveBeforeDelete() {
-    try {
-        saveAutomaticBackup();
-        localStorage.setItem(LAST_BACKUP_KEY, localStorage.getItem(BACKUP_KEY) || JSON.stringify(collectBackup()));
-    } catch(e) {}
-}
-function downloadBackup() {
-    saveAutomaticBackup();
-    const blob = new Blob([localStorage.getItem(BACKUP_KEY)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url; link.download = `diraz-backup-${new Date().toISOString().slice(0,10)}.json`;
-    link.click(); URL.revokeObjectURL(url);
-    showToast('✅ تم تنزيل النسخة الاحتياطية');
-}
-function applyBackup(snapshot) {
-    if (!snapshot || typeof snapshot.data !== 'object') throw new Error('invalid backup');
-    Object.keys(snapshot.data).forEach(key => localStorage.setItem(key, snapshot.data[key]));
-    saveAutomaticBackup();
-    renderList(); updateStorageBar();
-    showToast('✅ تم استرجاع النسخة الاحتياطية');
-}
-function importBackup(input) {
-    const file = input.files[0]; if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function() {
-        try {
-            if (!confirm('سيتم استبدال البيانات الحالية بمحتوى النسخة. هل تريد المتابعة؟')) return;
-            saveBeforeDelete();
-            applyBackup(JSON.parse(reader.result));
-        } catch(e) { showToast('❌ ملف النسخة غير صالح'); }
-        input.value = '';
-    };
-    reader.readAsText(file);
-}
-function restoreLastBackup() {
-    const raw = localStorage.getItem(LAST_BACKUP_KEY);
-    if (!raw) { showToast('ℹ️ لا توجد نسخة قبل حذف سابق'); return; }
-    if (!confirm('استرجاع النسخة السابقة سيعيد آخر شيء تم حذفه. هل تريد المتابعة؟')) return;
-    try { applyBackup(JSON.parse(raw)); showToast('✅ تم التراجع عن آخر حذف'); }
-    catch(e) { showToast('❌ النسخة السابقة غير صالحة'); }
-}
-
-// يبقي الأجهزة المفتوحة على تزامن مباشر بدون الحاجة لإعادة تسجيل الدخول
-let cloudPollingTimer = null;
-function startCloudPolling() {
-    if (cloudPollingTimer) return;
-    cloudPollingTimer = setInterval(() => { if (window.DirazCloud) hydrateCloudData(); }, 20000);
-}
-
-// ── تحقق من كلمة السر ──
-function checkPass() {
-    if (document.getElementById('passInput').value === ADMIN_PASSWORD) {
-        document.getElementById('lockScreen').style.display = 'none';
-        document.getElementById('adminPanel').style.display  = 'block';
-        renderList(); updateStorageBar();
-        saveAutomaticBackup();
-        hydrateCloudData().then(() => recordAdminLogin());
-        startCloudPolling();
-    } else {
-        const err = document.getElementById('lockError');
-        err.style.display = 'block';
-        document.getElementById('passInput').value = '';
-        setTimeout(() => err.style.display='none', 3000);
-    }
-}
-
-async function hydrateCloudData() {
-    const results = await Promise.allSettled([
-        DirazCloud.list('orders','&order=updated_at.desc'),
-        DirazCloud.list('coupons','&order=updated_at.desc'),
-        DirazCloud.list('customers','&order=updated_at.desc'),
-        DirazCloud.list('perfumes','&order=updated_at.desc'),
-        DirazCloud.list('admin_logins','&order=created_at.desc&limit=100'),
-        DirazCloud.list('deleted_customers','&order=deleted_at.desc'),
-        DirazCloud.list('deleted_orders','&order=deleted_at.desc'),
-        DirazCloud.list('deleted_coupons','&order=deleted_at.desc')
-    ]);
-    const [ordersResult, couponsResult, customersResult, perfumesResult, loginsResult, deletedResult, deletedOrdersResult, deletedCouponsResult] = results;
-    const failedTables = [];
-
-    if (deletedResult.status === 'fulfilled') {
-        const localDeleted = tryParseAdmin(DELETED_CUSTOMERS_KEY, []).map(phone => String(phone).replace(/\D/g, ''));
-        const cloudDeleted = deletedResult.value.map(row => String(row.phone).replace(/\D/g, ''));
-        const mergedDeleted = [...new Set([...localDeleted, ...cloudDeleted])];
-        localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify(mergedDeleted));
-    } else failedTables.push('deleted_customers');
-
-    let deletedOrderIds = new Set(tryParseAdmin(DELETED_ORDERS_KEY, []).map(String));
-    if (deletedOrdersResult.status === 'fulfilled') {
-        const cloudDeletedOrders = deletedOrdersResult.value.map(row => String(row.id));
-        deletedOrderIds = new Set([...deletedOrderIds, ...cloudDeletedOrders]);
-        localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify([...deletedOrderIds]));
-    } else failedTables.push('deleted_orders');
-
-    let deletedCouponCodes = new Set();
-    if (deletedCouponsResult.status === 'fulfilled') {
-        const cloudDeletedCoupons = deletedCouponsResult.value.map(row => row.code);
-        deletedCouponCodes = new Set(cloudDeletedCoupons);
-        localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCouponCodes]));
-    } else failedTables.push('deleted_coupons');
-
-    if (ordersResult.status === 'fulfilled') {
-        const cloudOrders = ordersResult.value.map(row => row.data).filter(order => !deletedOrderIds.has(String(order.id)));
-        const localOrders = tryParseAdmin('diraz_orders', []);
-        const cloudIds = new Set(cloudOrders.map(order => String(order.id)));
-        const localOnly = localOrders.filter(order => !cloudIds.has(String(order.id)) && !deletedOrderIds.has(String(order.id)));
-        const mergedOrders = [...cloudOrders, ...localOnly].sort((a,b) => new Date(b.date) - new Date(a.date));
-        localStorage.setItem('diraz_orders', JSON.stringify(mergedOrders));
-        localOnly.forEach(order => DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{}));
-    } else failedTables.push('orders');
-
-    if (couponsResult.status === 'fulfilled') {
-        const cloudCoupons = couponsResult.value.map(row => row.data).filter(coupon => !deletedCouponCodes.has(coupon.code));
-        const localCoupons = tryParseAdmin('diraz_coupons', []);
-        const cloudCodes = new Set(cloudCoupons.map(coupon => coupon.code));
-        const localOnly = localCoupons.filter(coupon => !cloudCodes.has(coupon.code) && !deletedCouponCodes.has(coupon.code));
-        const mergedCoupons = [...cloudCoupons, ...localOnly];
-        localStorage.setItem('diraz_coupons', JSON.stringify(mergedCoupons));
-        localOnly.forEach(coupon => DirazCloud.upsert('coupons', [{code:coupon.code, data:coupon, total_uses:Number(coupon.totalUses)||0, updated_at:new Date().toISOString()}]).catch(()=>{}));
-    } else failedTables.push('coupons');
-
-    if (customersResult.status === 'fulfilled') {
-        const deletedPhones = new Set(tryParseAdmin(DELETED_CUSTOMERS_KEY, []));
-        const cloudCustomers = customersResult.value
-            .map(row => row.data)
-            .filter(customer => !deletedPhones.has(String(customer.phone || '').replace(/\D/g, '')));
-        const localCustomers = tryParseAdmin('diraz_customers', []);
-        const cloudPhones = new Set(cloudCustomers.map(customer => String(customer.phone || '').replace(/\D/g, '')));
-        const localOnly = localCustomers.filter(customer => {
-            const phoneKey = String(customer.phone || '').replace(/\D/g, '');
-            return phoneKey && !deletedPhones.has(phoneKey) && !cloudPhones.has(phoneKey);
-        });
-        const mergedCustomers = [...cloudCustomers, ...localOnly];
-        localStorage.setItem('diraz_customers', JSON.stringify(mergedCustomers));
-        localOnly.forEach(customer => {
-            const phoneKey = String(customer.phone || '').replace(/\D/g, '');
-            if (phoneKey) DirazCloud.upsert('customers', [{phone:phoneKey, data:customer}]).catch(()=>{});
-        });
-    } else failedTables.push('customers');
-
-    if (loginsResult.status === 'fulfilled') {
-        const localLogins = tryParseAdmin(ADMIN_LOGINS_KEY, []);
-        const mergedLogins = [...localLogins, ...loginsResult.value.map(row=>row.data)]
-            .filter((login, index, all) => all.findIndex(item => String(item.id) === String(login.id)) === index);
-        localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(trimAdminLogins(mergedLogins)));
-    } else failedTables.push('admin_logins');
-
-    if (perfumesResult.status === 'fulfilled') {
-        if (perfumesResult.value.length && Array.isArray(perfumesResult.value[0].data)) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(perfumesResult.value[0].data));
-        } else {
-            await DirazCloud.upsert('perfumes', [{id:1, data:loadPerfumes(), updated_at:new Date().toISOString()}]).catch(()=>{});
-        }
-    } else failedTables.push('perfumes');
-
-    renderList(); renderAdminLogins(); saveAutomaticBackup();
-    if (failedTables.length) showToast('ℹ️ تعذر مزامنة: ' + failedTables.join('، ') + ' — الباقي اشتغل من السحابة');
-}
-function logout() {
-    document.getElementById('lockScreen').style.display = 'flex';
-    document.getElementById('adminPanel').style.display  = 'none';
-    document.getElementById('passInput').value = '';
-}
-
-function getDeviceName() {
-    const ua = navigator.userAgent || '';
-    if (/Android/i.test(ua)) return 'هاتف Android';
-    if (/iPhone|iPad|iPod/i.test(ua)) return 'هاتف iPhone/iPad';
-    if (/Windows/i.test(ua)) return 'جهاز Windows';
-    if (/Macintosh|Mac OS/i.test(ua)) return 'جهاز Mac';
-    return navigator.platform || 'جهاز غير معروف';
-}
-function getBrowserName() {
-    const ua = navigator.userAgent || '';
-    if (/Edg\//i.test(ua)) return 'Microsoft Edge';
-    if (/Chrome\//i.test(ua)) return 'Google Chrome';
-    if (/Firefox\//i.test(ua)) return 'Mozilla Firefox';
-    if (/Safari\//i.test(ua)) return 'Safari';
-    return 'متصفح غير معروف';
-}
-function renderAdminLogins() {
-    const list = document.getElementById('adminLoginList');
-    if (!list) return;
-    let logins = [];
-    try { logins = JSON.parse(localStorage.getItem(ADMIN_LOGINS_KEY) || '[]'); } catch(e) {}
-    if (!logins.length) { list.innerHTML = '<div class="no-logins">📭 لا توجد تسجيلات دخول بعد</div>'; return; }
-    list.innerHTML = logins.slice(0,ADMIN_LOGINS_LIMIT).map((login,index) => `
-        <div class="login-item">
-            <div class="login-num">${index + 1}</div>
-            <div class="login-info">
-                <div class="login-device">📱 ${login.device || 'جهاز غير معروف'}</div>
-                <div class="login-meta">🕐 ${new Date(login.date).toLocaleString('ar-IQ', {dateStyle:'medium', timeStyle:'short'})} · ${login.browser || 'متصفح غير معروف'}</div>
-            </div>
-        </div>`).join('');
-}
-function recordAdminLogin() {
-    const login = { id:Date.now(), date:new Date().toISOString(), device:getDeviceName(), browser:getBrowserName() };
-    let logins = [];
-    try { logins = JSON.parse(localStorage.getItem(ADMIN_LOGINS_KEY) || '[]'); } catch(e) {}
-    logins.unshift(login);
-    localStorage.setItem(ADMIN_LOGINS_KEY, JSON.stringify(trimAdminLogins(logins)));
-    renderAdminLogins();
-    if (window.DirazCloud) {
-        DirazCloud.insert('admin_logins', [{id:String(login.id), data:login, created_at:login.date}]).catch(()=>{});
-    }
-}
-
-// ── localStorage ──
-function loadPerfumes() {
-    const d = localStorage.getItem(STORAGE_KEY);
-    return d ? JSON.parse(d) : (window.DIRAZ_DEFAULT_PERFUMES || []);
-}
-function storePerfumes(arr) {
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(arr));
-    } catch(e) {
-        showToast('⚠️ التخزين ممتلئ! احذف بعض الصور أو قلّل جودتها');
-    }
-    if (window.DirazCloud) {
-        DirazCloud.upsert('perfumes', [{id:1, data:arr, updated_at:new Date().toISOString()}])
-            .catch(() => showToast('⚠️ تم حفظ العطر محليًا، وتعذر تحديث السحابة'));
-    }
-    saveAutomaticBackup();
-    updateStorageBar();
-}
-
-// ── شريط التخزين (max ~5MB) ──
-function updateStorageBar() {
-    const used = new Blob(Object.values(localStorage)).size;
-    const max  = 5 * 1024 * 1024; // 5MB تقريبي
-    const pct  = Math.min((used / max) * 100, 100).toFixed(1);
-    const kb   = (used / 1024).toFixed(0);
-    document.getElementById('storageLabel').textContent = `💾 التخزين المستخدم: ${kb} KB من ~5120 KB (${pct}%)`;
-    document.getElementById('storageFill').style.width  = pct + '%';
-    document.getElementById('storageFill').style.background = pct > 80 ? '#ff8080' : 'white';
-}
-
-// ═══════════════════════════════════════
-//  📷 رفع الصورة وضغطها
-// ═══════════════════════════════════════
-let selectedBase64 = '';     // Base64 للصورة الحالية المختارة
-let keepOldImage   = false;  // عند التعديل: إبقاء الصورة القديمة
-
-function handleFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-    compressAndPreview(file);
-}
-
-function handleDrop(e) {
-    e.preventDefault();
-    document.getElementById('uploadArea').classList.remove('dragover');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type.startsWith('image/')) compressAndPreview(file);
-}
-
-function compressAndPreview(file) {
-    const reader = new FileReader();
-    reader.onload = function(ev) {
-        const img = new Image();
-        img.onload = function() {
-            // ── ضغط الصورة بـ Canvas (max 600px) ──
-            const MAX = 600;
-            let w = img.width, h = img.height;
-            if (w > h && w > MAX) { h = Math.round(h * MAX / w); w = MAX; }
-            else if (h > MAX)     { w = Math.round(w * MAX / h); h = MAX; }
-
-            const canvas = document.createElement('canvas');
-            canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-
-            // جودة JPEG 0.82
-            const base64 = canvas.toDataURL('image/jpeg', 0.82);
-            selectedBase64 = base64;
-            keepOldImage   = false;
-
-            // عرض المعاينة
-            const sizeKB = Math.round(base64.length * 0.75 / 1024);
-            document.getElementById('imgPreviewBig').src = base64;
-            document.getElementById('previewName').textContent = file.name;
-            document.getElementById('previewSize').textContent = `${w}×${h} px — حجم تقريبي: ${sizeKB} KB`;
-            document.getElementById('previewWrap').classList.add('visible');
-            updateStorageBar();
-        };
-        img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeImage() {
-    selectedBase64 = '';
-    keepOldImage   = false;
-    document.getElementById('previewWrap').classList.remove('visible');
-    document.getElementById('f_image').value = '';
-}
-
-// ═══════════════════════════════════════
-//  قائمة العطور
-// ═══════════════════════════════════════
-function renderList() {
-    renderStats(); renderOrders(); renderCustomers(); renderCoupons(); initSiteToggle();
-    const perfumes = loadPerfumes();
-    const list = document.getElementById('perfumeList');
-    document.getElementById('countBadge').textContent = perfumes.length;
-
-    if (!perfumes.length) {
-        list.innerHTML = '<p class="empty-msg">لا توجد عطور بعد — أضف أول عطر! 🌸</p>';
-        return;
-    }
-
-    list.innerHTML = perfumes.map((p, i) => `
-        <div class="perfume-item">
-            <div class="item-thumb">
-                ${p.image
-                    ? `<img src="${p.image}" alt="${p.name}" onerror="this.parentElement.textContent='🌸'">`
-                    : '🌸'}
-            </div>
-            <div class="perfume-info">
-                <div class="pname">${p.name}${p.nameEn ? ' — ' + p.nameEn : ''}</div>
-                <div class="pmeta">${p.type} &bull; ${p.size} &bull; ${p.price} ${p.currency}</div>
-                ${p.badge && p.badge !== 'none' ? `<span class="perfume-badge ${p.badge}">${p.badge === 'soldout' ? 'نفذ' : p.badge === 'bestseller' ? 'الأكثر مبيعًا' : 'محدود'}</span>` : ''}
-            </div>
-            <div class="item-actions">
-                <button class="btn-move" onclick="movePerfume(${i},-1)" ${i === 0 ? 'disabled' : ''} title="رفع العطر">↑</button>
-                <button class="btn-move" onclick="movePerfume(${i},1)" ${i === perfumes.length - 1 ? 'disabled' : ''} title="تنزيل العطر">↓</button>
-                <button class="btn-edit"   onclick="editPerfume(${i})">✏️ تعديل</button>
-                <button class="btn-delete" onclick="deletePerfume(${i})">🗑️ حذف</button>
-            </div>
-        </div>
-    `).join('');
-}
-
-// ═══════════════════════════════════════
-//  إضافة / تعديل / حذف
-// ═══════════════════════════════════════
-let editIndex = -1;
-
-function savePerfume() {
-    const name  = (document.getElementById('f_name').value  || '').trim();
-    const price = (document.getElementById('f_price').value || '').trim();
-    const size  = '50ml';
-    // فقط الاسم إلزامي — باقي الحقول اختيارية
-    if (!name) { showToast('❗ اسم العطر مطلوب فقط'); return; }
-
-    // حدّد الصورة المستخدمة
-    let imageToSave = selectedBase64;
-    if (!imageToSave && keepOldImage && editIndex >= 0) {
-        imageToSave = loadPerfumes()[editIndex].image || '';
-    }
-
-    const p = {
-        name,
-        nameEn:      document.getElementById('f_nameEn').value.trim(),
-        type:        document.getElementById('f_type').value,
-        size,
-        price,
-        currency:    document.getElementById('f_currency').value,
-        badge:       document.getElementById('f_badge').value,
-        oldPrice:    (document.getElementById('f_oldPrice').value || '').trim(),
-        image:       imageToSave,
-        description: document.getElementById('f_desc').value.trim()
-    };
-
-    const perfumes = loadPerfumes();
-    if (editIndex >= 0) {
-        perfumes[editIndex] = p;
-        showToast('✅ تم تعديل العطر بنجاح');
-    } else {
-        perfumes.push(p);
-        showToast('✅ تمت إضافة العطر بنجاح');
-    }
-    storePerfumes(perfumes);
-    resetForm();
-    renderList();
-}
-
-function editPerfume(i) {
-    const p = loadPerfumes()[i];
-    document.getElementById('f_name').value     = p.name     || '';
-    document.getElementById('f_nameEn').value   = p.nameEn   || '';
-    document.getElementById('f_type').value     = p.type     || 'نسائي';
-    document.getElementById('f_badge').value    = p.badge    || 'none';
-    document.getElementById('f_size').value     = '50ml';
-    document.getElementById('f_price').value    = p.price    || '';
-    document.getElementById('f_currency').value = p.currency || 'دينار';
-    document.getElementById('f_oldPrice').value    = p.oldPrice    || '';
-    document.getElementById('f_desc').value     = p.description || '';
-
-    // إذا كان عنده صورة قديمة: اعرضها
-    if (p.image) {
-        document.getElementById('imgPreviewBig').src     = p.image;
-        document.getElementById('previewName').textContent = 'الصورة الحالية';
-        document.getElementById('previewSize').textContent = '— يمكنك تغييرها باختيار صورة جديدة';
-        document.getElementById('previewWrap').classList.add('visible');
-        keepOldImage   = true;
-        selectedBase64 = '';
-    }
-
-    editIndex = i;
-    document.getElementById('formTitle').textContent = '✏️ تعديل العطر';
-    document.getElementById('cancelBtn').style.display = 'inline-block';
-    document.getElementById('perfumeFormSection').scrollIntoView({ behavior:'smooth', block:'start' });
-}
-
-function deletePerfume(i) {
-    if (!confirm('هل أنت متأكد من حذف هذا العطر؟')) return;
-    saveBeforeDelete();
-    const perfumes = loadPerfumes();
-    perfumes.splice(i, 1);
-    storePerfumes(perfumes);
-    renderList();
-    showToast('🗑️ تم حذف العطر');
-}
-
-function movePerfume(index, direction) {
-    const perfumes = loadPerfumes();
-    const targetIndex = index + direction;
-    if (index < 0 || targetIndex < 0 || targetIndex >= perfumes.length) return;
-    [perfumes[index], perfumes[targetIndex]] = [perfumes[targetIndex], perfumes[index]];
-    storePerfumes(perfumes);
-    renderList();
-}
-
-function resetForm() {
-    ['f_name','f_nameEn','f_oldPrice','f_desc'].forEach(id => document.getElementById(id).value='');
-    document.getElementById('f_price').value = '20000';
-    document.getElementById('f_size').value = '50ml';
-    document.getElementById('f_type').value     = 'نسائي';
-    document.getElementById('f_badge').value    = 'none';
-    document.getElementById('f_currency').value = 'دينار';
-    document.getElementById('f_image').value    = '';
-    document.getElementById('previewWrap').classList.remove('visible');
-    document.getElementById('formTitle').textContent     = '➕ إضافة عطر جديد';
-    document.getElementById('cancelBtn').style.display   = 'none';
-    selectedBase64 = ''; keepOldImage = false; editIndex = -1;
-}
-
-// ── Toast ──
-function showToast(msg) {
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2800);
-}
-
-// ════════════════════════════════════════
-//  نظام الطلبات
-// ════════════════════════════════════════
-const ORDERS_KEY = 'diraz_orders';
-const WA_NUM     = '9647747474014';
-let   currentFilter = 'all';
-
-function loadOrders() {
-    try { return JSON.parse(localStorage.getItem(ORDERS_KEY) || '[]'); }
-    catch(e){ return []; }
-}
-function saveOrders(arr) {
-    localStorage.setItem(ORDERS_KEY, JSON.stringify(arr));
-    arr.forEach(order => DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{}));
-    saveAutomaticBackup();
-}
-
-// ── إحصائيات ──
-function renderStats() {
-    const orders   = loadOrders();
-    const pending  = orders.filter(o => o.status === 'pending').length;
-    const delivered= orders.filter(o => o.status === 'delivered').length;
-    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(phone => String(phone).replace(/\D/g, '')));
-    const registeredCustomers = loadRegisteredCustomers();
-    const customerPhones = new Set();
-    registeredCustomers.forEach(customer => {
-        const phone = String(customer.phone || '').replace(/\D/g, '');
-        if (phone && !deletedPhones.has(phone)) customerPhones.add(phone);
-    });
-    orders.forEach(order => {
-        const phone = String(order.customer?.phone || '').replace(/\D/g, '');
-        if (phone) customerPhones.add(phone);
-    });
-    const customers=customerPhones.size;
-
-    document.getElementById('statsGrid').innerHTML = `
-        <div class="stat-card">
-            <div class="stat-icon">📦</div>
-            <div class="stat-num">${orders.length}</div>
-            <div class="stat-label">إجمالي الطلبات</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🟡</div>
-            <div class="stat-num">${pending}</div>
-            <div class="stat-label">قيد الانتظار</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">🟢</div>
-            <div class="stat-num">${delivered}</div>
-            <div class="stat-label">تم التسليم</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-icon">👥</div>
-            <div class="stat-num">${customers}</div>
-            <div class="stat-label">عدد الزبائن</div>
-        </div>
-    `;
-}
-
-// ── عرض الطلبات ──
-function renderOrders() {
-    const orders = loadOrders();
-    const list   = document.getElementById('ordersList');
-    if (!list) return;
-
-    const filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
-
-    if (!filtered.length) {
-        list.innerHTML = '<div class="no-orders">📭 لا توجد طلبات ' + (currentFilter === 'pending' ? 'قيد الانتظار' : currentFilter === 'delivered' ? 'مسلّمة' : 'بعد') + '</div>';
-        return;
-    }
-
-    list.innerHTML = filtered.map((order, fi) => {
-        const realIdx  = orders.indexOf(order);
-        const dateStr  = new Date(order.date).toLocaleString('ar', { dateStyle:'medium', timeStyle:'short' });
-        const isPending= order.status === 'pending';
-        const itemsHTML= (order.items||[]).map(i =>
-            `<div class="order-item-row">• ${i.name} × ${i.qty} — ${(i.price*i.qty).toLocaleString('en-US')} ${i.currency}</div>`
-        ).join('');
-
-        return `
-        <div class="order-card" id="orderCard_${realIdx}">
-            <div class="order-top">
-                <div>
-                    <div class="order-id"># ${order.id || realIdx+1}</div>
-                    <div class="order-cust">👤 ${order.customer?.name || '—'}</div>
-                    <div class="order-phone">📱 ${order.customer?.phone || '—'}</div>
-                    <div class="order-address">📍 ${order.customer?.address || '—'}</div>
-                    <div class="order-address">🚚 ${order.customer?.province || '—'} — ${order.customer?.area === 'district' ? 'قضاء/ناحية' : order.customer?.area === 'center' ? 'مركز المحافظة' : '—'}</div>
-                </div>
-                <div style="text-align:left">
-                    <div class="order-date">🕐 ${dateStr}</div>
-                    <button class="status-badge ${isPending ? 'status-pending' : 'status-delivered'}"
-                            onclick="toggleStatus('${order.id}')">
-                        ${isPending ? '🟡 قيد الانتظار' : '🟢 تم التسليم'}
-                    </button>
-                </div>
-            </div>
-
-            <div class="order-items-list">${itemsHTML || '<div style="color:rgba(255,255,255,0.5)">—</div>'}</div>
-
-            <div class="order-total-row">
-                <span class="order-total-label">العطور ${(order.subtotal||order.total||0).toLocaleString('en-US')} + التوصيل ${(order.deliveryFee||0).toLocaleString('en-US')}</span>
-                <span class="order-total-val">${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}</span>
-            </div>
-
-            <div class="order-actions">
-                ${isPending ? `<button class="btn-deliver" onclick="toggleStatus('${order.id}')">✅ تحديد كمُسلَّم</button>` : `<button class="btn-deliver" onclick="toggleStatus('${order.id}')">↩️ إرجاع لقيد الانتظار</button>`}
-                <button class="btn-wa-resend" onclick="resendWA('${order.id}')">💬 إعادة إرسال واتساب</button>
-                <button class="btn-del-order" onclick="deleteOrder('${order.id}')">🗑️ حذف</button>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-// ── تبديل الحالة ──
-function findOrderIndex(orders, orderId) {
-    return orders.findIndex(order => String(order.id) === String(orderId));
-}
-
-function toggleStatus(orderId) {
-    const orders = loadOrders();
-    const idx = findOrderIndex(orders, orderId);
-    if (!orders[idx]) return;
-    orders[idx].status = orders[idx].status === 'pending' ? 'delivered' : 'pending';
-    saveOrders(orders);
-    renderStats(); renderOrders(); renderCustomers(); renderCoupons(); initSiteToggle();
-    showToast(orders[idx].status === 'delivered' ? '✅ تم تحديده كمُسلَّم' : '↩️ رُجّع لقيد الانتظار');
-}
-
-// ── حذف طلب ──
-function deleteOrder(orderId) {
-    if (!confirm('هل أنت متأكد من حذف هذا الطلب؟')) return;
-    saveBeforeDelete();
-    const orders = loadOrders();
-    const idx = findOrderIndex(orders, orderId);
-    if (idx < 0) return;
-    orders.splice(idx, 1);
-    saveOrders(orders);
-    const deletedOrders = new Set(tryParseAdmin(DELETED_ORDERS_KEY, []).map(String));
-    deletedOrders.add(String(orderId));
-    localStorage.setItem(DELETED_ORDERS_KEY, JSON.stringify([...deletedOrders]));
-    if (window.DirazCloud) {
-        DirazCloud.remove('orders', 'id=eq.' + encodeURIComponent(String(orderId)))
-            .catch(() => showToast('⚠️ حُذف الطلب من هذا الجهاز، وتعذر حذفه من السحابة'));
-        DirazCloud.upsert('deleted_orders', [{id:String(orderId), deleted_at:new Date().toISOString()}]).catch(()=>{});
-    }
-    renderStats(); renderOrders(); renderCustomers(); renderCoupons(); initSiteToggle();
-    showToast('🗑️ تم حذف الطلب');
-}
-
-// ── إعادة إرسال واتساب ──
-function resendWA(orderId) {
-    const orders = loadOrders();
-    const order = orders[findOrderIndex(orders, orderId)];
-    if (!order) return;
-    let msg = `● الاسم: ${order.customer?.name||'—'}\n● الهاتف: ${order.customer?.phone||'—'}\n● العنوان: ${order.customer?.address||'—'}\n● المحافظة: ${order.customer?.province||'—'}\n● المنطقة: ${order.customer?.area === 'district' ? 'قضاء/ناحية' : order.customer?.area === 'center' ? 'مركز المحافظة' : '—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
-    (order.items||[]).forEach((item,i)=>{
-        msg += `${i+1}. ${item.name} × ${item.qty} ← ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`;
-    });
-    msg += `━━━━━━━━━━━━━━━━━━━━\n● سعر العطور: ${(order.subtotal||order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}\n● التوصيل: ${(order.deliveryFee||0).toLocaleString('en-US')} ${order.currency||'دينار'}\n● الإجمالي: ${(order.total||0).toLocaleString('en-US')} ${order.currency||'دينار'}`;
-    window.open('https://wa.me/' + WA_NUM + '?text=' + encodeURIComponent(msg), '_blank');
-}
-
-// ── فلتر ──
-function filterOrders(f, btn) {
-    currentFilter = f;
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    renderOrders();
-}
-
-// ── تهيئة عند الدخول (استدعاء بعد checkPass) ──
-const _origRenderList = typeof renderList !== 'undefined' ? renderList : ()=>{};
-
-// ════════════════════════════════════════
-//  قائمة الزبائن
-// ════════════════════════════════════════
-function renderCustomers() {
-    const orders = loadOrders();
-    const custMap = {};
-    const deletedPhones = new Set(tryParseAdmin('diraz_deleted_customers', []).map(phone => String(phone).replace(/\D/g, '')));
-    loadRegisteredCustomers().forEach(customer => {
-        const phone = customer.phone || '—';
-        const phoneKey = String(phone).replace(/\D/g, '');
-        if (!phoneKey || deletedPhones.has(phoneKey)) return;
-        custMap[phoneKey] = { name:customer.name || '—', phone, address:customer.address || '—', province:customer.province || '—', area:customer.area || '—', count:0 };
-    });
-    orders.forEach(order => {
-        const phone = order.customer?.phone || '—';
-        const phoneKey = String(phone).replace(/\D/g, '');
-        if (!phoneKey) return;
-        const name  = order.customer?.name  || '—';
-        const address = order.customer?.address || '—';
-        const province = order.customer?.province || '—';
-        const area = order.customer?.area || '—';
-        if (!custMap[phoneKey]) custMap[phoneKey] = { name, phone, address, province, area, count: 0 };
-        else {
-            if (custMap[phoneKey].address === '—' && address !== '—') custMap[phoneKey].address = address;
-            if (custMap[phoneKey].province === '—' && province !== '—') custMap[phoneKey].province = province;
-            if (custMap[phoneKey].area === '—' && area !== '—') custMap[phoneKey].area = area;
-        }
-        custMap[phoneKey].count++;
-    });
-
-    const customers = Object.values(custMap);
-    const listEl    = document.getElementById('custList');
-    const countEl   = document.getElementById('custCount');
-    if (countEl) countEl.textContent = customers.length;
-    if (!listEl) return;
-
-    if (!customers.length) {
-        listEl.innerHTML = '<div class="no-custs">📭 لا يوجد زبائن بعد</div>';
-        return;
-    }
-
-    listEl.innerHTML = customers.map((c, i) => `
-        <div class="cust-item">
-            <div class="cust-num">${i + 1}</div>
-            <div class="cust-info">
-                <div class="cust-name">👤 ${c.name}</div>
-                <div class="cust-phone">📱 ${c.phone}</div>
-                <details class="cust-details">
-                    <summary>عرض بيانات العنوان</summary>
-                    <div>المحافظة: ${c.province}</div>
-                    <div>المنطقة: ${c.area === 'district' ? 'داخل المحافظة - قضاء/ناحية' : c.area === 'center' ? 'داخل المحافظة - مركز المحافظة' : c.area}</div>
-                    <div>العنوان: ${c.address}</div>
-                </details>
-            </div>
-            <div class="cust-orders-count">${c.count} ${c.count === 1 ? 'طلب' : 'طلبات'}</div>
-            <button type="button" class="cust-delete" data-phone="${String(c.phone).replace(/"/g, '&quot;')}">🗑️ حذف الحساب</button>
-        </div>
-    `).join('');
-    listEl.querySelectorAll('.cust-delete').forEach(button => {
-        button.addEventListener('click', () => deleteCustomer(button.dataset.phone || ''));
-    });
-}
-
-function deleteCustomer(phone) {
-    phone = String(phone || '').replace(/\D/g, '');
-    if (!phone || phone === '—') return;
-    if (!confirm('سيتم حذف حساب هذا الزبون من قائمة الحسابات. ستبقى طلباته السابقة محفوظة. هل تريد المتابعة؟')) return;
-    saveBeforeDelete();
-    const customers = loadRegisteredCustomers().filter(customer => String(customer.phone || '').replace(/\D/g, '') !== phone);
-    localStorage.setItem('diraz_customers', JSON.stringify(customers));
-    const deletedPhones = new Set(tryParseAdmin(DELETED_CUSTOMERS_KEY, []).map(value => String(value).replace(/\D/g, '')));
-    deletedPhones.add(phone);
-    localStorage.setItem(DELETED_CUSTOMERS_KEY, JSON.stringify([...deletedPhones]));
-    const currentCustomer = tryParseAdmin('diraz_customer', null);
-    if (currentCustomer?.phone === phone) localStorage.removeItem('diraz_customer');
-    renderStats(); renderCustomers();
-    showToast('✅ تم حذف حساب الزبون');
-    if (window.DirazCloud) {
-        DirazCloud.remove('customers', 'phone=eq.' + encodeURIComponent(phone))
-            .catch(() => showToast('⚠️ تم الحذف من هذا الجهاز، وتعذر تحديث السحابة'));
-        DirazCloud.upsert('deleted_customers', [{phone, deleted_at:new Date().toISOString()}]).catch(()=>{});
-    }
-}
-
-function loadRegisteredCustomers() {
-    let customers=[];
-    try { customers=JSON.parse(localStorage.getItem('diraz_customers') || '[]'); } catch(e) {}
-    const currentCustomer=tryParseAdmin('diraz_customer',null);
-    if(currentCustomer?.phone && !customers.some(customer => customer.phone === currentCustomer.phone)) customers.unshift(currentCustomer);
-    return customers;
-}
-function tryParseAdmin(key, fallback) {
-    try { const raw=localStorage.getItem(key); return raw ? JSON.parse(raw) : fallback; } catch(e) { return fallback; }
-}
-
-// ════════════════════════════════════════
-//  أكواد الخصم
-// ════════════════════════════════════════
-const COUPONS_KEY = 'diraz_coupons';
-
-function loadCoupons() {
-    try { return JSON.parse(localStorage.getItem(COUPONS_KEY) || '[]'); }
-    catch(e) { return []; }
-}
-function saveCoupons(arr) {
-    localStorage.setItem(COUPONS_KEY, JSON.stringify(arr));
-    arr.forEach(coupon => DirazCloud.upsert('coupons', [{code:coupon.code, data:coupon, total_uses:Number(coupon.totalUses)||0, updated_at:new Date().toISOString()}]).catch(()=>{}));
-    saveAutomaticBackup();
-}
-
-function reviveCouponCode(code) {
-    const deletedCoupons = new Set(tryParseAdmin(DELETED_COUPONS_KEY, []));
-    deletedCoupons.delete(code);
-    localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCoupons]));
-    if (window.DirazCloud) DirazCloud.remove('deleted_coupons', 'code=eq.' + encodeURIComponent(code)).catch(()=>{});
-}
-
-function addCoupon() {
-    const code    = (document.getElementById('cp_code').value || '').trim().toUpperCase().replace(/\s+/g,'').replace(/[^A-Z0-9\u0600-\u06FF\u0660-\u0669]/g,'');
-    const type    = document.getElementById('cp_type').value;
-    const value   = parseFloat(document.getElementById('cp_value').value   || '0');
-    const maxUses = parseInt(document.getElementById('cp_maxUses').value || '1') || 1;
-    const usagePolicy = document.getElementById('cp_usagePolicy').value;
-
-    if (!code)  { showToast('❗ أدخل اسم الكود'); return; }
-    if (!value) { showToast('❗ أدخل قيمة الخصم'); return; }
-    if (type === 'percent' && (value <= 0 || value > 100)) { showToast('❗ النسبة يجب أن تكون بين 1 و100'); return; }
-
-    const coupons = loadCoupons();
-    if (coupons.find(c => c.code === code)) { showToast('❗ هذا الكود موجود مسبقاً'); return; }
-
-    reviveCouponCode(code);
-    coupons.unshift({ code, type, value, maxUses, usagePolicy, active:true, totalUses:0, createdAt:new Date().toISOString() });
-    saveCoupons(coupons);
-    renderCoupons();
-    document.getElementById('cp_code').value = '';
-    document.getElementById('cp_value').value = '';
-    document.getElementById('cp_maxUses').value = '1';
-    document.getElementById('cp_usagePolicy').value = 'once';
-    showToast('✅ تم إنشاء كود: ' + code);
-}
-
-function toggleCouponActive(idx) {
-    const coupons = loadCoupons();
-    if (!coupons[idx]) return;
-    coupons[idx].active = !coupons[idx].active;
-    saveCoupons(coupons);
-    renderCoupons();
-    showToast(coupons[idx].active ? '✅ الكود مفعّل' : '⏸️ الكود متوقف');
-}
-
-function deleteCoupon(idx) {
-    if (!confirm('هل أنت متأكد من حذف هذا الكود؟')) return;
-    saveBeforeDelete();
-    const coupons = loadCoupons();
-    const [removedCoupon] = coupons.splice(idx, 1);
-    saveCoupons(coupons);
-    renderCoupons();
-    showToast('🗑️ تم حذف الكود');
-    if (removedCoupon) {
-        const deletedCoupons = new Set(tryParseAdmin(DELETED_COUPONS_KEY, []));
-        deletedCoupons.add(removedCoupon.code);
-        localStorage.setItem(DELETED_COUPONS_KEY, JSON.stringify([...deletedCoupons]));
-        if (window.DirazCloud) {
-            DirazCloud.remove('coupons', 'code=eq.' + encodeURIComponent(removedCoupon.code))
-                .catch(() => showToast('⚠️ حُذف الكود من هذا الجهاز، وتعذر حذفه من السحابة'));
-            DirazCloud.upsert('deleted_coupons', [{code:removedCoupon.code, deleted_at:new Date().toISOString()}]).catch(()=>{});
-        }
-    }
-}
-
-function renderCoupons() {
-    const coupons = loadCoupons();
-    const el = document.getElementById('couponsList');
-    if (!el) return;
-
-    if (!coupons.length) {
-        el.innerHTML = '<div class="no-orders">🏷️ لا توجد أكواد خصم بعد</div>';
-        return;
-    }
-
-    el.innerHTML = coupons.map((c, i) => {
-        const valTxt = c.type === 'percent' ? c.value + '%' : c.value.toLocaleString('en-US') + ' دينار';
-        const usePct = Math.min(c.totalUses / Math.max(c.maxUses,1) * 100, 100).toFixed(0);
-        return `
-        <div class="coupon-item ${!c.active ? 'coupon-inactive' : ''}">
-            <div class="coupon-code-big">${c.code}</div>
-            <div class="coupon-meta">
-                <strong>خصم ${valTxt}</strong><br>
-                إجمالي الاستخدام: ${c.maxUses} مرة &nbsp;•&nbsp; استُخدم ${c.totalUses} مرة<br>
-                ${c.usagePolicy === 'multiple' ? 'للزبون نفسه: عدة مرات' : 'لكل زبون: مرة واحدة'}
-                <div class="uses-bar-wrap">
-                    <div class="uses-bar"><div class="uses-fill" style="width:${usePct}%"></div></div>
-                </div>
-            </div>
-            <div class="coupon-actions">
-                <button class="status-badge ${c.active ? 'status-delivered' : 'status-pending'}"
-                        onclick="toggleCouponActive(${i})">
-                    ${c.active ? '🟢 فعال' : '🔴 متوقف'}
-                </button>
-                <button class="btn-del-order" onclick="deleteCoupon(${i})">🗑️</button>
-            </div>
-        </div>`;
-    }).join('');
-}
-
-// ════════════════════════════════════════
-//  تشغيل / إيقاف الموقع
-// ════════════════════════════════════════
-function initSiteToggle(){
-    const status = localStorage.getItem('diraz_site_status') || 'open';
-    const isOpen = status !== 'closed';
-    const tog = document.getElementById('siteToggle');
-    if(tog) tog.checked = isOpen;
-    updateStatusBar(isOpen);
-}
 
 function toggleSite(){
     const tog = document.getElementById('siteToggle');
@@ -1628,6 +853,62 @@ function updateStatusBar(isOpen){
         title.textContent = '🔴 الموقع مغلق';
         desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
         label.textContent = 'إيقاف';
+    }
+}
+
+// ════════════════════════════════════════
+//  تشغيل / إيقاف الموقع (config.json)
+// ════════════════════════════════════════
+function initSiteToggle(){
+    fetch('config.json?_='+Date.now(),{cache:'no-store'})
+      .then(r=>r.json())
+      .then(function(cfg){
+        const isOpen = cfg.open !== false && cfg.open !== 'false';
+        const tog = document.getElementById('siteToggle');
+        if(tog) tog.checked = isOpen;
+        updateStatusBar(isOpen);
+      })
+      .catch(function(){ updateStatusBar(true); });
+}
+
+function toggleSite(){
+    const tog    = document.getElementById('siteToggle');
+    const isOpen = tog ? tog.checked : true;
+    updateStatusBar(isOpen);
+    // اعرض تعليمات التغيير على GitHub
+    const instr  = document.getElementById('githubInstructions');
+    const action = isOpen ? 'فتح' : 'إغلاق';
+    const value  = isOpen ? 'true' : 'false';
+    if(instr){
+        instr.style.display='block';
+        instr.innerHTML = `
+        <div style="margin-top:14px;background:rgba(255,255,255,0.2);border-radius:14px;padding:16px;font-size:.88rem;color:white;line-height:1.8">
+            <strong>📋 خطوات ${action} الموقع على GitHub:</strong><br>
+            1. روح لـ GitHub repo → اضغط على <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">config.json</code><br>
+            2. اضغط ✏️ (تعديل)<br>
+            3. غيّر القيمة إلى: <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">{"open": ${value}}</code><br>
+            4. اضغط <strong>Commit changes</strong><br>
+            ✅ الموقع راح ي${isOpen ? 'نفتح' : 'نغلق'} خلال دقيقة لكل الزبائن
+        </div>`;
+    }
+}
+
+function updateStatusBar(isOpen){
+    const bar   = document.getElementById('siteStatusBar');
+    const title = document.getElementById('statusTitle');
+    const desc  = document.getElementById('statusDesc');
+    const label = document.getElementById('toggleLabel');
+    if(!bar) return;
+    if(isOpen){
+        bar.className  = 'site-status-bar on';
+        if(title) title.textContent = '🟢 الموقع يعمل الآن';
+        if(desc)  desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
+        if(label) label.textContent = 'تشغيل';
+    } else {
+        bar.className  = 'site-status-bar off';
+        if(title) title.textContent = '🔴 الموقع مغلق';
+        if(desc)  desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
+        if(label) label.textContent = 'إيقاف';
     }
 }
 </script>

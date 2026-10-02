@@ -1,6 +1,26 @@
 ﻿<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<script>
+(function(){
+  // شاشة تحميل مؤقتة
+  var ov=document.createElement('div');
+  ov.id='siteCheckOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:#f4a7be;z-index:99999;display:flex;align-items:center;justify-content:center';
+  ov.innerHTML='<div style="font-size:2.5rem;animation:spin 1.5s linear infinite">🌸</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
+  document.documentElement.appendChild(ov);
+
+  fetch('config.json?_='+Date.now(),{cache:'no-store'})
+    .then(function(r){return r.json();})
+    .then(function(cfg){
+      if(cfg.open===false||cfg.open==='false'){
+        window.location.replace('maintenance.html');
+      } else { ov.remove(); }
+    })
+    .catch(function(){ ov.remove(); }); // لو فشل الفحص: اعرض الموقع
+})();
+</script>
+
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
