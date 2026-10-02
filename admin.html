@@ -1,915 +1,539 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-    <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="robots" content="noindex,nofollow">
-    <meta name="googlebot" content="noindex,nofollow">
-    <title>لوحة التحكم | ديراز</title>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
-    <style>
-        :root { --pink:#f4a7be; --pink-dark:#e07898; --pink-deep:#c45a7a; --pink-light:#fce4ef; }
-        *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-        body {
-            font-family:'Cairo',sans-serif; direction:rtl;
-            background-color:var(--pink);
-            background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3C/svg%3E");
-            background-repeat:repeat; background-size:120px 60px; min-height:100vh;
-        }
-
-        /* ══ شاشة كلمة السر ══ */
-        #lockScreen {
-            position:fixed; inset:0; z-index:9999;
-            background:rgba(196,90,122,0.96); backdrop-filter:blur(20px);
-            display:flex; align-items:center; justify-content:center;
-        }
-        .lock-box {
-            background:rgba(255,255,255,0.18); border:1.5px solid rgba(255,255,255,0.45);
-            border-radius:24px; padding:50px 40px; text-align:center;
-            max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.2);
-        }
-        .lock-icon { font-size:3rem; margin-bottom:14px; }
-        .lock-box h2 { color:white; font-size:1.5rem; font-weight:900; margin-bottom:6px; }
-        .lock-box p  { color:rgba(255,255,255,0.8); font-size:0.9rem; margin-bottom:28px; }
-        .lock-input {
-            width:100%; padding:14px 18px; border-radius:50px;
-            border:2px solid rgba(255,255,255,0.5); background:rgba(255,255,255,0.2);
-            color:white; font-family:'Cairo',sans-serif; font-size:1rem;
-            text-align:center; letter-spacing:3px; outline:none; margin-bottom:14px;
-        }
-        .lock-input::placeholder { color:rgba(255,255,255,0.6); letter-spacing:1px; }
-        .lock-input:focus { border-color:white; background:rgba(255,255,255,0.3); }
-        .lock-btn {
-            width:100%; padding:14px; border-radius:50px; border:none;
-            background:white; color:var(--pink-deep);
-            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:900;
-            cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
-            box-shadow:0 5px 20px rgba(255,255,255,0.3);
-        }
-        .lock-btn:hover { transform:translateY(-3px); }
-        .lock-error { color:#ffd0d0; font-size:0.85rem; margin-top:10px; display:none; }
-
-        /* ══ Admin Panel ══ */
-        #adminPanel { display:none; padding-bottom:60px; }
-        header {
-            position:sticky; top:0; z-index:100;
-            display:flex; align-items:center; justify-content:space-between;
-            padding:12px 24px;
-            background:rgba(244,150,185,0.9); backdrop-filter:blur(14px);
-            border-bottom:1px solid rgba(255,255,255,0.35);
-            box-shadow:0 2px 20px rgba(196,90,122,0.2);
-        }
-        .logo { width:46px; height:46px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,0.7); }
-        .header-title { color:white; font-size:1rem; font-weight:900; }
-        .logout-btn {
-            background:white; color:var(--pink-deep); border:none;
-            padding:8px 18px; border-radius:50px;
-            font-family:'Cairo',sans-serif; font-size:0.85rem; font-weight:700;
-            cursor:pointer; transition:transform 0.2s;
-        }
-        .logout-btn:hover { transform:translateY(-2px); }
-
-        main { max-width:900px; margin:0 auto; padding:40px 20px; }
-        .section-card {
-            background:rgba(255,255,255,0.25); backdrop-filter:blur(18px);
-            border:1.5px solid rgba(255,255,255,0.5);
-            border-radius:22px; padding:30px; margin-bottom:28px;
-        }
-        .section-card h2 {
-            color:white; font-size:1.3rem; font-weight:900;
-            margin-bottom:22px; padding-bottom:12px;
-            border-bottom:1px solid rgba(255,255,255,0.3);
-        }
-
-        /* ══ Form ══ */
-        .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-        .form-group { display:flex; flex-direction:column; gap:6px; }
-        .form-group.full { grid-column:1/-1; }
-        label { color:rgba(255,255,255,0.9); font-size:0.85rem; font-weight:700; }
-        input[type=text], input[type=number], select, textarea {
-            padding:11px 16px; border-radius:12px;
-            border:1.5px solid rgba(255,255,255,0.4);
-            background:rgba(255,255,255,0.2); color:white;
-            font-family:'Cairo',sans-serif; font-size:0.95rem; outline:none;
-            transition:border 0.2s;
-        }
-        input::placeholder, textarea::placeholder { color:rgba(255,255,255,0.55); }
-        input:focus, select:focus, textarea:focus { border-color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.28); }
-        select option { background:#c45a7a; color:white; }
-        textarea { resize:vertical; min-height:80px; }
-
-        /* ══ File Upload ══ */
-        .file-upload-area {
-            border:2px dashed rgba(255,255,255,0.5); border-radius:14px;
-            padding:22px; text-align:center; cursor:pointer;
-            transition:all 0.25s; position:relative; background:rgba(255,255,255,0.1);
-        }
-        .file-upload-area:hover, .file-upload-area.dragover {
-            border-color:white; background:rgba(255,255,255,0.22);
-        }
-        .file-upload-area input[type=file] {
-            position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%;
-        }
-        .upload-icon { font-size:2rem; margin-bottom:8px; }
-        .upload-text { color:rgba(255,255,255,0.9); font-size:0.9rem; font-weight:700; }
-        .upload-sub  { color:rgba(255,255,255,0.65); font-size:0.78rem; margin-top:4px; }
-
-        /* معاينة الصورة */
-        .img-preview-wrap {
-            margin-top:14px; display:none; align-items:center; gap:14px;
-            background:rgba(255,255,255,0.15); border-radius:12px; padding:12px;
-        }
-        .img-preview-wrap.visible { display:flex; }
-        #imgPreviewBig {
-            width:80px; height:80px; border-radius:10px; object-fit:cover;
-            border:2px solid rgba(255,255,255,0.6); flex-shrink:0;
-        }
-        .img-preview-info { flex:1; color:white; font-size:0.85rem; }
-        .img-preview-info strong { display:block; margin-bottom:4px; }
-        .img-preview-info span { color:rgba(255,255,255,0.7); font-size:0.78rem; }
-        .btn-remove-img {
-            background:rgba(255,80,80,0.35); border:1px solid rgba(255,100,100,0.5);
-            color:white; padding:6px 14px; border-radius:50px; font-size:0.78rem;
-            font-family:'Cairo',sans-serif; cursor:pointer; font-weight:700;
-            transition:background 0.2s;
-        }
-        .btn-remove-img:hover { background:rgba(255,80,80,0.55); }
-
-        /* حجم التخزين */
-        .storage-bar-wrap { margin-top:14px; }
-        .storage-label { color:rgba(255,255,255,0.8); font-size:0.8rem; margin-bottom:5px; }
-        .storage-bar { height:6px; border-radius:3px; background:rgba(255,255,255,0.2); overflow:hidden; }
-        .storage-fill { height:100%; border-radius:3px; background:white; transition:width 0.4s; }
-
-        .form-actions { display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
-        .btn-save {
-            flex:1; padding:13px; border-radius:50px; border:none;
-            background:white; color:var(--pink-deep);
-            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:900;
-            cursor:pointer; transition:transform 0.2s, box-shadow 0.2s;
-            box-shadow:0 4px 16px rgba(255,255,255,0.3);
-        }
-        .btn-save:hover { transform:translateY(-3px); box-shadow:0 8px 25px rgba(255,255,255,0.4); }
-        .btn-cancel {
-            padding:13px 28px; border-radius:50px;
-            border:2px solid rgba(255,255,255,0.6);
-            background:transparent; color:white;
-            font-family:'Cairo',sans-serif; font-size:0.95rem; font-weight:700;
-            cursor:pointer; transition:all 0.2s; display:none;
-        }
-        .btn-cancel:hover { background:rgba(255,255,255,0.15); }
-
-        /* ══ قائمة العطور ══ */
-        .perfume-list { display:flex; flex-direction:column; gap:12px; }
-        .perfume-item {
-            display:flex; align-items:center; justify-content:space-between;
-            background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4);
-            border-radius:14px; padding:14px 18px; gap:12px; transition:background 0.2s;
-        }
-        .perfume-item:hover { background:rgba(255,255,255,0.3); }
-        .item-thumb {
-            width:58px; height:58px; border-radius:10px; object-fit:cover;
-            border:2px solid rgba(255,255,255,0.5); flex-shrink:0; background:rgba(255,255,255,0.1);
-            display:flex; align-items:center; justify-content:center; font-size:1.4rem;
-        }
-        .item-thumb img { width:100%; height:100%; object-fit:cover; border-radius:8px; }
-        .perfume-info { flex:1; }
-        .perfume-info .pname { color:white; font-weight:900; font-size:1rem; }
-        .perfume-info .pmeta { color:rgba(255,255,255,0.75); font-size:0.82rem; margin-top:3px; }
-        .perfume-badge { display:inline-block; margin-top:6px; padding:3px 10px; border-radius:20px; color:white; font-size:.72rem; font-weight:800; }
-        .perfume-badge.soldout { background:#e53935; }
-        .perfume-badge.bestseller { background:#22a447; }
-        .perfume-badge.limited { background:#1976d2; }
-        .item-actions { display:flex; gap:8px; flex-shrink:0; }
-        .btn-edit {
-            padding:8px 18px; border-radius:50px; border:none;
-            background:white; color:var(--pink-deep);
-            font-family:'Cairo',sans-serif; font-size:0.82rem; font-weight:700;
-            cursor:pointer; transition:transform 0.2s;
-        }
-        .btn-edit:hover { transform:translateY(-2px); }
-        .btn-delete {
-            padding:8px 16px; border-radius:50px;
-            border:2px solid rgba(255,255,255,0.5);
-            background:transparent; color:white;
-            font-family:'Cairo',sans-serif; font-size:0.82rem; font-weight:700;
-            cursor:pointer; transition:all 0.2s;
-        }
-        .btn-delete:hover { background:rgba(255,0,0,0.25); }
-        .btn-move {
-            width:34px; height:34px; border-radius:50%;
-            border:1.5px solid rgba(255,255,255,0.6);
-            background:rgba(255,255,255,0.16); color:white;
-            font-family:'Cairo',sans-serif; font-size:1rem; font-weight:900;
-            cursor:pointer; transition:all 0.2s;
-        }
-        .btn-move:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
-        .btn-move:disabled { opacity:0.3; cursor:not-allowed; transform:none; }
-        .empty-msg { text-align:center; color:rgba(255,255,255,0.7); padding:30px 0; }
-
-        #toast {
-            position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px);
-            background:rgba(30,30,30,0.92); color:white;
-            padding:12px 30px; border-radius:50px; font-size:0.9rem; font-weight:700;
-            z-index:9999; transition:transform 0.4s ease; pointer-events:none;
-        }
-        #toast.show { transform:translateX(-50%) translateY(0); }
-
-        @media(max-width:600px){
-            .form-grid{grid-template-columns:1fr}
-            .perfume-item{flex-direction:column;align-items:flex-start}
-        }
-    
-        /* ══ إحصائيات ══ */
-        .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:14px; margin-bottom:28px; }
-        .stat-card {
-            background:rgba(255,255,255,0.25); border:1.5px solid rgba(255,255,255,0.5);
-            border-radius:18px; padding:22px 18px; text-align:center;
-        }
-        .stat-icon  { font-size:2rem; margin-bottom:8px; }
-        .stat-num   { font-size:2rem; font-weight:900; color:white; line-height:1; }
-        .stat-label { color:rgba(255,255,255,0.75); font-size:0.83rem; margin-top:5px; }
-        .login-list { display:flex; flex-direction:column; gap:10px; }
-        .login-item { display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.35); border-radius:12px; padding:11px 14px; color:white; }
-        .login-num { width:30px; height:30px; border-radius:50%; background:rgba(255,255,255,.25); display:flex; align-items:center; justify-content:center; font-weight:900; flex-shrink:0; }
-        .login-info { flex:1; min-width:0; }
-        .login-device { font-weight:800; font-size:.9rem; }
-        .login-meta { color:rgba(255,255,255,.7); font-size:.78rem; margin-top:3px; }
-        .no-logins { text-align:center; color:rgba(255,255,255,.65); padding:20px 0; }
-
-        /* ══ فلتر الطلبات ══ */
-        .filter-bar { display:flex; gap:10px; margin-bottom:18px; flex-wrap:wrap; }
-        .filter-btn {
-            padding:8px 20px; border-radius:50px; border:1.5px solid rgba(255,255,255,0.5);
-            background:transparent; color:white;
-            font-family:'Cairo',sans-serif; font-size:.85rem; font-weight:700;
-            cursor:pointer; transition:all .2s;
-        }
-        .filter-btn.active, .filter-btn:hover { background:white; color:#c45a7a; }
-
-        /* ══ بطاقة طلب ══ */
-        .order-card {
-            background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.4);
-            border-radius:16px; padding:18px; margin-bottom:12px;
-            transition:background .2s;
-        }
-        .order-card:hover { background:rgba(255,255,255,0.28); }
-        .order-top {
-            display:flex; align-items:center; justify-content:space-between;
-            margin-bottom:12px; flex-wrap:wrap; gap:8px;
-        }
-        .order-id    { color:rgba(255,255,255,0.55); font-size:.78rem; }
-        .order-cust  { color:white; font-weight:900; font-size:1rem; }
-        .order-phone { color:rgba(255,255,255,0.75); font-size:.85rem; }
-        .order-address { color:rgba(255,255,255,0.75); font-size:.85rem; }
-        .order-date  { color:rgba(255,255,255,0.6); font-size:.78rem; }
-        .status-badge {
-            padding:5px 14px; border-radius:20px; font-size:.78rem; font-weight:800;
-            border:none; cursor:pointer; font-family:'Cairo',sans-serif; transition:all .2s;
-        }
-        .status-pending   { background:rgba(255,193,7,0.35); color:#ffe566; border:1px solid rgba(255,193,7,0.5); }
-        .status-delivered { background:rgba(37,211,102,0.3); color:#5fffaa; border:1px solid rgba(37,211,102,0.5); }
-        .order-items-list { margin:10px 0; padding:10px; background:rgba(0,0,0,0.1); border-radius:10px; }
-        .order-item-row   { color:rgba(255,255,255,0.85); font-size:.85rem; padding:3px 0; }
-        .order-total-row  {
-            display:flex; justify-content:space-between; align-items:center;
-            padding-top:10px; border-top:1px solid rgba(255,255,255,0.2);
-            margin-top:8px;
-        }
-        .order-total-label { color:rgba(255,255,255,0.7); font-size:.85rem; }
-        .order-total-val   { color:white; font-weight:900; font-size:1.1rem; }
-        .order-actions { display:flex; gap:8px; margin-top:12px; flex-wrap:wrap; }
-        .btn-deliver {
-            padding:8px 18px; border-radius:50px; border:none;
-            background:rgba(37,211,102,0.3); color:#5fffaa;
-            border:1px solid rgba(37,211,102,0.5);
-            font-family:'Cairo',sans-serif; font-size:.82rem; font-weight:700;
-            cursor:pointer; transition:all .2s;
-        }
-        .btn-deliver:hover { background:rgba(37,211,102,0.5); }
-        .btn-del-order {
-            padding:8px 16px; border-radius:50px;
-            border:1px solid rgba(255,100,100,0.4);
-            background:rgba(255,80,80,0.15); color:rgba(255,180,180,.9);
-            font-family:'Cairo',sans-serif; font-size:.82rem; font-weight:700;
-            cursor:pointer; transition:all .2s;
-        }
-        .btn-del-order:hover { background:rgba(255,80,80,0.3); }
-        .btn-wa-resend {
-            padding:8px 16px; border-radius:50px;
-            border:1px solid rgba(37,211,102,0.4);
-            background:rgba(37,211,102,0.15); color:rgba(100,255,150,.9);
-            font-family:'Cairo',sans-serif; font-size:.82rem; font-weight:700;
-            cursor:pointer; transition:all .2s;
-        }
-        .btn-wa-resend:hover { background:rgba(37,211,102,0.3); }
-        .no-orders { text-align:center; color:rgba(255,255,255,0.65); padding:40px 0; }
-        
-        /* ══ قسم الزبائن ══ */
-        .cust-grid { display:flex; flex-direction:column; gap:10px; }
-        .cust-item {
-            display:flex; align-items:center; gap:14px;
-            background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.38);
-            border-radius:14px; padding:13px 16px; transition:background .2s;
-        }
-        .cust-item:hover { background:rgba(255,255,255,0.28); }
-        .cust-num {
-            width:34px; height:34px; border-radius:50%; flex-shrink:0;
-            background:rgba(255,255,255,0.3); color:white;
-            font-weight:900; font-size:.95rem;
-            display:flex; align-items:center; justify-content:center;
-        }
-        .cust-info { flex:1; }
-        .cust-name  { color:white; font-weight:800; font-size:.97rem; }
-        .cust-phone { color:rgba(255,255,255,0.7); font-size:.83rem; margin-top:2px; }
-        .cust-address { color:rgba(255,255,255,0.7); font-size:.83rem; margin-top:2px; }
-        .cust-details { margin-top:8px; color:rgba(255,255,255,0.82); font-size:.82rem; line-height:1.8; }
-        .cust-details summary { cursor:pointer; color:white; font-weight:700; }
-        .cust-delete { padding:7px 13px; border-radius:50px; border:1px solid rgba(255,100,100,.45); background:rgba(255,80,80,.16); color:#ffd0d0; font-family:'Cairo',sans-serif; font-size:.76rem; font-weight:700; cursor:pointer; }
-        .cust-delete:hover { background:rgba(255,80,80,.3); }
-        .cust-orders-count {
-            background:rgba(255,255,255,0.2); color:white;
-            padding:4px 12px; border-radius:20px; font-size:.78rem; font-weight:700;
-            white-space:nowrap;
-        }
-        .no-custs { text-align:center; color:rgba(255,255,255,0.6); padding:30px 0; }
-
-        @media (max-width: 900px) {
-            main { padding: 24px 16px 40px; }
-            .form-grid, .coupon-form-grid { grid-template-columns: 1fr; }
-            .stats-grid { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
-            .order-top { align-items: flex-start; }
-            .order-card { padding: 16px 14px; }
-            .order-actions { flex-direction: column; }
-            .btn-deliver, .btn-del-order, .btn-wa-resend { width: 100%; }
-            .section-card { padding: 20px 16px; }
-            .backup-actions { flex-direction: column; }
-        }
-
-        @media (max-width: 640px) {
-            header {
-                padding: 10px 12px;
-                gap: 8px;
-            }
-            .logo { width: 42px; height: 42px; }
-            .header-title { font-size: .82rem; }
-            .logout-btn { padding: 8px 12px; font-size: .75rem; }
-
-            .stats-grid { grid-template-columns: 1fr 1fr; }
-            .stat-num { font-size: 1.5rem; }
-            .stat-label { font-size: .75rem; }
-
-            .filter-bar { display: grid; grid-template-columns: 1fr; }
-            .filter-btn { width: 100%; }
-            .order-total-row { flex-direction: column; align-items: flex-start; gap: 6px; }
-            .cust-item { flex-wrap: wrap; }
-            .cust-orders-count { width: 100%; text-align: center; }
-            .coupon-item { flex-direction: column; align-items: flex-start; }
-            .coupon-meta { padding: 0; width: 100%; }
-            .coupon-actions { width: 100%; }
-            .status-badge, .btn-deliver, .btn-del-order, .btn-wa-resend { width: 100%; }
-        }
-
-        @media (max-width: 480px) {
-            .lock-box { padding: 30px 18px; }
-            .lock-box h2 { font-size: 1.25rem; }
-            .lock-input, .lock-btn { font-size: .9rem; }
-            .stats-grid { grid-template-columns: 1fr; }
-            .header-title { font-size: .7rem; }
-            .section-card h2 { font-size: 1.1rem; }
-            .form-group label { font-size: .78rem; }
-            input[type=text], input[type=number], select, textarea { font-size: .88rem; }
-            .btn-save, .backup-btn { font-size: .85rem; }
-        }
-        
-        /* ══ قسم أكواد الخصم ══ */
-        .coupon-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-        .coupon-item {
-            display:flex; align-items:center; justify-content:space-between;
-            flex-wrap:wrap; gap:10px;
-            background:rgba(255,255,255,0.18); border:1px solid rgba(255,255,255,0.38);
-            border-radius:14px; padding:14px 18px; transition:background .2s;
-        }
-        .coupon-item:hover { background:rgba(255,255,255,0.26); }
-        .coupon-inactive { opacity:.5; }
-        .coupon-code-big {
-            font-size:1.15rem; font-weight:900; color:white;
-            letter-spacing:2px; font-family:monospace;
-            background:rgba(255,255,255,0.15); padding:4px 14px;
-            border-radius:8px; border:1px dashed rgba(255,255,255,0.4);
-        }
-        .coupon-meta { color:rgba(255,255,255,0.75); font-size:.83rem; flex:1; padding:0 10px; line-height:1.7; }
-        .coupon-meta strong { color:white; }
-        .coupon-actions { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-        .uses-bar-wrap { margin-top:4px; }
-        .uses-bar { height:5px; border-radius:3px; background:rgba(255,255,255,0.15); overflow:hidden; width:120px; }
-        .uses-fill { height:100%; background:white; border-radius:3px; transition:width .4s; }
-        .backup-actions { display:flex; gap:10px; flex-wrap:wrap; }
-        .backup-btn { flex:1; min-width:180px; padding:12px 18px; border-radius:50px; border:1.5px solid rgba(255,255,255,0.55); background:rgba(255,255,255,0.18); color:white; font-family:'Cairo',sans-serif; font-size:.9rem; font-weight:800; cursor:pointer; transition:all .2s; }
-        .backup-btn:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
-        .backup-note { color:rgba(255,255,255,0.72); font-size:.82rem; margin-top:10px; line-height:1.7; }
-        
-        /* ══ شريط حالة الموقع ══ */
-        .site-status-bar{
-            display:flex;align-items:center;justify-content:space-between;
-            padding:16px 24px;margin:20px 0;
-            border-radius:18px;border:2px solid rgba(255,255,255,0.5);
-            transition:background .4s,border-color .4s;
-        }
-        .site-status-bar.on { background:rgba(37,211,102,0.25); border-color:rgba(37,211,102,0.6); }
-        .site-status-bar.off{ background:rgba(255,80,80,0.2);   border-color:rgba(255,100,100,0.5); }
-        .status-info h3{color:white;font-size:1rem;font-weight:900;margin-bottom:4px}
-        .status-info p {color:rgba(255,255,255,0.75);font-size:.83rem}
-
-        /* Toggle Switch */
-        .toggle-wrap{display:flex;align-items:center;gap:14px;flex-shrink:0}
-        .toggle-label{color:white;font-weight:900;font-size:1rem}
-        .switch{position:relative;display:inline-block;width:62px;height:32px}
-        .switch input{opacity:0;width:0;height:0}
-        .slider-sw{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,0.25);border:1.5px solid rgba(255,255,255,0.45);border-radius:34px;transition:.4s}
-        .slider-sw:before{position:absolute;content:'';height:24px;width:24px;right:3px;bottom:3px;background:white;border-radius:50%;transition:.4s;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
-        input:checked + .slider-sw{background:rgba(37,211,102,0.6);border-color:rgba(37,211,102,0.8)}
-        input:checked + .slider-sw:before{transform:translateX(-30px);background:#25D366}
-        </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة التحكم | ديراز</title>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{--pink:#f4a7be;--pink-deep:#c45a7a}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Cairo',sans-serif;direction:rtl;background-color:var(--pink);
+background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3C/svg%3E");
+background-repeat:repeat;background-size:120px 60px;min-height:100vh}
+/* Lock */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:rgba(196,90,122,0.96);backdrop-filter:blur(20px);display:flex;align-items:center;justify-content:center}
+.lock-box{background:rgba(255,255,255,0.18);border:1.5px solid rgba(255,255,255,0.45);border-radius:24px;padding:50px 40px;text-align:center;max-width:380px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.2)}
+.lock-icon{font-size:3rem;margin-bottom:14px}
+.lock-box h2{color:white;font-size:1.5rem;font-weight:900;margin-bottom:6px}
+.lock-box p{color:rgba(255,255,255,0.8);font-size:.9rem;margin-bottom:28px}
+.lock-input{width:100%;padding:14px 18px;border-radius:50px;border:2px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.2);color:white;font-family:'Cairo',sans-serif;font-size:1rem;text-align:center;letter-spacing:3px;outline:none;margin-bottom:14px}
+.lock-input::placeholder{color:rgba(255,255,255,0.6);letter-spacing:1px}
+.lock-input:focus{border-color:white;background:rgba(255,255,255,0.3)}
+.lock-btn{width:100%;padding:14px;border-radius:50px;border:none;background:white;color:var(--pink-deep);font-family:'Cairo',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;transition:transform .2s;box-shadow:0 5px 20px rgba(255,255,255,0.3)}
+.lock-btn:hover{transform:translateY(-3px)}
+.lock-error{color:#ffd0d0;font-size:.85rem;margin-top:10px;display:none}
+/* Panel */
+#adminPanel{display:none;padding-bottom:60px}
+header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:rgba(244,150,185,0.9);backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,0.35)}
+.logo{width:46px;height:46px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,0.7)}
+.header-title{color:white;font-size:1rem;font-weight:900}
+.logout-btn{background:white;color:var(--pink-deep);border:none;padding:8px 18px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:transform .2s}
+.logout-btn:hover{transform:translateY(-2px)}
+main{max-width:900px;margin:0 auto;padding:30px 20px}
+/* Site Status Bar */
+.site-status-bar{display:flex;align-items:center;justify-content:space-between;padding:18px 24px;border-radius:18px;border:2px solid rgba(255,255,255,0.5);margin-bottom:12px;transition:background .4s,border-color .4s}
+.site-status-bar.on{background:rgba(37,211,102,0.25);border-color:rgba(37,211,102,0.6)}
+.site-status-bar.off{background:rgba(255,80,80,0.2);border-color:rgba(255,100,100,0.5)}
+.status-info h3{color:white;font-size:1rem;font-weight:900;margin-bottom:4px}
+.status-info p{color:rgba(255,255,255,0.75);font-size:.83rem}
+.toggle-wrap{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.toggle-label{color:white;font-weight:900;font-size:1rem}
+.switch{position:relative;display:inline-block;width:62px;height:32px}
+.switch input{opacity:0;width:0;height:0}
+.slider-sw{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,0.25);border:1.5px solid rgba(255,255,255,0.45);border-radius:34px;transition:.4s}
+.slider-sw:before{position:absolute;content:'';height:24px;width:24px;right:3px;bottom:3px;background:white;border-radius:50%;transition:.4s;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+input:checked+.slider-sw{background:rgba(37,211,102,0.6);border-color:rgba(37,211,102,0.8)}
+input:checked+.slider-sw:before{transform:translateX(-30px);background:#25D366}
+.github-instr{display:none;background:rgba(255,255,255,0.15);border-radius:14px;padding:16px 20px;margin-bottom:20px;font-size:.86rem;color:white;line-height:2}
+.github-instr code{background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px}
+/* Section Card */
+.section-card{background:rgba(255,255,255,0.25);backdrop-filter:blur(18px);border:1.5px solid rgba(255,255,255,0.5);border-radius:22px;padding:30px;margin-bottom:28px}
+.section-card h2{color:white;font-size:1.3rem;font-weight:900;margin-bottom:22px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.3)}
+/* Stats */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:28px}
+.stat-card{background:rgba(255,255,255,0.25);border:1.5px solid rgba(255,255,255,0.5);border-radius:18px;padding:22px 18px;text-align:center}
+.stat-icon{font-size:2rem;margin-bottom:8px}
+.stat-num{font-size:2rem;font-weight:900;color:white;line-height:1}
+.stat-label{color:rgba(255,255,255,0.75);font-size:.83rem;margin-top:5px}
+/* Form */
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+label{color:rgba(255,255,255,0.9);font-size:.85rem;font-weight:700}
+input[type=text],input[type=number],select,textarea{padding:11px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.4);background:rgba(255,255,255,0.2);color:white;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none;transition:border .2s}
+input::placeholder,textarea::placeholder{color:rgba(255,255,255,0.55)}
+input:focus,select:focus,textarea:focus{border-color:rgba(255,255,255,0.85);background:rgba(255,255,255,0.28)}
+select option{background:#c45a7a;color:white}
+textarea{resize:vertical;min-height:80px}
+.form-actions{display:flex;gap:12px;margin-top:18px;flex-wrap:wrap}
+.btn-save{flex:1;padding:13px;border-radius:50px;border:none;background:white;color:var(--pink-deep);font-family:'Cairo',sans-serif;font-size:1rem;font-weight:900;cursor:pointer;transition:transform .2s;box-shadow:0 4px 16px rgba(255,255,255,0.3)}
+.btn-save:hover{transform:translateY(-3px)}
+.btn-cancel{padding:13px 28px;border-radius:50px;border:2px solid rgba(255,255,255,0.6);background:transparent;color:white;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:all .2s;display:none}
+.btn-cancel:hover{background:rgba(255,255,255,0.15)}
+/* File Upload */
+.file-upload-area{border:2px dashed rgba(255,255,255,0.5);border-radius:14px;padding:22px;text-align:center;cursor:pointer;transition:all .25s;position:relative;background:rgba(255,255,255,0.1)}
+.file-upload-area:hover{border-color:white;background:rgba(255,255,255,0.22)}
+.file-upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:2rem;margin-bottom:8px}
+.upload-text{color:rgba(255,255,255,.9);font-size:.9rem;font-weight:700}
+.upload-sub{color:rgba(255,255,255,.65);font-size:.78rem;margin-top:4px}
+.img-preview-wrap{margin-top:14px;display:none;align-items:center;gap:14px;background:rgba(255,255,255,0.15);border-radius:12px;padding:12px}
+.img-preview-wrap.visible{display:flex}
+#imgPreviewBig{width:80px;height:80px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,0.6);flex-shrink:0}
+.img-preview-info{flex:1;color:white;font-size:.85rem}
+.img-preview-info strong{display:block;margin-bottom:4px}
+.img-preview-info span{color:rgba(255,255,255,0.7);font-size:.78rem}
+.btn-remove-img{background:rgba(255,80,80,0.35);border:1px solid rgba(255,100,100,0.5);color:white;padding:6px 14px;border-radius:50px;font-size:.78rem;font-family:'Cairo',sans-serif;cursor:pointer;font-weight:700}
+.storage-bar-wrap{margin-top:14px}
+.storage-label{color:rgba(255,255,255,0.8);font-size:.8rem;margin-bottom:5px}
+.storage-bar{height:6px;border-radius:3px;background:rgba(255,255,255,0.2);overflow:hidden}
+.storage-fill{height:100%;border-radius:3px;background:white;transition:width .4s}
+/* Lists */
+.perfume-list,.cust-grid{display:flex;flex-direction:column;gap:12px}
+.perfume-item,.cust-item,.order-card,.coupon-item{background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.4);border-radius:14px;padding:14px 18px;transition:background .2s}
+.perfume-item:hover,.cust-item:hover,.order-card:hover,.coupon-item:hover{background:rgba(255,255,255,0.3)}
+.perfume-item{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.item-thumb{width:58px;height:58px;border-radius:10px;object-fit:cover;border:2px solid rgba(255,255,255,0.5);flex-shrink:0;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;overflow:hidden}
+.item-thumb img{width:100%;height:100%;object-fit:cover}
+.perfume-info .pname{color:white;font-weight:900;font-size:1rem}
+.perfume-info .pmeta{color:rgba(255,255,255,0.75);font-size:.82rem;margin-top:3px}
+.item-actions{display:flex;gap:8px;flex-shrink:0}
+.btn-edit{padding:8px 18px;border-radius:50px;border:none;background:white;color:var(--pink-deep);font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:transform .2s}
+.btn-edit:hover{transform:translateY(-2px)}
+.btn-delete{padding:8px 16px;border-radius:50px;border:2px solid rgba(255,255,255,0.5);background:transparent;color:white;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-delete:hover{background:rgba(255,0,0,0.25)}
+.cust-item{display:flex;align-items:center;gap:14px}
+.cust-num{width:34px;height:34px;border-radius:50%;flex-shrink:0;background:rgba(255,255,255,0.3);color:white;font-weight:900;font-size:.95rem;display:flex;align-items:center;justify-content:center}
+.cust-info{flex:1}
+.cust-name{color:white;font-weight:800;font-size:.97rem}
+.cust-phone{color:rgba(255,255,255,0.7);font-size:.83rem;margin-top:2px}
+.cust-orders-count{background:rgba(255,255,255,0.2);color:white;padding:4px 12px;border-radius:20px;font-size:.78rem;font-weight:700;white-space:nowrap}
+/* Orders */
+.filter-bar{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap}
+.filter-btn{padding:8px 20px;border-radius:50px;border:1.5px solid rgba(255,255,255,0.5);background:transparent;color:white;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s}
+.filter-btn.active,.filter-btn:hover{background:white;color:var(--pink-deep)}
+.order-list{display:flex;flex-direction:column;gap:12px}
+.order-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.order-id{color:rgba(255,255,255,0.55);font-size:.78rem}
+.order-cust{color:white;font-weight:900;font-size:1rem}
+.order-phone,.order-date{color:rgba(255,255,255,0.7);font-size:.83rem}
+.status-badge{padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:800;border:none;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s}
+.status-pending{background:rgba(255,193,7,0.35);color:#ffe566;border:1px solid rgba(255,193,7,0.5)}
+.status-delivered{background:rgba(37,211,102,0.3);color:#5fffaa;border:1px solid rgba(37,211,102,0.5)}
+.order-items-list{margin:10px 0;padding:10px;background:rgba(0,0,0,0.1);border-radius:10px}
+.order-item-row{color:rgba(255,255,255,0.85);font-size:.85rem;padding:3px 0}
+.order-total-row{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,0.2);margin-top:8px}
+.order-total-label{color:rgba(255,255,255,0.7);font-size:.85rem}
+.order-total-val{color:white;font-weight:900;font-size:1.1rem}
+.order-actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.btn-deliver{padding:8px 18px;border-radius:50px;border:1px solid rgba(37,211,102,0.5);background:rgba(37,211,102,0.3);color:#5fffaa;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-deliver:hover{background:rgba(37,211,102,0.5)}
+.btn-del-order{padding:8px 16px;border-radius:50px;border:1px solid rgba(255,100,100,0.4);background:rgba(255,80,80,0.15);color:rgba(255,180,180,.9);font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-del-order:hover{background:rgba(255,80,80,0.3)}
+.btn-wa-resend{padding:8px 16px;border-radius:50px;border:1px solid rgba(37,211,102,0.4);background:rgba(37,211,102,0.15);color:rgba(100,255,150,.9);font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-wa-resend:hover{background:rgba(37,211,102,0.3)}
+/* Coupons */
+.coupon-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.coupon-item{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px}
+.coupon-inactive{opacity:.5}
+.coupon-code-big{font-size:1.15rem;font-weight:900;color:white;letter-spacing:2px;font-family:monospace;background:rgba(255,255,255,0.15);padding:4px 14px;border-radius:8px;border:1px dashed rgba(255,255,255,0.4)}
+.coupon-meta{color:rgba(255,255,255,0.75);font-size:.83rem;flex:1;padding:0 10px;line-height:1.7}
+.coupon-meta strong{color:white}
+.coupon-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.uses-bar{height:5px;border-radius:3px;background:rgba(255,255,255,0.15);overflow:hidden;width:120px;margin-top:4px}
+.uses-fill{height:100%;background:white;border-radius:3px;transition:width .4s}
+/* No items */
+.no-items{text-align:center;color:rgba(255,255,255,0.65);padding:30px 0}
+/* Toast */
+#toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(30,30,30,0.92);color:white;padding:12px 30px;border-radius:50px;font-size:.9rem;font-weight:700;z-index:9999;transition:transform .4s;pointer-events:none}
+#toast.show{transform:translateX(-50%) translateY(0)}
+@media(max-width:600px){.form-grid,.coupon-form-grid{grid-template-columns:1fr}.perfume-item{flex-direction:column;align-items:flex-start}}
+</style>
 </head>
 <body>
 
 <!-- شاشة كلمة السر -->
 <div id="lockScreen">
-    <div class="lock-box">
-        <div class="lock-icon">🔐</div>
-        <h2>لوحة التحكم</h2>
-        <p>ديراز للعطور — الدخول للمشرف فقط</p>
-        <input type="password" id="passInput" class="lock-input" placeholder="كلمة السر"
-               onkeydown="if(event.key==='Enter')checkPass()">
-        <button class="lock-btn" onclick="checkPass()">دخول</button>
-        <div class="lock-error" id="lockError">❌ كلمة السر غلط، حاول مرة ثانية</div>
-    </div>
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <h2>لوحة التحكم</h2>
+    <p>ديراز للعطور — الدخول للمشرف فقط</p>
+    <input type="password" id="passInput" class="lock-input" placeholder="كلمة السر"
+           onkeydown="if(event.key==='Enter')checkPass()">
+    <button class="lock-btn" onclick="checkPass()">دخول</button>
+    <div class="lock-error" id="lockError">❌ كلمة السر غلط، حاول مجدداً</div>
+  </div>
 </div>
 
 <!-- لوحة التحكم -->
 <div id="adminPanel">
-    <!-- ══ شريط حالة الموقع ══ -->
-    <div id="siteStatusBar" class="site-status-bar on" style="max-width:900px;margin:20px auto 0">
-        <div class="status-info">
-            <h3 id="statusTitle">🟢 الموقع يعمل الآن</h3>
-            <p id="statusDesc">الزبائن يستطيعون تصفح الموقع وإرسال الطلبات</p>
-        </div>
-        <div class="toggle-wrap">
-            <span class="toggle-label" id="toggleLabel">تشغيل</span>
-            <label class="switch">
-                <input type="checkbox" id="siteToggle" onchange="toggleSite()" checked>
-                <span class="slider-sw"></span>
-            </label>
-        </div>
+  <header>
+    <img src="images/logo.jpg" alt="Logo" class="logo" onerror="this.style.display='none'">
+    <div class="header-title">⚙️ لوحة التحكم — ديراز للعطور</div>
+    <button class="logout-btn" onclick="logout()">خروج 🚪</button>
+  </header>
+
+  <main>
+
+    <!-- تشغيل / إيقاف الموقع -->
+    <div id="siteStatusBar" class="site-status-bar on">
+      <div class="status-info">
+        <h3 id="statusTitle">🟢 الموقع يعمل الآن</h3>
+        <p  id="statusDesc">الزبائن يستطيعون تصفح الموقع وإرسال الطلبات</p>
+      </div>
+      <div class="toggle-wrap">
+        <span class="toggle-label" id="toggleLabel">تشغيل</span>
+        <label class="switch">
+          <input type="checkbox" id="siteToggle" onchange="toggleSite()" checked>
+          <span class="slider-sw"></span>
+        </label>
+      </div>
     </div>
-    <div id='githubInstructions' style='max-width:900px;margin:0 auto;display:none;padding:0 0 10px'></div>
+    <div id="githubInstr" class="github-instr"></div>
 
-    <header>
-        <img src="images/logo.jpg" alt="Logo" class="logo">
-        <div class="header-title">⚙️ لوحة التحكم — ديراز للعطور</div>
-        <button class="logout-btn" onclick="logout()">خروج 🚪</button>
-    </header>
+    <!-- إحصائيات -->
+    <div class="stats-grid" id="statsGrid"></div>
 
-    <main>
-        <!-- ══ إحصائيات ══ -->
-        <div class="stats-grid" id="statsGrid"></div>
+    <!-- الطلبات -->
+    <div class="section-card">
+      <h2>📦 إدارة الطلبات</h2>
+      <div class="filter-bar">
+        <button class="filter-btn active" onclick="filterOrders('all',this)">الكل</button>
+        <button class="filter-btn" onclick="filterOrders('pending',this)">🟡 قيد الانتظار</button>
+        <button class="filter-btn" onclick="filterOrders('delivered',this)">🟢 تم التسليم</button>
+      </div>
+      <div class="order-list" id="ordersList"></div>
+    </div>
 
-        <!-- ══ النسخ الاحتياطي ══ -->
-        <div class="section-card">
-            <h2>🕘 سجل دخول لوحة التحكم</h2>
-            <div class="login-list" id="adminLoginList"></div>
+    <!-- الزبائن -->
+    <div class="section-card">
+      <h2>👥 قائمة الزبائن (<span id="custCount">0</span>)</h2>
+      <div class="cust-grid" id="custList"></div>
+    </div>
+
+    <!-- أكواد الخصم -->
+    <div class="section-card">
+      <h2>🏷️ أكواد الخصم</h2>
+      <div class="coupon-form-grid">
+        <div class="form-group"><label>الكود *</label><input type="text" id="cp_code" placeholder="DIRAZ20" style="text-transform:uppercase"></div>
+        <div class="form-group"><label>النوع *</label><select id="cp_type"><option value="percent">نسبة مئوية (%)</option><option value="fixed">مبلغ ثابت (دينار)</option></select></div>
+        <div class="form-group"><label>القيمة *</label><input type="number" id="cp_value" placeholder="20"></div>
+        <div class="form-group"><label>حد الاستخدام / شخص</label><input type="number" id="cp_maxUses" value="1" min="1"></div>
+      </div>
+      <div class="form-actions" style="margin-top:14px"><button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button></div>
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
+    </div>
+
+    <!-- إضافة / تعديل عطر -->
+    <div class="section-card">
+      <h2 id="formTitle">➕ إضافة عطر جديد</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>اسم العطر بالعربي *</label><input type="text" id="f_name" placeholder="ورد الليل"></div>
+        <div class="form-group"><label>الاسم بالإنجليزي</label><input type="text" id="f_nameEn" placeholder="Night Rose"></div>
+        <div class="form-group"><label>النوع</label>
+          <select id="f_type"><option value="نسائي">نسائي</option><option value="رجالي">رجالي</option><option value="للجنسين">للجنسين</option></select>
         </div>
-
-        <!-- ══ النسخ الاحتياطي ══ -->
-        <div class="section-card">
-            <h2>💾 النسخ الاحتياطي</h2>
-            <div class="backup-actions">
-                <button class="backup-btn" onclick="downloadBackup()">⬇️ تنزيل نسخة كاملة</button>
-                <button class="backup-btn" onclick="document.getElementById('backupFile').click()">⬆️ استرجاع نسخة</button>
-                <button class="backup-btn" onclick="restoreLastBackup()">↩️ تراجع عن آخر حذف</button>
-            </div>
-            <input type="file" id="backupFile" accept="application/json,.json" hidden onchange="importBackup(this)">
-            <div class="backup-note">يتم حفظ نسخة تلقائياً قبل الحذف، وتحديثها بعد الإضافة أو التعديل أو تغيير الترتيب. احتفظ بملف النسخة خارج المتصفح.</div>
+        <div class="form-group"><label>الحجم</label><input type="text" id="f_size" placeholder="50ml"></div>
+        <div class="form-group"><label>السعر الحالي</label><input type="number" id="f_price" placeholder="25000"></div>
+        <div class="form-group"><label>السعر القديم (اختياري للخصم)</label><input type="number" id="f_oldPrice" placeholder="35000"></div>
+        <div class="form-group"><label>العملة</label>
+          <select id="f_currency"><option value="دينار">دينار</option><option value="ريال">ريال</option><option value="درهم">درهم</option><option value="دولار">دولار</option></select>
         </div>
-
-        <!-- ══ أكواد الخصم ══ -->
-        <div class="section-card">
-            <h2>🏷️ أكواد الخصم</h2>
-            <div class="coupon-form-grid">
-                <div class="form-group">
-                    <label>الكود * (عربي أو إنجليزي وأرقام)</label>
-                    <input type="text" id="cp_code" placeholder="مثال: DIRAZ20 أو خصم20">
-                </div>
-                <div class="form-group">
-                    <label>نوع الخصم *</label>
-                    <select id="cp_type">
-                        <option value="percent">نسبة مئوية (%)</option>
-                        <option value="fixed">مبلغ ثابت (دينار)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>قيمة الخصم *</label>
-                    <input type="number" id="cp_value" placeholder="مثال: 20">
-                </div>
-                <div class="form-group">
-                    <label>إجمالي عدد استخدامات الكود</label>
-                    <input type="number" id="cp_maxUses" placeholder="1" value="1" min="1">
-                </div>
-                <div class="form-group">
-                    <label>طريقة الاستخدام</label>
-                    <select id="cp_usagePolicy">
-                        <option value="once">مرة واحدة لكل زبون</option>
-                        <option value="multiple">عدة مرات للزبون نفسه</option>
-                    </select>
-                </div>
-            </div>
-            <div class="form-actions" style="margin-top:14px">
-                <button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button>
-            </div>
-            <div style="margin-top:20px; display:flex; flex-direction:column; gap:10px;" id="couponsList"></div>
+        <div class="form-group full">
+          <label>صورة العطر</label>
+          <div class="file-upload-area" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
+            <input type="file" id="f_image" accept="image/*" onchange="handleFile(this)">
+            <div class="upload-icon">🖼️</div>
+            <div class="upload-text">اضغط لاختيار صورة أو اسحبها هنا</div>
+            <div class="upload-sub">JPG · PNG · WEBP — تُضغط وتُحفظ في المتصفح</div>
+          </div>
+          <div class="img-preview-wrap" id="previewWrap">
+            <img id="imgPreviewBig" src="" alt="معاينة">
+            <div class="img-preview-info"><strong id="previewName">صورة</strong><span id="previewSize"></span></div>
+            <button class="btn-remove-img" onclick="removeImage()">✕ إزالة</button>
+          </div>
+          <div class="storage-bar-wrap">
+            <div class="storage-label" id="storageLabel">💾 ...</div>
+            <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
+          </div>
         </div>
+        <div class="form-group full"><label>وصف مختصر</label><textarea id="f_desc" placeholder="رائحة زهرية ناعمة تمتزج مع المسك..."></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-save" onclick="savePerfume()">💾 حفظ العطر</button>
+        <button class="btn-cancel" id="cancelBtn" onclick="resetForm()">إلغاء التعديل</button>
+      </div>
+    </div>
 
-        <!-- ══ قسم الزبائن ══ -->
-        <div class="section-card">
-            <h2>👥 قائمة الزبائن (<span id="custCount">0</span>)</h2>
-            <div class="cust-grid" id="custList"></div>
-        </div>
+    <!-- قائمة العطور -->
+    <div class="section-card">
+      <h2>🌺 العطور الحالية (<span id="countBadge">0</span>)</h2>
+      <div class="perfume-list" id="perfumeList"></div>
+    </div>
 
-        <!-- ══ قسم الطلبات ══ -->
-        <div class="section-card">
-            <h2>📦 إدارة الطلبات</h2>
-            <div class="filter-bar">
-                <button class="filter-btn active" onclick="filterOrders('all',this)">الكل</button>
-                <button class="filter-btn" onclick="filterOrders('pending',this)">🟡 قيد الانتظار</button>
-                <button class="filter-btn" onclick="filterOrders('delivered',this)">🟢 تم التسليم</button>
-            </div>
-            <div id="ordersList"></div>
-        </div>
-
-        <!-- نموذج الإضافة / التعديل -->
-        <div class="section-card" id="perfumeFormSection">
-            <h2 id="formTitle">➕ إضافة عطر جديد</h2>
-            <div class="form-grid">
-
-                <div class="form-group">
-                    <label>اسم العطر بالعربي *</label>
-                    <input type="text" id="f_name" placeholder="مثال: ورد الليل">
-                </div>
-                <div class="form-group">
-                    <label>الاسم بالإنجليزي</label>
-                    <input type="text" id="f_nameEn" placeholder="Night Rose">
-                </div>
-                <div class="form-group">
-                    <label>النوع *</label>
-                    <select id="f_type">
-                        <option value="نسائي">نسائي</option>
-                        <option value="رجالي">رجالي</option>
-                        <option value="للجنسين">للجنسين</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>علامة العطر</label>
-                    <select id="f_badge">
-                        <option value="none">لا شيء</option>
-                        <option value="soldout">نفذ</option>
-                        <option value="bestseller">الأكثر مبيعًا</option>
-                        <option value="limited">محدود</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>الحجم الثابت</label>
-                    <input type="text" id="f_size" value="50ml" readonly>
-                </div>
-                <div class="form-group">
-                    <label>السعر الحالي (بعد الخصم) *</label>
-                    <input type="number" id="f_price" value="20000" placeholder="20000" min="0">
-                </div>
-                <div class="form-group">
-                    <label>السعر القديم قبل الخصم <span style="opacity:0.6;font-weight:400">(اختياري — اتركه فارغاً إذا لا يوجد خصم)</span></label>
-                    <input type="number" id="f_oldPrice" placeholder="35000">
-                </div>
-                <div class="form-group">
-                    <label>العملة</label>
-                    <select id="f_currency">
-                        <option value="دينار">دينار</option>
-                        <option value="ريال">ريال</option>
-                        <option value="درهم">درهم</option>
-                        <option value="دولار">دولار</option>
-                    </select>
-                </div>
-
-                <!-- حقل الصورة — رفع ملف -->
-                <div class="form-group full">
-                    <label>صورة العطر</label>
-                    <div class="file-upload-area" id="uploadArea"
-                         ondragover="event.preventDefault();this.classList.add('dragover')"
-                         ondragleave="this.classList.remove('dragover')"
-                         ondrop="handleDrop(event)">
-                        <input type="file" id="f_image" accept="image/*" onchange="handleFile(this)">
-                        <div class="upload-icon">🖼️</div>
-                        <div class="upload-text">اضغط لاختيار صورة أو اسحبها هنا</div>
-                        <div class="upload-sub">JPG · PNG · WEBP — الصورة تُحفظ مباشرة في المتصفح</div>
-                    </div>
-
-                    <!-- معاينة الصورة بعد الاختيار -->
-                    <div class="img-preview-wrap" id="previewWrap">
-                        <img id="imgPreviewBig" src="" alt="معاينة">
-                        <div class="img-preview-info">
-                            <strong id="previewName">صورة محددة</strong>
-                            <span id="previewSize">—</span>
-                        </div>
-                        <button class="btn-remove-img" onclick="removeImage()">✕ إزالة</button>
-                    </div>
-
-                    <!-- شريط حجم التخزين -->
-                    <div class="storage-bar-wrap">
-                        <div class="storage-label" id="storageLabel">💾 التخزين المستخدم: يتم الحساب...</div>
-                        <div class="storage-bar"><div class="storage-fill" id="storageFill" style="width:0%"></div></div>
-                    </div>
-                </div>
-
-                <div class="form-group full">
-                    <label>وصف مختصر (اختياري)</label>
-                    <textarea id="f_desc" placeholder="رائحة زهرية ناعمة..."></textarea>
-                </div>
-            </div>
-
-            <div class="form-actions">
-                <button class="btn-save"   onclick="savePerfume()">💾 حفظ العطر</button>
-                <button class="btn-cancel" id="cancelBtn" onclick="resetForm()">إلغاء التعديل</button>
-            </div>
-        </div>
-
-        <!-- قائمة العطور الحالية -->
-        <div class="section-card">
-            <h2>🌺 العطور الحالية (<span id="countBadge">0</span>)</h2>
-            <div class="perfume-list" id="perfumeList"></div>
-        </div>
-    </main>
+  </main>
 </div>
-
 <div id="toast"></div>
 
-<script src="perfumes-data.js">
-
-
-function toggleSite(){
-    const tog = document.getElementById('siteToggle');
-    const isOpen = tog ? tog.checked : true;
-    localStorage.setItem('diraz_site_status', isOpen ? 'open' : 'closed');
-    updateStatusBar(isOpen);
-    showToast(isOpen ? '✅ الموقع مفتوح الآن' : '🔒 الموقع مغلق — الزبائن يرون صفحة الإغلاق');
-}
-
-function updateStatusBar(isOpen){
-    const bar   = document.getElementById('siteStatusBar');
-    const title = document.getElementById('statusTitle');
-    const desc  = document.getElementById('statusDesc');
-    const label = document.getElementById('toggleLabel');
-    if(!bar) return;
-    if(isOpen){
-        bar.className  = 'site-status-bar on';
-        title.textContent = '🟢 الموقع يعمل الآن';
-        desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
-        label.textContent = 'تشغيل';
-    } else {
-        bar.className  = 'site-status-bar off';
-        title.textContent = '🔴 الموقع مغلق';
-        desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
-        label.textContent = 'إيقاف';
-    }
-}
-
-// ════════════════════════════════════════
-//  تشغيل / إيقاف الموقع (config.json)
-// ════════════════════════════════════════
-function initSiteToggle(){
-    fetch('config.json?_='+Date.now(),{cache:'no-store'})
-      .then(r=>r.json())
-      .then(function(cfg){
-        const isOpen = cfg.open !== false && cfg.open !== 'false';
-        const tog = document.getElementById('siteToggle');
-        if(tog) tog.checked = isOpen;
-        updateStatusBar(isOpen);
-      })
-      .catch(function(){ updateStatusBar(true); });
-}
-
-function toggleSite(){
-    const tog    = document.getElementById('siteToggle');
-    const isOpen = tog ? tog.checked : true;
-    updateStatusBar(isOpen);
-    // اعرض تعليمات التغيير على GitHub
-    const instr  = document.getElementById('githubInstructions');
-    const action = isOpen ? 'فتح' : 'إغلاق';
-    const value  = isOpen ? 'true' : 'false';
-    if(instr){
-        instr.style.display='block';
-        instr.innerHTML = `
-        <div style="margin-top:14px;background:rgba(255,255,255,0.2);border-radius:14px;padding:16px;font-size:.88rem;color:white;line-height:1.8">
-            <strong>📋 خطوات ${action} الموقع على GitHub:</strong><br>
-            1. روح لـ GitHub repo → اضغط على <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">config.json</code><br>
-            2. اضغط ✏️ (تعديل)<br>
-            3. غيّر القيمة إلى: <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">{"open": ${value}}</code><br>
-            4. اضغط <strong>Commit changes</strong><br>
-            ✅ الموقع راح ي${isOpen ? 'نفتح' : 'نغلق'} خلال دقيقة لكل الزبائن
-        </div>`;
-    }
-}
-
-function updateStatusBar(isOpen){
-    const bar   = document.getElementById('siteStatusBar');
-    const title = document.getElementById('statusTitle');
-    const desc  = document.getElementById('statusDesc');
-    const label = document.getElementById('toggleLabel');
-    if(!bar) return;
-    if(isOpen){
-        bar.className  = 'site-status-bar on';
-        if(title) title.textContent = '🟢 الموقع يعمل الآن';
-        if(desc)  desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
-        if(label) label.textContent = 'تشغيل';
-    } else {
-        bar.className  = 'site-status-bar off';
-        if(title) title.textContent = '🔴 الموقع مغلق';
-        if(desc)  desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
-        if(label) label.textContent = 'إيقاف';
-    }
-}
-</script>
-<script src="supabase-config.js">
-
-
-function toggleSite(){
-    const tog = document.getElementById('siteToggle');
-    const isOpen = tog ? tog.checked : true;
-    localStorage.setItem('diraz_site_status', isOpen ? 'open' : 'closed');
-    updateStatusBar(isOpen);
-    showToast(isOpen ? '✅ الموقع مفتوح الآن' : '🔒 الموقع مغلق — الزبائن يرون صفحة الإغلاق');
-}
-
-function updateStatusBar(isOpen){
-    const bar   = document.getElementById('siteStatusBar');
-    const title = document.getElementById('statusTitle');
-    const desc  = document.getElementById('statusDesc');
-    const label = document.getElementById('toggleLabel');
-    if(!bar) return;
-    if(isOpen){
-        bar.className  = 'site-status-bar on';
-        title.textContent = '🟢 الموقع يعمل الآن';
-        desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
-        label.textContent = 'تشغيل';
-    } else {
-        bar.className  = 'site-status-bar off';
-        title.textContent = '🔴 الموقع مغلق';
-        desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
-        label.textContent = 'إيقاف';
-    }
-}
-
-// ════════════════════════════════════════
-//  تشغيل / إيقاف الموقع (config.json)
-// ════════════════════════════════════════
-function initSiteToggle(){
-    fetch('config.json?_='+Date.now(),{cache:'no-store'})
-      .then(r=>r.json())
-      .then(function(cfg){
-        const isOpen = cfg.open !== false && cfg.open !== 'false';
-        const tog = document.getElementById('siteToggle');
-        if(tog) tog.checked = isOpen;
-        updateStatusBar(isOpen);
-      })
-      .catch(function(){ updateStatusBar(true); });
-}
-
-function toggleSite(){
-    const tog    = document.getElementById('siteToggle');
-    const isOpen = tog ? tog.checked : true;
-    updateStatusBar(isOpen);
-    // اعرض تعليمات التغيير على GitHub
-    const instr  = document.getElementById('githubInstructions');
-    const action = isOpen ? 'فتح' : 'إغلاق';
-    const value  = isOpen ? 'true' : 'false';
-    if(instr){
-        instr.style.display='block';
-        instr.innerHTML = `
-        <div style="margin-top:14px;background:rgba(255,255,255,0.2);border-radius:14px;padding:16px;font-size:.88rem;color:white;line-height:1.8">
-            <strong>📋 خطوات ${action} الموقع على GitHub:</strong><br>
-            1. روح لـ GitHub repo → اضغط على <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">config.json</code><br>
-            2. اضغط ✏️ (تعديل)<br>
-            3. غيّر القيمة إلى: <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">{"open": ${value}}</code><br>
-            4. اضغط <strong>Commit changes</strong><br>
-            ✅ الموقع راح ي${isOpen ? 'نفتح' : 'نغلق'} خلال دقيقة لكل الزبائن
-        </div>`;
-    }
-}
-
-function updateStatusBar(isOpen){
-    const bar   = document.getElementById('siteStatusBar');
-    const title = document.getElementById('statusTitle');
-    const desc  = document.getElementById('statusDesc');
-    const label = document.getElementById('toggleLabel');
-    if(!bar) return;
-    if(isOpen){
-        bar.className  = 'site-status-bar on';
-        if(title) title.textContent = '🟢 الموقع يعمل الآن';
-        if(desc)  desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
-        if(label) label.textContent = 'تشغيل';
-    } else {
-        bar.className  = 'site-status-bar off';
-        if(title) title.textContent = '🔴 الموقع مغلق';
-        if(desc)  desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
-        if(label) label.textContent = 'إيقاف';
-    }
-}
-</script>
 <script>
+const ADMIN_PASSWORD = 'diraz@2026/admin';
+const STORAGE_KEY    = 'diraz_perfumes';
+const ORDERS_KEY     = 'diraz_orders';
+const COUPONS_KEY    = 'diraz_coupons';
+const WA_NUM         = '9647747474014';
+let   currentFilter  = 'all';
 
-
-function toggleSite(){
-    const tog = document.getElementById('siteToggle');
-    const isOpen = tog ? tog.checked : true;
-    localStorage.setItem('diraz_site_status', isOpen ? 'open' : 'closed');
-    updateStatusBar(isOpen);
-    showToast(isOpen ? '✅ الموقع مفتوح الآن' : '🔒 الموقع مغلق — الزبائن يرون صفحة الإغلاق');
+// ══ Auth ══
+function checkPass(){
+  const val = document.getElementById('passInput').value;
+  if(val === ADMIN_PASSWORD){
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('adminPanel').style.display = 'block';
+    initAll();
+  } else {
+    const e = document.getElementById('lockError');
+    e.style.display = 'block';
+    document.getElementById('passInput').value = '';
+    setTimeout(function(){ e.style.display = 'none'; }, 2500);
+  }
+}
+function logout(){
+  document.getElementById('lockScreen').style.display = 'flex';
+  document.getElementById('adminPanel').style.display = 'none';
+  document.getElementById('passInput').value = '';
+}
+function initAll(){
+  renderStats(); renderOrders(); renderCustomers();
+  renderCoupons(); renderList(); updateStorageBar(); initSiteToggle();
 }
 
-function updateStatusBar(isOpen){
-    const bar   = document.getElementById('siteStatusBar');
-    const title = document.getElementById('statusTitle');
-    const desc  = document.getElementById('statusDesc');
-    const label = document.getElementById('toggleLabel');
-    if(!bar) return;
-    if(isOpen){
-        bar.className  = 'site-status-bar on';
-        title.textContent = '🟢 الموقع يعمل الآن';
-        desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
-        label.textContent = 'تشغيل';
-    } else {
-        bar.className  = 'site-status-bar off';
-        title.textContent = '🔴 الموقع مغلق';
-        desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
-        label.textContent = 'إيقاف';
-    }
-}
-
-// ════════════════════════════════════════
-//  تشغيل / إيقاف الموقع (config.json)
-// ════════════════════════════════════════
+// ══ Site Toggle ══
 function initSiteToggle(){
-    fetch('config.json?_='+Date.now(),{cache:'no-store'})
-      .then(r=>r.json())
-      .then(function(cfg){
-        const isOpen = cfg.open !== false && cfg.open !== 'false';
-        const tog = document.getElementById('siteToggle');
-        if(tog) tog.checked = isOpen;
-        updateStatusBar(isOpen);
-      })
-      .catch(function(){ updateStatusBar(true); });
+  fetch('config.json?_=' + Date.now(), {cache:'no-store'})
+    .then(function(r){ return r.json(); })
+    .then(function(cfg){
+      var isOpen = cfg.open !== false && cfg.open !== 'false';
+      document.getElementById('siteToggle').checked = isOpen;
+      updateStatusBar(isOpen);
+    }).catch(function(){ updateStatusBar(true); });
 }
-
 function toggleSite(){
-    const tog    = document.getElementById('siteToggle');
-    const isOpen = tog ? tog.checked : true;
-    updateStatusBar(isOpen);
-    // اعرض تعليمات التغيير على GitHub
-    const instr  = document.getElementById('githubInstructions');
-    const action = isOpen ? 'فتح' : 'إغلاق';
-    const value  = isOpen ? 'true' : 'false';
-    if(instr){
-        instr.style.display='block';
-        instr.innerHTML = `
-        <div style="margin-top:14px;background:rgba(255,255,255,0.2);border-radius:14px;padding:16px;font-size:.88rem;color:white;line-height:1.8">
-            <strong>📋 خطوات ${action} الموقع على GitHub:</strong><br>
-            1. روح لـ GitHub repo → اضغط على <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">config.json</code><br>
-            2. اضغط ✏️ (تعديل)<br>
-            3. غيّر القيمة إلى: <code style="background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px">{"open": ${value}}</code><br>
-            4. اضغط <strong>Commit changes</strong><br>
-            ✅ الموقع راح ي${isOpen ? 'نفتح' : 'نغلق'} خلال دقيقة لكل الزبائن
-        </div>`;
-    }
+  var isOpen = document.getElementById('siteToggle').checked;
+  updateStatusBar(isOpen);
+  var val    = isOpen ? 'true' : 'false';
+  var action = isOpen ? 'فتح' : 'إغلاق';
+  var instr  = document.getElementById('githubInstr');
+  instr.style.display = 'block';
+  instr.innerHTML = '<strong>📋 خطوات ' + action + ' الموقع على GitHub:</strong><br>'
+    + '1. روح للـ repo ← اضغط على <code>config.json</code><br>'
+    + '2. اضغط ✏️ ثم غيّر القيمة إلى: <code>{"open": ' + val + '}</code><br>'
+    + '3. اضغط <strong>Commit changes</strong> ✅<br>'
+    + '<small style="opacity:.7">الموقع يتأثر خلال دقيقة لكل الزبائن</small>';
+}
+function updateStatusBar(isOpen){
+  var bar = document.getElementById('siteStatusBar');
+  bar.className = 'site-status-bar ' + (isOpen ? 'on' : 'off');
+  document.getElementById('statusTitle').textContent = isOpen ? '🟢 الموقع يعمل الآن' : '🔴 الموقع مغلق';
+  document.getElementById('statusDesc').textContent  = isOpen ? 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات' : 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
+  document.getElementById('toggleLabel').textContent = isOpen ? 'تشغيل' : 'إيقاف';
 }
 
-function updateStatusBar(isOpen){
-    const bar   = document.getElementById('siteStatusBar');
-    const title = document.getElementById('statusTitle');
-    const desc  = document.getElementById('statusDesc');
-    const label = document.getElementById('toggleLabel');
-    if(!bar) return;
-    if(isOpen){
-        bar.className  = 'site-status-bar on';
-        if(title) title.textContent = '🟢 الموقع يعمل الآن';
-        if(desc)  desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
-        if(label) label.textContent = 'تشغيل';
-    } else {
-        bar.className  = 'site-status-bar off';
-        if(title) title.textContent = '🔴 الموقع مغلق';
-        if(desc)  desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً"';
-        if(label) label.textContent = 'إيقاف';
-    }
+// ══ Helpers ══
+function tryParse(k, f){ try{ var d=localStorage.getItem(k); return d ? JSON.parse(d) : f; } catch(e){ return f; } }
+function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2800); }
+
+// ══ Stats ══
+function renderStats(){
+  var orders    = tryParse(ORDERS_KEY, []);
+  var pending   = orders.filter(function(o){ return o.status==='pending'; }).length;
+  var delivered = orders.filter(function(o){ return o.status==='delivered'; }).length;
+  var phones    = {};
+  orders.forEach(function(o){ if(o.customer&&o.customer.phone) phones[o.customer.phone]=1; });
+  var custs = Object.keys(phones).length;
+  document.getElementById('statsGrid').innerHTML =
+    '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-num">' + orders.length + '</div><div class="stat-label">إجمالي الطلبات</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">🟡</div><div class="stat-num">' + pending + '</div><div class="stat-label">قيد الانتظار</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-num">' + delivered + '</div><div class="stat-label">تم التسليم</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num">' + custs + '</div><div class="stat-label">عدد الزبائن</div></div>';
+}
+
+// ══ Orders ══
+function renderOrders(){
+  var orders   = tryParse(ORDERS_KEY, []);
+  var list     = document.getElementById('ordersList');
+  var filtered = currentFilter === 'all' ? orders : orders.filter(function(o){ return o.status === currentFilter; });
+  if(!filtered.length){ list.innerHTML = '<div class="no-items">📭 لا توجد طلبات</div>'; return; }
+  list.innerHTML = filtered.map(function(order){
+    var idx  = orders.indexOf(order);
+    var d    = new Date(order.date).toLocaleString('ar', {dateStyle:'medium', timeStyle:'short'});
+    var ip   = order.status === 'pending';
+    var items = (order.items||[]).map(function(i,n){ return '<div class="order-item-row">'+(n+1)+'. '+i.name+' × '+i.qty+' — '+(i.price*i.qty).toLocaleString('en-US')+' '+i.currency+'</div>'; }).join('');
+    return '<div class="order-card">' +
+      '<div class="order-top">' +
+        '<div><div class="order-id"># '+(order.id||idx+1)+'</div><div class="order-cust">👤 '+(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+(order.customer&&order.customer.phone||'—')+'</div></div>' +
+        '<div style="text-align:left"><div class="order-date">🕐 '+d+'</div>' +
+        '<button class="status-badge '+(ip?'status-pending':'status-delivered')+'" onclick="toggleStatus('+idx+')">'+(ip?'🟡 قيد الانتظار':'🟢 تم التسليم')+'</button></div>' +
+      '</div>' +
+      '<div class="order-items-list">'+(items||'—')+'</div>' +
+      '<div class="order-total-row"><span class="order-total-label">الإجمالي</span><span class="order-total-val">'+((order.total||0).toLocaleString('en-US'))+' '+(order.currency||'دينار')+'</span></div>' +
+      '<div class="order-actions">' +
+        '<button class="btn-deliver" onclick="toggleStatus('+idx+')">'+(ip?'✅ تحديد كمُسلَّم':'↩️ إرجاع لقيد الانتظار')+'</button>' +
+        '<button class="btn-wa-resend" onclick="resendWA('+idx+')">💬 إعادة إرسال</button>' +
+        '<button class="btn-del-order" onclick="deleteOrder('+idx+')">🗑️ حذف</button>' +
+      '</div></div>';
+  }).join('');
+}
+function filterOrders(f,btn){ currentFilter=f; document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); }); btn.classList.add('active'); renderOrders(); }
+function toggleStatus(i){ var o=tryParse(ORDERS_KEY,[]); if(!o[i])return; o[i].status=o[i].status==='pending'?'delivered':'pending'; localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); renderStats(); renderOrders(); showToast(o[i].status==='delivered'?'✅ تم التسليم':'↩️ رُجّع لقيد الانتظار'); }
+function deleteOrder(i){ if(!confirm('حذف الطلب؟'))return; var o=tryParse(ORDERS_KEY,[]); o.splice(i,1); localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); renderStats(); renderOrders(); showToast('🗑️ تم حذف الطلب'); }
+function resendWA(i){
+  var order = tryParse(ORDERS_KEY,[])[i]; if(!order)return;
+  var now   = new Date(order.date).toLocaleString('ar',{dateStyle:'long',timeStyle:'short'});
+  var msg   = '🌸 *طلب — ديراز للعطور*\n━━━━━━━━━━━━━━━━━━━━\n👤 *الاسم:* '+(order.customer&&order.customer.name||'—')+'\n📱 *الهاتف:* '+(order.customer&&order.customer.phone||'—')+'\n━━━━━━━━━━━━━━━━━━━━\n🛒 *العطور:*\n';
+  (order.items||[]).forEach(function(item,n){ msg+=(n+1)+'. '+item.name+' × '+item.qty+' ← '+(item.price*item.qty).toLocaleString('en-US')+' '+item.currency+'\n'; });
+  msg+='━━━━━━━━━━━━━━━━━━━━\n💰 *الإجمالي:* '+((order.total||0).toLocaleString('en-US'))+' '+(order.currency||'دينار')+'\n📅 '+now;
+  window.open('https://wa.me/'+WA_NUM+'?text='+encodeURIComponent(msg),'_blank');
+}
+
+// ══ Customers ══
+function renderCustomers(){
+  var orders = tryParse(ORDERS_KEY, []);
+  var map    = {};
+  orders.forEach(function(o){ var p=o.customer&&o.customer.phone||'—'; if(!map[p])map[p]={name:o.customer&&o.customer.name||'—',phone:p,count:0}; map[p].count++; });
+  var custs  = Object.values(map);
+  document.getElementById('custCount').textContent = custs.length;
+  var el = document.getElementById('custList');
+  if(!custs.length){ el.innerHTML='<div class="no-items">📭 لا يوجد زبائن بعد</div>'; return; }
+  el.innerHTML = custs.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+c.name+'</div><div class="cust-phone">📱 '+c.phone+'</div></div><div class="cust-orders-count">'+c.count+' '+(c.count===1?'طلب':'طلبات')+'</div></div>'; }).join('');
+}
+
+// ══ Coupons ══
+function addCoupon(){
+  var code    = (document.getElementById('cp_code').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var type    = document.getElementById('cp_type').value;
+  var value   = parseFloat(document.getElementById('cp_value').value||'0');
+  var maxUses = parseInt(document.getElementById('cp_maxUses').value||'1')||1;
+  if(!code){ showToast('❗ أدخل اسم الكود'); return; }
+  if(!value){ showToast('❗ أدخل قيمة الخصم'); return; }
+  var coupons = tryParse(COUPONS_KEY,[]);
+  if(coupons.find(function(c){ return c.code===code; })){ showToast('❗ الكود موجود مسبقاً'); return; }
+  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString()});
+  localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));
+  renderCoupons();
+  document.getElementById('cp_code').value = '';
+  document.getElementById('cp_value').value = '';
+  document.getElementById('cp_maxUses').value = '1';
+  showToast('✅ تم إنشاء كود: '+code);
+}
+function toggleCouponActive(i){ var c=tryParse(COUPONS_KEY,[]); if(!c[i])return; c[i].active=!c[i].active; localStorage.setItem(COUPONS_KEY,JSON.stringify(c)); renderCoupons(); showToast(c[i].active?'✅ الكود مفعّل':'⏸️ الكود متوقف'); }
+function deleteCoupon(i){ if(!confirm('حذف الكود؟'))return; var c=tryParse(COUPONS_KEY,[]); c.splice(i,1); localStorage.setItem(COUPONS_KEY,JSON.stringify(c)); renderCoupons(); showToast('🗑️ تم حذف الكود'); }
+function renderCoupons(){
+  var coupons = tryParse(COUPONS_KEY,[]);
+  var el = document.getElementById('couponsList');
+  if(!coupons.length){ el.innerHTML='<div class="no-items">🏷️ لا توجد أكواد خصم بعد</div>'; return; }
+  el.innerHTML = coupons.map(function(c,i){
+    var v   = c.type==='percent' ? c.value+'%' : c.value.toLocaleString('en-US')+' دينار';
+    var pct = Math.min(c.totalUses/Math.max(c.maxUses,1)*100,100).toFixed(0);
+    return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
+      '<div class="coupon-code-big">'+c.code+'</div>' +
+      '<div class="coupon-meta"><strong>خصم '+v+'</strong><br>حد '+c.maxUses+' / شخص • استُخدم '+c.totalUses+' مرة<div class="uses-bar"><div class="uses-fill" style="width:'+pct+'%"></div></div></div>' +
+      '<div class="coupon-actions">' +
+        '<button class="status-badge '+(c.active?'status-delivered':'status-pending')+'" onclick="toggleCouponActive('+i+')">'+(c.active?'🟢 فعال':'🔴 متوقف')+'</button>' +
+        '<button class="btn-del-order" onclick="deleteCoupon('+i+')">🗑️</button>' +
+      '</div></div>';
+  }).join('');
+}
+
+// ══ Perfumes ══
+var editIndex=-1, selectedBase64='', keepOldImage=false;
+function handleFile(input){ var f=input.files[0]; if(f) compressAndPreview(f); }
+function handleDrop(e){ e.preventDefault(); var f=e.dataTransfer.files[0]; if(f&&f.type.startsWith('image/')) compressAndPreview(f); }
+function compressAndPreview(file){
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    var img = new Image();
+    img.onload = function(){
+      var MAX=600, w=img.width, h=img.height;
+      if(w>h&&w>MAX){ h=Math.round(h*MAX/w); w=MAX; } else if(h>MAX){ w=Math.round(w*MAX/h); h=MAX; }
+      var canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+      canvas.getContext('2d').drawImage(img,0,0,w,h);
+      selectedBase64 = canvas.toDataURL('image/jpeg',0.82);
+      keepOldImage = false;
+      var kb = Math.round(selectedBase64.length*0.75/1024);
+      document.getElementById('imgPreviewBig').src = selectedBase64;
+      document.getElementById('previewName').textContent = file.name;
+      document.getElementById('previewSize').textContent = w+'×'+h+'px — '+kb+'KB';
+      document.getElementById('previewWrap').classList.add('visible');
+      updateStorageBar();
+    };
+    img.src = ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function removeImage(){ selectedBase64=''; keepOldImage=false; document.getElementById('previewWrap').classList.remove('visible'); document.getElementById('f_image').value=''; }
+function updateStorageBar(){
+  var used = 0;
+  for(var k in localStorage){ try{ used += localStorage[k].length*2; }catch(e){} }
+  var pct = Math.min(used/(5*1024*1024)*100,100).toFixed(1);
+  var kb  = (used/1024).toFixed(0);
+  document.getElementById('storageLabel').textContent = '💾 '+kb+' KB من ~5120 KB ('+pct+'%)';
+  document.getElementById('storageFill').style.width = pct+'%';
+  document.getElementById('storageFill').style.background = pct>80?'#ff8080':'white';
+}
+function savePerfume(){
+  var name = (document.getElementById('f_name').value||'').trim();
+  if(!name){ showToast('❗ اسم العطر مطلوب'); return; }
+  var img = selectedBase64;
+  if(!img && keepOldImage && editIndex>=0) img = (tryParse(STORAGE_KEY,[])[editIndex]||{}).image||'';
+  var p = {
+    name:name, nameEn:(document.getElementById('f_nameEn').value||'').trim(),
+    type:document.getElementById('f_type').value, size:(document.getElementById('f_size').value||'').trim(),
+    price:(document.getElementById('f_price').value||'').trim(), oldPrice:(document.getElementById('f_oldPrice').value||'').trim(),
+    currency:document.getElementById('f_currency').value, image:img,
+    description:(document.getElementById('f_desc').value||'').trim()
+  };
+  var perfumes = tryParse(STORAGE_KEY,[]);
+  if(editIndex>=0){ perfumes[editIndex]=p; showToast('✅ تم تعديل العطر'); }
+  else { perfumes.push(p); showToast('✅ تمت إضافة العطر'); }
+  localStorage.setItem(STORAGE_KEY,JSON.stringify(perfumes));
+  resetForm(); renderList(); updateStorageBar();
+}
+function editPerfume(i){
+  var p = tryParse(STORAGE_KEY,[])[i]; if(!p)return;
+  document.getElementById('f_name').value    = p.name||'';
+  document.getElementById('f_nameEn').value  = p.nameEn||'';
+  document.getElementById('f_type').value    = p.type||'نسائي';
+  document.getElementById('f_size').value    = p.size||'';
+  document.getElementById('f_price').value   = p.price||'';
+  document.getElementById('f_oldPrice').value= p.oldPrice||'';
+  document.getElementById('f_currency').value= p.currency||'دينار';
+  document.getElementById('f_desc').value    = p.description||'';
+  if(p.image){ document.getElementById('imgPreviewBig').src=p.image; document.getElementById('previewName').textContent='الصورة الحالية'; document.getElementById('previewSize').textContent='يمكنك تغييرها'; document.getElementById('previewWrap').classList.add('visible'); keepOldImage=true; selectedBase64=''; }
+  editIndex=i; document.getElementById('formTitle').textContent='✏️ تعديل العطر'; document.getElementById('cancelBtn').style.display='inline-block';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function deletePerfume(i){ if(!confirm('حذف العطر؟'))return; var p=tryParse(STORAGE_KEY,[]); p.splice(i,1); localStorage.setItem(STORAGE_KEY,JSON.stringify(p)); renderList(); updateStorageBar(); showToast('🗑️ تم حذف العطر'); }
+function resetForm(){
+  ['f_name','f_nameEn','f_size','f_price','f_oldPrice','f_desc'].forEach(function(id){ document.getElementById(id).value=''; });
+  document.getElementById('f_type').value='نسائي'; document.getElementById('f_currency').value='دينار';
+  document.getElementById('f_image').value=''; document.getElementById('previewWrap').classList.remove('visible');
+  document.getElementById('formTitle').textContent='➕ إضافة عطر جديد'; document.getElementById('cancelBtn').style.display='none';
+  selectedBase64=''; keepOldImage=false; editIndex=-1;
+}
+function renderList(){
+  var perfumes = tryParse(STORAGE_KEY,[]);
+  document.getElementById('countBadge').textContent = perfumes.length;
+  var list = document.getElementById('perfumeList');
+  if(!perfumes.length){ list.innerHTML='<div class="no-items">لا توجد عطور بعد 🌸</div>'; return; }
+  list.innerHTML = perfumes.map(function(p,i){
+    return '<div class="perfume-item">' +
+      '<div class="item-thumb">'+(p.image?'<img src="'+p.image+'" onerror="this.parentElement.innerHTML=\'🌸\'">'+'':'🌸')+'</div>' +
+      '<div class="perfume-info"><div class="pname">'+p.name+(p.nameEn?' — '+p.nameEn:'')+'</div>' +
+      '<div class="pmeta">'+(p.type||'')+' '+(p.size?'• '+p.size:'')+' '+(p.price?'• '+parseInt(p.price).toLocaleString('en-US')+' '+(p.currency||''):'')+'</div></div>' +
+      '<div class="item-actions"><button class="btn-edit" onclick="editPerfume('+i+')">✏️ تعديل</button><button class="btn-delete" onclick="deletePerfume('+i+')">🗑️</button></div>' +
+    '</div>';
+  }).join('');
 }
 </script>
 </body>
