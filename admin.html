@@ -411,6 +411,28 @@
         .backup-btn { flex:1; min-width:180px; padding:12px 18px; border-radius:50px; border:1.5px solid rgba(255,255,255,0.55); background:rgba(255,255,255,0.18); color:white; font-family:'Cairo',sans-serif; font-size:.9rem; font-weight:800; cursor:pointer; transition:all .2s; }
         .backup-btn:hover { background:rgba(255,255,255,0.35); transform:translateY(-2px); }
         .backup-note { color:rgba(255,255,255,0.72); font-size:.82rem; margin-top:10px; line-height:1.7; }
+        
+        /* ══ شريط حالة الموقع ══ */
+        .site-status-bar{
+            display:flex;align-items:center;justify-content:space-between;
+            padding:16px 24px;margin:20px 0;
+            border-radius:18px;border:2px solid rgba(255,255,255,0.5);
+            transition:background .4s,border-color .4s;
+        }
+        .site-status-bar.on { background:rgba(37,211,102,0.25); border-color:rgba(37,211,102,0.6); }
+        .site-status-bar.off{ background:rgba(255,80,80,0.2);   border-color:rgba(255,100,100,0.5); }
+        .status-info h3{color:white;font-size:1rem;font-weight:900;margin-bottom:4px}
+        .status-info p {color:rgba(255,255,255,0.75);font-size:.83rem}
+
+        /* Toggle Switch */
+        .toggle-wrap{display:flex;align-items:center;gap:14px;flex-shrink:0}
+        .toggle-label{color:white;font-weight:900;font-size:1rem}
+        .switch{position:relative;display:inline-block;width:62px;height:32px}
+        .switch input{opacity:0;width:0;height:0}
+        .slider-sw{position:absolute;cursor:pointer;inset:0;background:rgba(255,255,255,0.25);border:1.5px solid rgba(255,255,255,0.45);border-radius:34px;transition:.4s}
+        .slider-sw:before{position:absolute;content:'';height:24px;width:24px;right:3px;bottom:3px;background:white;border-radius:50%;transition:.4s;box-shadow:0 2px 8px rgba(0,0,0,0.2)}
+        input:checked + .slider-sw{background:rgba(37,211,102,0.6);border-color:rgba(37,211,102,0.8)}
+        input:checked + .slider-sw:before{transform:translateX(-30px);background:#25D366}
         </style>
 </head>
 <body>
@@ -430,6 +452,21 @@
 
 <!-- لوحة التحكم -->
 <div id="adminPanel">
+    <!-- ══ شريط حالة الموقع ══ -->
+    <div id="siteStatusBar" class="site-status-bar on" style="max-width:900px;margin:20px auto 0">
+        <div class="status-info">
+            <h3 id="statusTitle">🟢 الموقع يعمل الآن</h3>
+            <p id="statusDesc">الزبائن يستطيعون تصفح الموقع وإرسال الطلبات</p>
+        </div>
+        <div class="toggle-wrap">
+            <span class="toggle-label" id="toggleLabel">تشغيل</span>
+            <label class="switch">
+                <input type="checkbox" id="siteToggle" onchange="toggleSite()" checked>
+                <span class="slider-sw"></span>
+            </label>
+        </div>
+    </div>
+
     <header>
         <img src="images/logo.jpg" alt="Logo" class="logo">
         <div class="header-title">⚙️ لوحة التحكم — ديراز للعطور</div>
@@ -616,8 +653,84 @@
 
 <div id="toast"></div>
 
-<script src="perfumes-data.js"></script>
-<script src="supabase-config.js"></script>
+<script src="perfumes-data.js">
+// ════════════════════════════════════════
+//  تشغيل / إيقاف الموقع
+// ════════════════════════════════════════
+function initSiteToggle(){
+    const status = localStorage.getItem('diraz_site_status') || 'open';
+    const isOpen = status !== 'closed';
+    const tog = document.getElementById('siteToggle');
+    if(tog) tog.checked = isOpen;
+    updateStatusBar(isOpen);
+}
+
+function toggleSite(){
+    const tog = document.getElementById('siteToggle');
+    const isOpen = tog ? tog.checked : true;
+    localStorage.setItem('diraz_site_status', isOpen ? 'open' : 'closed');
+    updateStatusBar(isOpen);
+    showToast(isOpen ? '✅ الموقع مفتوح الآن' : '🔒 الموقع مغلق — الزبائن يرون صفحة الإغلاق');
+}
+
+function updateStatusBar(isOpen){
+    const bar   = document.getElementById('siteStatusBar');
+    const title = document.getElementById('statusTitle');
+    const desc  = document.getElementById('statusDesc');
+    const label = document.getElementById('toggleLabel');
+    if(!bar) return;
+    if(isOpen){
+        bar.className  = 'site-status-bar on';
+        title.textContent = '🟢 الموقع يعمل الآن';
+        desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
+        label.textContent = 'تشغيل';
+    } else {
+        bar.className  = 'site-status-bar off';
+        title.textContent = '🔴 الموقع مغلق';
+        desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
+        label.textContent = 'إيقاف';
+    }
+}
+</script>
+<script src="supabase-config.js">
+// ════════════════════════════════════════
+//  تشغيل / إيقاف الموقع
+// ════════════════════════════════════════
+function initSiteToggle(){
+    const status = localStorage.getItem('diraz_site_status') || 'open';
+    const isOpen = status !== 'closed';
+    const tog = document.getElementById('siteToggle');
+    if(tog) tog.checked = isOpen;
+    updateStatusBar(isOpen);
+}
+
+function toggleSite(){
+    const tog = document.getElementById('siteToggle');
+    const isOpen = tog ? tog.checked : true;
+    localStorage.setItem('diraz_site_status', isOpen ? 'open' : 'closed');
+    updateStatusBar(isOpen);
+    showToast(isOpen ? '✅ الموقع مفتوح الآن' : '🔒 الموقع مغلق — الزبائن يرون صفحة الإغلاق');
+}
+
+function updateStatusBar(isOpen){
+    const bar   = document.getElementById('siteStatusBar');
+    const title = document.getElementById('statusTitle');
+    const desc  = document.getElementById('statusDesc');
+    const label = document.getElementById('toggleLabel');
+    if(!bar) return;
+    if(isOpen){
+        bar.className  = 'site-status-bar on';
+        title.textContent = '🟢 الموقع يعمل الآن';
+        desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
+        label.textContent = 'تشغيل';
+    } else {
+        bar.className  = 'site-status-bar off';
+        title.textContent = '🔴 الموقع مغلق';
+        desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
+        label.textContent = 'إيقاف';
+    }
+}
+</script>
 <script>
 // ═══════════════════════════════════════
 //  🔐 كلمة السر — غيّرها من هنا
@@ -955,7 +1068,7 @@ function removeImage() {
 //  قائمة العطور
 // ═══════════════════════════════════════
 function renderList() {
-    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons(); initSiteToggle();
     const perfumes = loadPerfumes();
     const list = document.getElementById('perfumeList');
     document.getElementById('countBadge').textContent = perfumes.length;
@@ -1225,7 +1338,7 @@ function toggleStatus(orderId) {
     if (!orders[idx]) return;
     orders[idx].status = orders[idx].status === 'pending' ? 'delivered' : 'pending';
     saveOrders(orders);
-    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons(); initSiteToggle();
     showToast(orders[idx].status === 'delivered' ? '✅ تم تحديده كمُسلَّم' : '↩️ رُجّع لقيد الانتظار');
 }
 
@@ -1246,7 +1359,7 @@ function deleteOrder(orderId) {
             .catch(() => showToast('⚠️ حُذف الطلب من هذا الجهاز، وتعذر حذفه من السحابة'));
         DirazCloud.upsert('deleted_orders', [{id:String(orderId), deleted_at:new Date().toISOString()}]).catch(()=>{});
     }
-    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons(); initSiteToggle();
     showToast('🗑️ تم حذف الطلب');
 }
 
@@ -1478,6 +1591,44 @@ function renderCoupons() {
             </div>
         </div>`;
     }).join('');
+}
+
+// ════════════════════════════════════════
+//  تشغيل / إيقاف الموقع
+// ════════════════════════════════════════
+function initSiteToggle(){
+    const status = localStorage.getItem('diraz_site_status') || 'open';
+    const isOpen = status !== 'closed';
+    const tog = document.getElementById('siteToggle');
+    if(tog) tog.checked = isOpen;
+    updateStatusBar(isOpen);
+}
+
+function toggleSite(){
+    const tog = document.getElementById('siteToggle');
+    const isOpen = tog ? tog.checked : true;
+    localStorage.setItem('diraz_site_status', isOpen ? 'open' : 'closed');
+    updateStatusBar(isOpen);
+    showToast(isOpen ? '✅ الموقع مفتوح الآن' : '🔒 الموقع مغلق — الزبائن يرون صفحة الإغلاق');
+}
+
+function updateStatusBar(isOpen){
+    const bar   = document.getElementById('siteStatusBar');
+    const title = document.getElementById('statusTitle');
+    const desc  = document.getElementById('statusDesc');
+    const label = document.getElementById('toggleLabel');
+    if(!bar) return;
+    if(isOpen){
+        bar.className  = 'site-status-bar on';
+        title.textContent = '🟢 الموقع يعمل الآن';
+        desc.textContent  = 'الزبائن يستطيعون تصفح الموقع وإرسال الطلبات';
+        label.textContent = 'تشغيل';
+    } else {
+        bar.className  = 'site-status-bar off';
+        title.textContent = '🔴 الموقع مغلق';
+        desc.textContent  = 'الزبائن يرون صفحة "الموقع مغلق مؤقتاً" ولا يمكنهم التصفح';
+        label.textContent = 'إيقاف';
+    }
 }
 </script>
 </body>
