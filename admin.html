@@ -405,7 +405,16 @@ function renderCustomers(){
   document.getElementById('custCount').textContent = custs.length;
   var el = document.getElementById('custList');
   if(!custs.length){ el.innerHTML='<div class="no-items">📭 لا يوجد زبائن بعد</div>'; return; }
-  el.innerHTML = custs.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+c.name+'</div><div class="cust-phone">📱 '+c.phone+'</div></div><div class="cust-orders-count">'+c.count+' '+(c.count===1?'طلب':'طلبات')+'</div></div>'; }).join('');
+  el.innerHTML = custs.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+c.name+'</div><div class="cust-phone">📱 '+c.phone+'</div></div><div class="cust-orders-count">'+c.count+' '+(c.count===1?'طلب':'طلبات')+'</div><button class="btn-del-order" onclick="deleteCustomer(\''+c.phone.replace(/'/g,"\\'")+'\')">🗑️</button></div>'; }).join('');
+}
+function deleteCustomer(phone){
+  if(!confirm('حذف الزبون '+phone+' وجميع طلباته؟')) return;
+  var orders = tryParse(ORDERS_KEY, []);
+  var before = orders.length;
+  orders = orders.filter(function(o){ return !(o.customer && o.customer.phone === phone); });
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  renderStats(); renderOrders(); renderCustomers();
+  showToast('🗑️ تم حذف الزبون و'+(before-orders.length)+' طلب');
 }
 
 // ══ Coupons ══
