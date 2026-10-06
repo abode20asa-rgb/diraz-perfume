@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <script>
@@ -548,11 +548,40 @@ function adjustCardQty(idx,d){
   el.textContent=Math.max(1,Math.min(99,(parseInt(el.textContent,10)||1)+d));
 }
 function changeQty(idx,d){
-  const item=cart.find(i=>i.idx===idx); if(!item) return;
-  item.qty+=d; if(item.qty<=0) cart=cart.filter(i=>i.idx!==idx);
-  saveCart(); updateCartUI(); renderCards();
+  const item=cart.find(i=>i.idx===idx); 
+  if(!item) return;
+  item.qty+=d; 
+  if(item.qty<=0) {
+    cart=cart.filter(i=>i.idx!==idx);
+    // التحقق إذا كان الكود المطبق يحتاج إلى إزالة بسبب تغيير السلة
+    if(appliedCoupon){
+      const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
+      if(currentItemCount<2||currentItemCount>3){
+        appliedCoupon=null; 
+        discountAmount=0;
+        showCouponMsg('❌ تم إلغاء الخصم: تغير عدد العطور','error');
+      }
+    }
+  }
+  saveCart(); 
+  updateCartUI(); 
+  renderCards(); 
 }
-function removeFromCart(idx){ cart=cart.filter(i=>i.idx!==idx); saveCart(); updateCartUI(); renderCards(); }
+function removeFromCart(idx){ 
+  cart=cart.filter(i=>i.idx!==idx); 
+  saveCart(); 
+  // التحقق إذا كان الكود المطبق يحتاج إلى إزالة بسبب تغيير السلة
+  if(appliedCoupon){
+    const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
+    if(currentItemCount<2||currentItemCount>3){
+      appliedCoupon=null; 
+      discountAmount=0;
+      showCouponMsg('❌ تم إلغاء الخصم: تغير عدد العطور','error');
+    }
+  }
+  updateCartUI(); 
+  renderCards(); 
+}
 function openCart(){
   const customer=tryParse(CUSTOMER_KEY,null);
   if(!customer?.name||!customer?.phone){
@@ -572,17 +601,23 @@ function updateCartUI(){
   }
   const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
+  
+  // إعادة حساب الخصم عند كل تحديث
   if(appliedCoupon){
     if(currentItemCount<2||currentItemCount>3){
       appliedCoupon=null; discountAmount=0;
       showCouponMsg('❌ تم إلغاء الخصم: يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط','error');
-    } else if(String(appliedCoupon.code).toUpperCase()==='ديراز'){
-      const targetTotal=currentItemCount===2?35000:45000;
-      discountAmount=Math.max(rawTotal-targetTotal,0);
     } else {
-      discountAmount=appliedCoupon.type==='percent'?Math.round(rawTotal*appliedCoupon.value/100):Math.min(appliedCoupon.value,rawTotal);
+      const isDirazSpecial=String(appliedCoupon.code).toUpperCase()==='ديراز';
+      if(isDirazSpecial){
+        const targetTotal=currentItemCount===2?35000:45000;
+        discountAmount=Math.max(rawTotal-targetTotal,0);
+      } else {
+        discountAmount=appliedCoupon.type==='percent'?Math.round(rawTotal*appliedCoupon.value/100):Math.min(appliedCoupon.value,rawTotal);
+      }
     }
   }
+  
   const total=Math.max(rawTotal-discountAmount,0);
   const count=cart.reduce((s,i)=>s+i.qty,0);
   const cur=cart.length?cart[0].currency:'دينار';
@@ -602,7 +637,9 @@ function updateCartUI(){
     if(appliedCoupon&&discountAmount>0){
       dLine.style.display='flex';
       dAmt.textContent='- '+discountAmount.toLocaleString('en-US')+' '+cur;
-    } else { dLine.style.display='none'; }
+    } else { 
+      dLine.style.display='none'; 
+    }
   }
 
   const itemsEl=document.getElementById('cartItems'); if(!itemsEl) return;
@@ -632,37 +669,50 @@ async function applyCoupon(){
   const itemCount=cart.reduce((total,item)=>total+item.qty,0);
   if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو ثلاثة عطور أولاً','error');return;}
   if(itemCount>3){showCouponMsg('❌ الخصم يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط. عند 4 عطور أو أكثر لا يوجد خصم','error');return;}
+  
+  // جلب الكوبونات من التخزين المحلي أو السحابة
   let coupons=tryParse(COUPONS_KEY,[]);
   if(window.DirazCloud){
     try {
       const cloudCoupons=await DirazCloud.list('coupons','&order=updated_at.desc');
       const activeCloudCoupons=cloudCoupons.map(row=>row.data).filter(coupon=>coupon&&coupon.active);
       if(activeCloudCoupons.length) coupons=activeCloudCoupons;
-    } catch(e) {}
+    } catch(e) {
+      console.log('Error fetching cloud coupons:', e);
+    }
   }
+  
   const coupon=coupons.find(c=>c.code===code);
   if(!coupon){showCouponMsg('❌ الكود غير صحيح','error');return;}
   if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
+  
+  // التحقق من استخدامات الكود
   const usageData=tryParse(USAGE_KEY,{});
   const customer=tryParse(CUSTOMER_KEY,{});
   const customerKey=customer.phone ? customer.phone.replace(/\D/g,'') : 'device';
   const codeUsage=usageData[code];
   const myUsage=codeUsage && typeof codeUsage==='object' ? (codeUsage[customerKey]||0) : 0;
   const totalUses=Number(coupon.totalUses)||0;
+  
   if(totalUses>=coupon.maxUses){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
   if((coupon.usagePolicy||'once')==='once'&&myUsage>=1){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
+  
+  // حساب الخصم
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const isDirazSpecial=code==='ديراز';
+  
   if(isDirazSpecial){
     const targetTotal=itemCount===2?35000:45000;
     discountAmount=Math.max(rawTotal-targetTotal,0);
   } else {
     discountAmount=coupon.type==='percent'?Math.round(rawTotal*coupon.value/100):Math.min(coupon.value,rawTotal);
   }
+  
   appliedCoupon=coupon;
   const remaining=coupon.maxUses-totalUses-1;
   const valTxt=isDirazSpecial?(itemCount===2?'سعر خاص 35,000 دينار':'سعر خاص 45,000 دينار'):coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
   const policyTxt=(coupon.usagePolicy||'once')==='multiple'?'يمكنك استخدامه عدة مرات':'مرة واحدة لكل زبون';
+  
   showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt}) — ${policyTxt} — متبقي للكود ${remaining} ${remaining===1?'استخدام':'استخدامات'}`,'success');
   updateCartUI();
 }
