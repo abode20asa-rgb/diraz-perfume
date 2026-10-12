@@ -54,6 +54,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
 
   async function load(first){
     if(!code||!key){ fail('❌ الرابط غير صحيح'); return; }
+    if(!window.DIRAZ_SUPABASE_URL){ fail('⚠️ ملف supabase-config.js غير مرفوع بجانب هذه الصفحة'); return; }
     try{
       var r = await fetch(window.DIRAZ_SUPABASE_URL+'/rest/v1/rpc/creator_stats',{
         method:'POST',
@@ -64,7 +65,13 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
       var d = await r.json();
       if(!d || d.ok!==true){ fail('❌ الرابط غير صحيح أو انتهت صلاحيته'); return; }
       render(d);
-    }catch(e){ if(first) fail('⚠️ تعذّر تحميل البيانات، حاول مرة ثانية'); }
+    }catch(e){
+      if(!first) return;
+      var m = String((e && e.message) || e);
+      if(/PGRST202|creator_stats|Could not find/i.test(m)) fail('⚠️ دالة creator_stats غير موجودة — شغّل supabase-creators.sql في Supabase');
+      else if(/Failed to fetch|NetworkError|Load failed/i.test(m)) fail('⚠️ تعذّر الاتصال بـ Supabase');
+      else fail('⚠️ تعذّر تحميل البيانات<br><small style="opacity:.8;word-break:break-all">'+esc(m.slice(0,200))+'</small>');
+    }
   }
 
   function render(d){
