@@ -702,7 +702,7 @@ let appliedCoupon=null, discountAmount=0;
 function toggleCouponInput(){ document.getElementById('couponArea').classList.toggle('open'); }
 function showCouponMsg(msg,type){ const el=document.getElementById('couponMsg'); el.textContent=msg; el.className='coupon-msg '+type; }
 async function applyCoupon(){
-  const code=(document.getElementById('couponInput').value||'').trim().toUpperCase();
+  const code=(document.getElementById('couponInput').value||'').toUpperCase().replace(/\s+/g,' ').trim();
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
   const itemCount=cart.reduce((total,item)=>total+item.qty,0);
   if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو ثلاثة عطور أولاً','error');return;}

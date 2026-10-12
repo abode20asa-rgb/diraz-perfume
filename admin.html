@@ -563,7 +563,7 @@ function deleteCustomer(i){
 
 // ══ Coupons ══
 function addCoupon(){
-  var code    = (document.getElementById('cp_code').value||'').trim().toUpperCase().replace(/[^A-Z0-9]/g,'');
+  var code    = (document.getElementById('cp_code').value||'').toUpperCase().replace(/[^\p{L}\p{N} ]/gu,'').replace(/\s+/g,' ').trim();
   var type    = document.getElementById('cp_type').value;
   var value   = parseFloat(document.getElementById('cp_value').value||'0');
   var maxUses = parseInt(document.getElementById('cp_maxUses').value||'1')||1;
