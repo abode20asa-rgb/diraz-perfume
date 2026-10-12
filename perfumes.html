@@ -551,7 +551,7 @@ function saveCustomer(){
   }
   if(pendingCartOpen){
     pendingCartOpen=false;
-    openCart();
+    openDelivery();
   }
 }
 
@@ -562,26 +562,26 @@ function loadCart(){ cart=tryParse(CART_KEY,[]); }
 function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
 
 const selectedSizes={};
+const pendingQty={};
+function cartSize(i){ return i.size||'50ml'; }
+function findItem(idx,size){ return cart.find(i=>i.idx===idx && cartSize(i)===size); }
 // أسعار موحدة لكل العطور حسب الحجم (غيّر الأرقام هنا إذا تغيّرت الأسعار)
 const SIZE_PRICES={'50ml':20000,'30ml':15000};
 function sizePrices(p,size){
   return {price:SIZE_PRICES[size]||SIZE_PRICES['50ml'], oldPrice:''};
 }
 function selectSize(idx,size){
-  if(cart.find(i=>i.idx===idx)) return;
+  // نحفظ الكمية المكتوبة قبل ما نغيّر الحجم
+  const q=document.getElementById('cardQty_'+idx);
+  if(q && !findItem(idx,selectedSizes[idx]||'')) pendingQty[idx]=parseInt(q.textContent,10)||1;
   selectedSizes[idx]=size;
-  const pf=loadPerfumes()[idx], pw=document.getElementById('priceWrap_'+idx);
-  if(pf&&pw){ const sp=sizePrices(pf,size); pw.innerHTML=buildPriceBlock(sp.price,sp.oldPrice,pf.currency); }
-  const pk=document.getElementById('sizePicker_'+idx); if(!pk) return;
-  pk.classList.remove('size-error');
-  pk.querySelectorAll('.size-opt').forEach(b=>b.classList.toggle('active',b.dataset.size===size));
+  renderCards();
 }
 function addToCart(idx){
   const p=loadPerfumes()[idx]; if(!p) return;
   if(p.badge==='soldout'){showToast('❌ هذا العطر نافذ وغير متوفر حاليًا');return;}
-  const ex=cart.find(i=>i.idx===idx);
-  if(ex) return;
   const size=selectedSizes[idx];
+  if(size && findItem(idx,size)) return;
   if(!size){
     const pk=document.getElementById('sizePicker_'+idx);
     if(pk){ pk.classList.remove('size-error'); void pk.offsetWidth; pk.classList.add('size-error'); setTimeout(()=>pk.classList.remove('size-error'),1800); }
@@ -591,21 +591,24 @@ function addToCart(idx){
   const qtyEl=document.getElementById('cardQty_'+idx);
   const qty=Math.max(parseInt(qtyEl?.textContent||'1',10)||1,1);
   cart.push({idx,name:p.name,price:parseInt(String(sizePrices(p,size).price||'0').replace(/[^0-9]/g,''))||0,currency:p.currency||'دينار',qty,size});
+  delete pendingQty[idx];
   saveCart(); updateCartUI(); renderCards();
   showToast(`🛍️ تمت إضافة ${qty} من ${p.name} (${size})`);
 }
 function adjustCardQty(idx,d){
-  const item=cart.find(i=>i.idx===idx);
-  if(item){ changeQty(idx,d); return; }
+  const size=selectedSizes[idx];
+  const item=size?findItem(idx,size):null;
+  if(item){ changeQty(idx,size,d); return; }
   const el=document.getElementById('cardQty_'+idx); if(!el) return;
-  el.textContent=Math.max(1,Math.min(99,(parseInt(el.textContent,10)||1)+d));
+  const v=Math.max(1,Math.min(99,(parseInt(el.textContent,10)||1)+d));
+  el.textContent=v; pendingQty[idx]=v;
 }
-function changeQty(idx,d){
-  const item=cart.find(i=>i.idx===idx); 
+function changeQty(idx,size,d){
+  const item=findItem(idx,size); 
   if(!item) return;
   item.qty+=d; 
   if(item.qty<=0) {
-    cart=cart.filter(i=>i.idx!==idx);
+    cart=cart.filter(i=>!(i.idx===idx && cartSize(i)===size));
     // التحقق إذا كان الكود المطبق يحتاج إلى إزالة بسبب تغيير السلة
     if(appliedCoupon){
       const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
@@ -620,8 +623,8 @@ function changeQty(idx,d){
   updateCartUI(); 
   renderCards(); 
 }
-function removeFromCart(idx){ 
-  cart=cart.filter(i=>i.idx!==idx); 
+function removeFromCart(idx,size){ 
+  cart=cart.filter(i=>!(i.idx===idx && cartSize(i)===size)); 
   saveCart(); 
   // التحقق إذا كان الكود المطبق يحتاج إلى إزالة بسبب تغيير السلة
   if(appliedCoupon){
@@ -657,13 +660,7 @@ function handleCustomerDeleted(){
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden) verifyCustomer(); });
 window.addEventListener('focus',()=>{ verifyCustomer(); });
 async function openCart(){
-  const customer=tryParse(CUSTOMER_KEY,null);
-  if(!customer?.name||!customer?.phone){
-    pendingCartOpen=true;
-    editCustomer();
-    return;
-  }
-  if(!(await verifyCustomer())) return;
+  // السلة تنفتح عادي بدون حساب — الحساب يُطلب عند الضغط على "طلب"
   document.getElementById('cartSidebar').classList.add('open'); document.getElementById('cartOverlay').classList.add('open');
 }
 function closeCart(){ document.getElementById('cartSidebar').classList.remove('open'); document.getElementById('cartOverlay').classList.remove('open'); }
@@ -730,11 +727,11 @@ function updateCartUI(){
         <div class="ci-price">${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}</div>
       </div>
       <div class="ci-qty">
-        <button class="qty-btn" onclick="changeQty(${item.idx},-1)">−</button>
+        <button class="qty-btn" onclick="changeQty(${item.idx},'${cartSize(item)}',-1)">−</button>
         <span class="qty-num">${item.qty}</span>
-        <button class="qty-btn" onclick="changeQty(${item.idx},1)">+</button>
+        <button class="qty-btn" onclick="changeQty(${item.idx},'${cartSize(item)}',1)">+</button>
       </div>
-      <button class="ci-remove" onclick="removeFromCart(${item.idx})">🗑️</button>
+      <button class="ci-remove" onclick="removeFromCart(${item.idx},'${cartSize(item)}')">🗑️</button>
     </div>`).join('');
 }
 
@@ -780,11 +777,11 @@ async function applyCoupon(){
   if(!res||!res.found){showCouponMsg('❌ الكود غير صحيح','error');return;}
   const coupon=res.coupon;
   if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
-  const myUsage=Number(res.myUses)||0;
-  const totalUses=Number(coupon.totalUses)||0;
-  
-  if(totalUses>=coupon.maxUses){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
-  if((coupon.usagePolicy||'once')==='once'&&myUsage>=1){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
+  // السيرفر يرجّع فقط: منتهي؟ / ممنوع عليّ؟ (بدون أرقام الاستخدام)
+  const exhausted = coupon.exhausted!==undefined ? coupon.exhausted===true : (Number(coupon.totalUses)||0)>=coupon.maxUses;
+  const blocked   = coupon.blockedForMe!==undefined ? coupon.blockedForMe===true : ((coupon.usagePolicy||'once')==='once'&&(Number(res.myUses)||0)>=1);
+  if(exhausted){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
+  if(blocked){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
   
   // حساب الخصم
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
@@ -800,11 +797,8 @@ async function applyCoupon(){
   }
   
   appliedCoupon=coupon;
-  const remaining=coupon.maxUses-totalUses-1;
   const valTxt=isBundle?bundleLabel:coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
-  const policyTxt=(coupon.usagePolicy||'once')==='multiple'?'يمكنك استخدامه عدة مرات':'مرة واحدة لكل زبون';
-  
-  showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt}) — ${policyTxt} — متبقي للكود ${remaining} ${remaining===1?'استخدام':'استخدامات'}`,'success');
+  showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt})`,'success');
   updateCartUI();
 }
 function removeCoupon(){
@@ -829,8 +823,16 @@ function updateDeliverySummary(){
   if(province) fee=province==='ميسان' ? (area==='district'?3000:2000) : 5000;
   document.getElementById('deliverySummary').textContent=fee ? `سعر التوصيل: ${fee.toLocaleString('en-US')} دينار` : 'اختر المحافظة والمنطقة لحساب التوصيل';
 }
-function openDelivery(){
+async function openDelivery(){
   if(!cart.length) return;
+  const customer=tryParse(CUSTOMER_KEY,null);
+  // ما عنده حساب: اطلب منه يسوي حساب أول، وبعدها تطلع نافذة المحافظة والعنوان
+  if(!customer?.name||!customer?.phone){
+    pendingCartOpen=true;
+    editCustomer();
+    return;
+  }
+  if(!(await verifyCustomer())) return;
   document.getElementById('deliveryPopup').style.display='flex';
 }
 function confirmDelivery(){
@@ -903,11 +905,12 @@ function renderCards(){
   const perfumes=loadPerfumes();
   if(!perfumes.length){ grid.innerHTML='<p style="text-align:center;color:rgba(255,255,255,0.8);padding:40px;grid-column:1/-1">لا توجد عطور حتى الآن 🌸</p>'; return; }
   grid.innerHTML=perfumes.map((p,idx)=>{
-    const item=cart.find(i=>i.idx===idx);
+    const curSize=selectedSizes[idx]||cart.find(i=>i.idx===idx)?.size||'';
+    const item=curSize?findItem(idx,curSize):null;
     const inCart=Boolean(item);
     const isSoldOut=p.badge==='soldout';
-    const qty=item?.qty||1;
-    const curSize=item?.size||selectedSizes[idx]||'';
+    const qty=item?.qty||pendingQty[idx]||1;
+    const inCartSizes=['50ml','30ml'].filter(sz=>findItem(idx,sz));
     return `<div class="card">
       ${p.image?`<div class="card-img-wrap"><img class="zoomable-perfume-image" src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
       ${buildStatusBadge(p.badge)}
@@ -916,7 +919,7 @@ function renderCards(){
       ${p.nameEn?`<div class="card-name-en">${p.nameEn}</div>`:''}
       <div class="size-label">اختر حجم العطر</div>
       <div class="size-picker" id="sizePicker_${idx}">
-        ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${(inCart||isSoldOut)?'disabled':''}>${sz}</button>`).join('')}
+        ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${isSoldOut?'disabled':''}>${sz}${findItem(idx,sz)?' 🛍️':''}</button>`).join('')}
       </div>
       <div id="priceWrap_${idx}">${curSize?(()=>{const sp=sizePrices(p,curSize);return buildPriceBlock(sp.price,sp.oldPrice,p.currency);})():'<div class="card-price-wrap"><div class="price-header"><div class="card-price-label">السعر</div></div><div class="price-pick">اختر الحجم لمعرفة السعر</div></div>'}</div>
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
@@ -925,7 +928,7 @@ function renderCards(){
         <span class="card-qty-num" id="cardQty_${idx}">${qty}</span>
         <button class="card-qty-btn" onclick="adjustCardQty(${idx},1)" aria-label="زيادة الكمية" ${isSoldOut?'disabled':''}>+</button>
       </div>
-      <button class="btn-add-cart${inCart?' added':''}" id="cartBtn_${idx}" onclick="${isSoldOut?'showToast(\'❌ هذا العطر نافذ وغير متوفر حاليًا\')':inCart?`removeFromCart(${idx})`:`addToCart(${idx})`}" ${isSoldOut?'disabled':''}>
+      <button class="btn-add-cart${inCart?' added':''}" id="cartBtn_${idx}" onclick="${isSoldOut?'showToast(\'❌ هذا العطر نافذ وغير متوفر حاليًا\')':inCart?`removeFromCart(${idx},'${curSize}')`:`addToCart(${idx})`}" ${isSoldOut?'disabled':''}>
         ${isSoldOut?'🚫 غير متوفر':inCart?'🗑️ إزالة من السلة':'🛍️ أضف إلى السلة'}
       </button>
     </div>`;
