@@ -483,6 +483,7 @@ function renderStats(){
   var delivered = orders.filter(function(o){ return o.status==='delivered'; }).length;
   var phones    = {};
   orders.forEach(function(o){ if(o.customer&&o.customer.phone) phones[o.customer.phone]=1; });
+  tryParse(CUSTOMERS_KEY, []).forEach(function(c){ if(c&&c.phone) phones[c.phone]=1; });
   var custs = Object.keys(phones).length;
   document.getElementById('statsGrid').innerHTML =
     '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-num">' + orders.length + '</div><div class="stat-label">إجمالي الطلبات</div></div>' +
