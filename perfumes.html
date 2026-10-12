@@ -100,6 +100,7 @@ main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 .card-name-ar{font-size:1.3rem;font-weight:900;color:white;text-shadow:0 1px 5px rgba(196,90,122,0.2);margin:10px 0 5px;line-height:1.3}
 .card-name-en{font-family:'Playfair Display',serif;font-size:.87rem;font-style:italic;color:rgba(255,255,255,0.75);margin-bottom:12px}
 .card-size{font-size:.84rem;color:rgba(255,255,255,0.7);margin-bottom:4px}
+.price-pick{font-size:.95rem;font-weight:800;color:rgba(255,255,255,0.92);text-align:center;padding:8px 0}
 .size-label{font-size:.8rem;font-weight:800;color:rgba(255,255,255,0.9);text-align:center;margin:4px 0 2px}
 .size-picker{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 8px;padding:8px;border-radius:50px;border:2px solid transparent;transition:border-color .2s,background .2s}
 .size-opt{min-width:92px;padding:9px 18px;border-radius:50px;border:2px solid white;background:rgba(255,255,255,0.88);color:#c45a7a;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(196,90,122,0.18)}
@@ -554,10 +555,10 @@ function loadCart(){ cart=tryParse(CART_KEY,[]); }
 function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
 
 const selectedSizes={};
-// سعر العطر حسب الحجم (30ml له سعر خاص إذا موجود، وإلا نفس سعر 50ml)
+// أسعار موحدة لكل العطور حسب الحجم (غيّر الأرقام هنا إذا تغيّرت الأسعار)
+const SIZE_PRICES={'50ml':20000,'30ml':15000};
 function sizePrices(p,size){
-  if(size==='30ml' && String(p.price30||'').trim()) return {price:p.price30, oldPrice:p.oldPrice30||''};
-  return {price:p.price, oldPrice:p.oldPrice};
+  return {price:SIZE_PRICES[size]||SIZE_PRICES['50ml'], oldPrice:''};
 }
 function selectSize(idx,size){
   if(cart.find(i=>i.idx===idx)) return;
@@ -863,7 +864,7 @@ function renderCards(){
       <div class="size-picker" id="sizePicker_${idx}">
         ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${(inCart||isSoldOut)?'disabled':''}>${sz}</button>`).join('')}
       </div>
-      <div id="priceWrap_${idx}">${(()=>{const sp=sizePrices(p,curSize);return buildPriceBlock(sp.price,sp.oldPrice,p.currency);})()}</div>
+      <div id="priceWrap_${idx}">${curSize?(()=>{const sp=sizePrices(p,curSize);return buildPriceBlock(sp.price,sp.oldPrice,p.currency);})():'<div class="card-price-wrap"><div class="price-header"><div class="card-price-label">السعر</div></div><div class="price-pick">اختر الحجم لمعرفة السعر</div></div>'}</div>
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
       <div class="card-qty">
         <button class="card-qty-btn" onclick="adjustCardQty(${idx},-1)" aria-label="إنقاص الكمية" ${isSoldOut?'disabled':''}>−</button>
