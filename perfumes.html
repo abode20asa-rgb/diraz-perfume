@@ -436,6 +436,50 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 <script src="perfumes-data.js"></script>
 <script src="supabase-config.js"></script>
 <script>
+/* ---------- تتبع الزوار ---------- */
+function trackVisitor(){
+  // لا نتبع الزوار لو كان مسجل دخوله
+  if(localStorage.getItem('diraz_admin_pass')) return;
+  
+  var today = new Date().toDateString();
+  var lastVisit = localStorage.getItem('diraz_last_visit');
+  
+  // إذا أول زيارة للموقع، زد العداد
+  if(!lastVisit){
+    var totalVisitors = parseInt(localStorage.getItem('diraz_visitors') || '0') + 1;
+    localStorage.setItem('diraz_visitors', totalVisitors);
+    localStorage.setItem('diraz_last_visit', today);
+    localStorage.setItem('diraz_first_visit', today);
+  }
+  // إذا اليوم جديد، زد زوار اليوم
+  else if(lastVisit !== today){
+    var todayVisitors = parseInt(localStorage.getItem('diraz_today_visitors') || '0') + 1;
+    localStorage.setItem('diraz_today_visitors', todayVisitors);
+    localStorage.setItem('diraz_last_visit', today);
+  }
+  
+  // إذا أول زيارة للأسبوع، زد زوار الأسبوع
+  var weekStart = getWeekStart(new Date());
+  var weekKey = 'diraz_week_' + weekStart.toISOString().split('T')[0];
+  if(!localStorage.getItem(weekKey)){
+    localStorage.setItem(weekKey, '1');
+    var weekVisitors = parseInt(localStorage.getItem('diraz_week_visitors') || '0') + 1;
+    localStorage.setItem('diraz_week_visitors', weekVisitors);
+  }
+}
+
+function getWeekStart(date){
+  var d = new Date(date);
+  var day = d.getDay();
+  var diff = d.getDate() - day + (day === 0 ? -6 : 1); // الأحد = 0
+  return new Date(d.setDate(diff));
+}
+
+// تشغيل التتبع عند تحميل الصفحة
+trackVisitor();
+</script>
+
+<script>
 // ══════════════════════════════════════════
 const STORAGE_KEY  = 'diraz_perfumes';
 const CART_KEY     = 'diraz_cart';

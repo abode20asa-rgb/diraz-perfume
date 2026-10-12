@@ -48,6 +48,17 @@ input:checked+.slider-sw:before{transform:translateX(-30px);background:#25D366}
 .github-instr{display:none;background:rgba(255,255,255,0.15);border-radius:14px;padding:16px 20px;margin-bottom:20px;font-size:.86rem;color:white;line-height:2}
 .github-instr code{background:rgba(0,0,0,0.2);padding:2px 8px;border-radius:6px}
 /* Section Card */
+.section-card{background:rgba(255,255,255,0.28);backdrop-filter:blur(18px);border:1.5px solid rgba(255,255,255,0.55);border-radius:22px;padding:24px;margin-bottom:20px;box-shadow:0 10px 30px rgba(196,90,122,0.15)}
+.section-card h2{color:white;font-size:1.4rem;font-weight:900;margin-bottom:16px;text-align:center}
+.section-card p{color:rgba(255,255,255,0.8);font-size:.9rem;margin-bottom:12px}
+/* Visitors Stats */
+.visitors-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:16px}
+.visitor-stat-card{background:rgba(255,255,255,0.18);border-radius:16px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,0.3)}
+.visitor-stat-icon{font-size:1.8rem;margin-bottom:8px}
+.visitor-stat-num{font-size:1.6rem;font-weight:900;color:white;margin-bottom:4px}
+.visitor-stat-label{font-size:.85rem;color:rgba(255,255,255,0.8)}
+.btn-reset-visitors{width:100%;padding:10px;border-radius:50px;border:none;background:rgba(255,255,255,0.2);color:white;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;transition:transform .2s;margin-top:12px}
+.btn-reset-visitors:hover{transform:translateY(-2px);background:rgba(255,255,255,0.3)}
 .section-card{background:rgba(255,255,255,0.25);backdrop-filter:blur(18px);border:1.5px solid rgba(255,255,255,0.5);border-radius:22px;padding:30px;margin-bottom:28px}
 .section-card h2{color:white;font-size:1.3rem;font-weight:900;margin-bottom:22px;padding-bottom:12px;border-bottom:1px solid rgba(255,255,255,0.3)}
 /* Stats */
@@ -213,6 +224,29 @@ textarea{resize:vertical;min-height:80px}
       <div class="cust-grid" id="custList"></div>
     </div>
 
+    <!-- الزوار -->
+    <div class="section-card">
+      <h2>👁️ إحصائيات الزوار</h2>
+      <div class="visitors-stats">
+        <div class="visitor-stat-card">
+          <div class="visitor-stat-icon">👁️</div>
+          <div class="visitor-stat-num" id="visitorsCount">0</div>
+          <div class="visitor-stat-label">إجمالي الزوار</div>
+        </div>
+        <div class="visitor-stat-card">
+          <div class="visitor-stat-icon">📅</div>
+          <div class="visitor-stat-num" id="todayVisitors">0</div>
+          <div class="visitor-stat-label">زوار اليوم</div>
+        </div>
+        <div class="visitor-stat-card">
+          <div class="visitor-stat-icon">📈</div>
+          <div class="visitor-stat-num" id="weekVisitors">0</div>
+          <div class="visitor-stat-label">زوار هذا الأسبوع</div>
+        </div>
+        <button class="btn-reset-visitors" onclick="resetVisitors()">🔄 إعادة تعيين الإحصائيات</button>
+      </div>
+    </div>
+
     <!-- أكواد الخصم -->
     <div class="section-card">
       <h2>🏷️ أكواد الخصم</h2>
@@ -361,6 +395,7 @@ function initAll(){
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    initVisitors(); // ⭐ استدعاء الزوار
   }).catch(cloudFail);
   loadPerfumesFromSource().then(function(){ renderList(); updateStorageBar(); });
   renderList(); updateStorageBar();
@@ -477,6 +512,75 @@ function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){ ret
 function tryParse(k, f){ try{ var d=localStorage.getItem(k); return d ? JSON.parse(d) : f; } catch(e){ return f; } }
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2800); }
 
+// ══ Visitors ══
+function initVisitors(){
+  var today = new Date().toDateString();
+  var lastVisit = localStorage.getItem('diraz_last_visit');
+  
+  // إذا أول زيارة للموقع، زد العداد
+  if(!lastVisit){
+    var totalVisitors = parseInt(localStorage.getItem('diraz_visitors') || '0') + 1;
+    localStorage.setItem('diraz_visitors', totalVisitors);
+    localStorage.setItem('diraz_last_visit', today);
+    localStorage.setItem('diraz_first_visit', today);
+  }
+  // إذا اليوم جديد، زد زوار اليوم
+  else if(lastVisit !== today){
+    var todayVisitors = parseInt(localStorage.getItem('diraz_today_visitors') || '0') + 1;
+    localStorage.setItem('diraz_today_visitors', todayVisitors);
+    localStorage.setItem('diraz_last_visit', today);
+  }
+  
+  // إذا أول زيارة للأسبوع، زد زوار الأسبوع
+  var weekStart = getWeekStart(new Date());
+  var weekKey = 'diraz_week_' + weekStart.toISOString().split('T')[0];
+  if(!localStorage.getItem(weekKey)){
+    localStorage.setItem(weekKey, '1');
+    var weekVisitors = parseInt(localStorage.getItem('diraz_week_visitors') || '0') + 1;
+    localStorage.setItem('diraz_week_visitors', weekVisitors);
+  }
+  
+  renderVisitors();
+}
+
+function getWeekStart(date){
+  var d = new Date(date);
+  var day = d.getDay();
+  var diff = d.getDate() - day + (day === 0 ? -6 : 1); // الأحد = 0
+  return new Date(d.setDate(diff));
+}
+
+function renderVisitors(){
+  var totalVisitors = parseInt(localStorage.getItem('diraz_visitors') || '0');
+  var todayVisitors = parseInt(localStorage.getItem('diraz_today_visitors') || '0');
+  var weekVisitors = parseInt(localStorage.getItem('diraz_week_visitors') || '0');
+  
+  document.getElementById('visitorsCount').textContent = totalVisitors;
+  document.getElementById('todayVisitors').textContent = todayVisitors;
+  document.getElementById('weekVisitors').textContent = weekVisitors;
+}
+
+function resetVisitors(){
+  if(!confirm('هل أنت متأكد من إعادة تعيين إحصائيات الزوار؟ هذه العملة لا يمكن التراجع عنها.')) return;
+  
+  localStorage.removeItem('diraz_visitors');
+  localStorage.removeItem('diraz_today_visitors');
+  localStorage.removeItem('diraz_week_visitors');
+  localStorage.removeItem('diraz_last_visit');
+  localStorage.removeItem('diraz_first_visit');
+  
+  // مسح جميع بيانات الأسبوع
+  for(var i = 0; i < localStorage.length; i++){
+    var key = localStorage.key(i);
+    if(key && key.startsWith('diraz_week_')){
+      localStorage.removeItem(key);
+    }
+  }
+  
+  renderVisitors();
+  showToast('🔄 تم إعادة تعيين إحصائيات الزوار');
+}
+
 // ══ Stats ══
 function renderStats(){
   var orders    = tryParse(ORDERS_KEY, []);
@@ -486,11 +590,13 @@ function renderStats(){
   orders.forEach(function(o){ if(o.customer&&o.customer.phone) phones[o.customer.phone]=1; });
   tryParse(CUSTOMERS_KEY, []).forEach(function(c){ if(c&&c.phone) phones[c.phone]=1; });
   var custs = Object.keys(phones).length;
+  var visitors = tryParse('diraz_visitors', 0);
   document.getElementById('statsGrid').innerHTML =
     '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-num">' + orders.length + '</div><div class="stat-label">إجمالي الطلبات</div></div>' +
     '<div class="stat-card"><div class="stat-icon">🟡</div><div class="stat-num">' + pending + '</div><div class="stat-label">قيد الانتظار</div></div>' +
     '<div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-num">' + delivered + '</div><div class="stat-label">تم التسليم</div></div>' +
-    '<div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num">' + custs + '</div><div class="stat-label">عدد الزبائن</div></div>';
+    '<div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num">' + custs + '</div><div class="stat-label">عدد الزبائن</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-num">' + visitors + '</div><div class="stat-label">عدد الزوار</div></div>';
 }
 
 // ══ Orders ══
