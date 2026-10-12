@@ -720,7 +720,10 @@ function editPerfume(i){
   document.getElementById('f_desc').value    = p.description||'';
   if(p.image){ document.getElementById('imgPreviewBig').src=p.image; document.getElementById('previewName').textContent='الصورة الحالية'; document.getElementById('previewSize').textContent='يمكنك تغييرها'; document.getElementById('previewWrap').classList.add('visible'); keepOldImage=true; selectedBase64=''; }
   editIndex=i; document.getElementById('formTitle').textContent='✏️ تعديل العطر'; document.getElementById('cancelBtn').style.display='inline-block';
-  window.scrollTo({top:0,behavior:'smooth'});
+  var card=document.getElementById('formTitle').closest('.section-card')||document.getElementById('formTitle');
+  card.style.scrollMarginTop='12px';
+  card.scrollIntoView({behavior:'smooth',block:'start'});
+  setTimeout(function(){ try{ document.getElementById('f_name').focus({preventScroll:true}); }catch(e){} },400);
 }
 function deletePerfume(i){ if(!confirm('حذف العطر؟'))return; var p=tryParse(STORAGE_KEY,[]); p.splice(i,1); persistPerfumes(p); renderList(); updateStorageBar(); showToast('🗑️ تم حذف العطر'); }
 function resetForm(){
