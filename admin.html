@@ -159,10 +159,11 @@ textarea{resize:vertical;min-height:80px}
     <div class="lock-icon">🔐</div>
     <h2>لوحة التحكم</h2>
     <p>ديراز للعطور — الدخول للمشرف فقط</p>
-    <input type="password" id="passInput" class="lock-input" placeholder="كلمة السر"
+    <input type="email" id="emailInput" class="lock-input" placeholder="الإيميل" dir="ltr" autocomplete="username" style="letter-spacing:0">
+    <input type="password" id="passInput" class="lock-input" placeholder="كلمة السر" autocomplete="current-password"
            onkeydown="if(event.key==='Enter')checkPass()">
-    <button class="lock-btn" onclick="checkPass()">دخول</button>
-    <div class="lock-error" id="lockError">❌ كلمة السر غلط، حاول مجدداً</div>
+    <button class="lock-btn" id="loginBtn" onclick="checkPass()">دخول</button>
+    <div class="lock-error" id="lockError">❌ الإيميل أو كلمة السر غلط</div>
   </div>
 </div>
 
@@ -220,6 +221,8 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>النوع *</label><select id="cp_type"><option value="percent">نسبة مئوية (%)</option><option value="fixed">مبلغ ثابت (دينار)</option></select></div>
         <div class="form-group"><label>القيمة *</label><input type="number" id="cp_value" placeholder="20"></div>
         <div class="form-group"><label>حد الاستخدام / شخص</label><input type="number" id="cp_maxUses" value="1" min="1"></div>
+        <div class="form-group"><label>اسم منشئ المحتوى (اختياري)</label><input type="text" id="cp_creator" placeholder="مثال: سارة"></div>
+        <div class="form-group"><label>عمولة المنشئ لكل طلب (دينار)</label><input type="number" id="cp_commission" value="5000" min="0"></div>
       </div>
       <div class="form-actions" style="margin-top:14px"><button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button></div>
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
@@ -276,36 +279,144 @@ textarea{resize:vertical;min-height:80px}
 </div>
 <div id="toast"></div>
 
+<script src="perfumes-data.js"></script>
+<script src="supabase-config.js"></script>
 <script>
-const ADMIN_PASSWORD = 'diraz@2026/admin';
 const STORAGE_KEY    = 'diraz_perfumes';
 const ORDERS_KEY     = 'diraz_orders';
 const COUPONS_KEY    = 'diraz_coupons';
 const WA_NUM         = '9647747474014';
 let   currentFilter  = 'all';
 
-// ══ Auth ══
-function checkPass(){
-  const val = document.getElementById('passInput').value;
-  if(val === ADMIN_PASSWORD){
-    document.getElementById('lockScreen').style.display = 'none';
-    document.getElementById('adminPanel').style.display = 'block';
-    initAll();
-  } else {
-    const e = document.getElementById('lockError');
-    e.style.display = 'block';
+// ══ Auth (Supabase Auth: إيميل + كلمة سر) ══
+function showLockError(msg){
+  var e = document.getElementById('lockError');
+  e.textContent = msg; e.style.display = 'block';
+  setTimeout(function(){ e.style.display = 'none'; }, 3000);
+}
+async function checkPass(){
+  var email = (document.getElementById('emailInput').value||'').trim();
+  var pass  = document.getElementById('passInput').value;
+  if(!email || !pass){ showLockError('❗ أدخل الإيميل وكلمة السر'); return; }
+  var btn = document.getElementById('loginBtn'); btn.disabled = true;
+  try{
+    try{ await DirazCloud.signIn(email, pass); }
+    catch(e){
+      DirazCloud.signOut();
+      var m = String((e && e.message) || e);
+      var msg = /confirm/i.test(m) ? '❌ الإيميل غير مؤكد — فعّل Auto Confirm للمستخدم في Supabase'
+              : /invalid/i.test(m) ? '❌ الإيميل أو كلمة السر غلط، أو الحساب غير موجود في Supabase'
+              : /fetch|network|load/i.test(m) ? '❌ تعذّر الاتصال بـ Supabase — تأكد من الإنترنت وملف supabase-config.js'
+              : '❌ فشل الدخول: ' + m;
+      showLockError(msg); return;
+    }
+    var ok;
+    try{ ok = await DirazCloud.rpc('am_i_admin'); }
+    catch(e){ DirazCloud.signOut(); showLockError('❌ الدخول نجح لكن دالة am_i_admin غير موجودة — شغّل supabase-security.sql في Supabase'); return; }
+    if(ok !== true){ DirazCloud.signOut(); showLockError('❌ هذا الحساب ليس حساب أدمن (الإيميل ما يطابق is_admin في SQL)'); return; }
+    enterPanel();
+  }finally{
+    btn.disabled = false;
     document.getElementById('passInput').value = '';
-    setTimeout(function(){ e.style.display = 'none'; }, 2500);
   }
 }
+function enterPanel(){
+  document.getElementById('lockScreen').style.display = 'none';
+  document.getElementById('adminPanel').style.display = 'block';
+  initAll();
+}
 function logout(){
+  DirazCloud.signOut();
+  // امسح نسخة بيانات الزبائن من هذا المتصفح
+  [ORDERS_KEY, COUPONS_KEY, 'diraz_customers'].forEach(function(k){ try{ localStorage.removeItem(k); }catch(e){} });
   document.getElementById('lockScreen').style.display = 'flex';
   document.getElementById('adminPanel').style.display = 'none';
   document.getElementById('passInput').value = '';
 }
+function cloudFail(e){
+  if(e && e.message === 'SESSION_EXPIRED'){ showToast('⚠️ انتهت الجلسة، سجّل الدخول من جديد'); logout(); return; }
+  showToast('⚠️ فشل الحفظ على السيرفر');
+}
 function initAll(){
-  renderStats(); renderOrders(); renderCustomers();
-  renderCoupons(); renderList(); updateStorageBar(); initSiteToggle();
+  initSiteToggle();
+  pullFromCloud().then(function(){
+    renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+  }).catch(cloudFail);
+  loadPerfumesFromSource().then(function(){ renderList(); updateStorageBar(); });
+  renderList(); updateStorageBar();
+}
+
+// ══ مزامنة الطلبات والزبائن والكوبونات مع Supabase ══
+var MIGRATED_KEY = 'diraz_admin_migrated_v1';
+async function fetchAllRows(){
+  var r = await Promise.all([
+    DirazCloud.list('orders'),
+    DirazCloud.list('customers'),
+    DirazCloud.list('coupons')
+  ]);
+  return { orders:r[0]||[], customers:r[1]||[], coupons:r[2]||[] };
+}
+// مرة وحدة: ارفع أي بيانات محلية قديمة (من قبل الربط) للسيرفر
+async function migrateLocal(rows){
+  var pushed = false;
+  var have = {};
+  rows.orders.forEach(function(r){ have[r.id] = 1; });
+  var mo = tryParse(ORDERS_KEY,[]).filter(function(o){ return o && o.id && !have[String(o.id)]; });
+  if(mo.length){ await DirazCloud.upsert('orders', mo.map(function(o){ return {id:String(o.id), data:o}; })); pushed = true; }
+  have = {};
+  rows.customers.forEach(function(r){ have[r.phone] = 1; });
+  var mc = tryParse(CUSTOMERS_KEY,[]).filter(function(c){ return c && c.phone && !have[c.phone]; });
+  if(mc.length){ await DirazCloud.upsert('customers', mc.map(function(c){ return {phone:c.phone, data:c}; })); pushed = true; }
+  have = {};
+  rows.coupons.forEach(function(r){ have[r.code] = 1; });
+  var mk = tryParse(COUPONS_KEY,[]).filter(function(c){ return c && c.code && !have[c.code]; });
+  if(mk.length){ await DirazCloud.upsert('coupons', mk.map(function(c){ return {code:c.code, data:c, total_uses:Number(c.totalUses)||0}; })); pushed = true; }
+  return pushed;
+}
+async function pullFromCloud(){
+  if(!DirazCloud.hasSession()) throw new Error('SESSION_EXPIRED');
+  var rows = await fetchAllRows();
+  if(localStorage.getItem(MIGRATED_KEY) !== '1'){
+    if(await migrateLocal(rows)) rows = await fetchAllRows();
+    localStorage.setItem(MIGRATED_KEY,'1');
+  }
+  var orders = rows.orders.map(function(r){ return r.data; }).filter(Boolean)
+    .sort(function(a,b){ return new Date(b.date) - new Date(a.date); });
+  var customers = rows.customers.map(function(r){ return Object.assign({phone:r.phone}, r.data); });
+  var coupons = rows.coupons.map(function(r){ return Object.assign({}, r.data, {code:r.code, totalUses:r.total_uses}); })
+    .sort(function(a,b){ return new Date(b.createdAt||0) - new Date(a.createdAt||0); });
+  localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+  localStorage.setItem(COUPONS_KEY, JSON.stringify(coupons));
+}
+
+// ══ Perfumes storage (cloud + local) ══
+function persistPerfumes(arr){
+  try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(arr)); }
+  catch(e){ showToast('⚠️ مساحة تخزين المتصفح ممتلئة'); }
+  if(!window.DirazCloud) return Promise.resolve();
+  return DirazCloud.upsert('perfumes',[{id:1,data:arr,updated_at:new Date().toISOString()}])
+    .catch(cloudFail);
+}
+async function loadPerfumesFromSource(){
+  var cloud=null;
+  try{
+    if(window.DirazCloud){
+      var rows=await DirazCloud.list('perfumes','&order=updated_at.desc');
+      if(rows.length && Array.isArray(rows[0].data)) cloud=rows[0].data;
+    }
+  }catch(e){}
+  if(cloud){
+    try{ localStorage.setItem(STORAGE_KEY,JSON.stringify(cloud)); }catch(e){}
+    return;
+  }
+  // ما موجود بالسيرفر: استخدم المحلي، وإذا فارغ استخدم العطور الافتراضية من perfumes-data.js
+  var local=tryParse(STORAGE_KEY,[]);
+  if(!local.length && Array.isArray(window.DIRAZ_DEFAULT_PERFUMES)){
+    await persistPerfumes(window.DIRAZ_DEFAULT_PERFUMES);
+  } else if(local.length){
+    await persistPerfumes(local);
+  }
 }
 
 // ══ Site Toggle ══
@@ -340,6 +451,7 @@ function updateStatusBar(isOpen){
 }
 
 // ══ Helpers ══
+function esc(v){ return String(v==null?'':v).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function tryParse(k, f){ try{ var d=localStorage.getItem(k); return d ? JSON.parse(d) : f; } catch(e){ return f; } }
 function showToast(m){ var t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(function(){ t.classList.remove('show'); }, 2800); }
 
@@ -368,15 +480,15 @@ function renderOrders(){
     var idx  = orders.indexOf(order);
     var d    = new Date(order.date).toLocaleString('ar', {dateStyle:'medium', timeStyle:'short'});
     var ip   = order.status === 'pending';
-    var items = (order.items||[]).map(function(i,n){ return '<div class="order-item-row">'+(n+1)+'. '+i.name+' × '+i.qty+' — '+(i.price*i.qty).toLocaleString('en-US')+' '+i.currency+'</div>'; }).join('');
+    var items = (order.items||[]).map(function(i,n){ return '<div class="order-item-row">'+(n+1)+'. '+esc(i.name)+' × '+esc(i.qty)+' — '+esc((i.price*i.qty).toLocaleString('en-US'))+' '+esc(i.currency)+'</div>'; }).join('');
     return '<div class="order-card">' +
       '<div class="order-top">' +
-        '<div><div class="order-id"># '+(order.id||idx+1)+'</div><div class="order-cust">👤 '+(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+(order.customer&&order.customer.phone||'—')+'</div></div>' +
+        '<div><div class="order-id"># '+esc(order.id||idx+1)+'</div><div class="order-cust">👤 '+esc(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+esc(order.customer&&order.customer.phone||'—')+'</div></div>' +
         '<div style="text-align:left"><div class="order-date">🕐 '+d+'</div>' +
         '<button class="status-badge '+(ip?'status-pending':'status-delivered')+'" onclick="toggleStatus('+idx+')">'+(ip?'🟡 قيد الانتظار':'🟢 تم التسليم')+'</button></div>' +
       '</div>' +
       '<div class="order-items-list">'+(items||'—')+'</div>' +
-      '<div class="order-total-row"><span class="order-total-label">الإجمالي</span><span class="order-total-val">'+((order.total||0).toLocaleString('en-US'))+' '+(order.currency||'دينار')+'</span></div>' +
+      '<div class="order-total-row"><span class="order-total-label">الإجمالي</span><span class="order-total-val">'+esc((order.total||0).toLocaleString('en-US'))+' '+esc(order.currency||'دينار')+'</span></div>' +
       '<div class="order-actions">' +
         '<button class="btn-deliver" onclick="toggleStatus('+idx+')">'+(ip?'✅ تحديد كمُسلَّم':'↩️ إرجاع لقيد الانتظار')+'</button>' +
         '<button class="btn-wa-resend" onclick="resendWA('+idx+')">💬 إعادة إرسال</button>' +
@@ -385,8 +497,8 @@ function renderOrders(){
   }).join('');
 }
 function filterOrders(f,btn){ currentFilter=f; document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); }); btn.classList.add('active'); renderOrders(); }
-function toggleStatus(i){ var o=tryParse(ORDERS_KEY,[]); if(!o[i])return; o[i].status=o[i].status==='pending'?'delivered':'pending'; localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); renderStats(); renderOrders(); showToast(o[i].status==='delivered'?'✅ تم التسليم':'↩️ رُجّع لقيد الانتظار'); }
-function deleteOrder(i){ if(!confirm('حذف الطلب؟'))return; var o=tryParse(ORDERS_KEY,[]); o.splice(i,1); localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); renderStats(); renderOrders(); showToast('🗑️ تم حذف الطلب'); }
+function toggleStatus(i){ var o=tryParse(ORDERS_KEY,[]); if(!o[i])return; o[i].status=o[i].status==='pending'?'delivered':'pending'; localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); DirazCloud.update('orders','id=eq.'+encodeURIComponent(String(o[i].id)),{data:o[i],updated_at:new Date().toISOString()}).catch(cloudFail); renderStats(); renderOrders(); showToast(o[i].status==='delivered'?'✅ تم التسليم':'↩️ رُجّع لقيد الانتظار'); }
+function deleteOrder(i){ if(!confirm('حذف الطلب؟'))return; var o=tryParse(ORDERS_KEY,[]); var gone=o.splice(i,1)[0]; localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); if(gone) DirazCloud.remove('orders','id=eq.'+encodeURIComponent(String(gone.id))).catch(cloudFail); renderStats(); renderOrders(); showToast('🗑️ تم حذف الطلب'); }
 function resendWA(i){
   var order = tryParse(ORDERS_KEY,[])[i]; if(!order)return;
   var now   = new Date(order.date).toLocaleString('ar',{dateStyle:'long',timeStyle:'short'});
@@ -397,22 +509,54 @@ function resendWA(i){
 }
 
 // ══ Customers ══
+const CUSTOMERS_KEY = 'diraz_customers';
 function renderCustomers(){
   var orders = tryParse(ORDERS_KEY, []);
-  var map    = {};
-  orders.forEach(function(o){ var p=o.customer&&o.customer.phone||'—'; if(!map[p])map[p]={name:o.customer&&o.customer.name||'—',phone:p,count:0}; map[p].count++; });
-  var custs  = Object.values(map);
-  document.getElementById('custCount').textContent = custs.length;
+  var customers = tryParse(CUSTOMERS_KEY, []);
+  var map = {};
+  
+  // إضافة العملاء من الطلبات الجديدة
+  orders.forEach(function(o){
+    if(o.customer && o.customer.phone && o.customer.name){
+      var existing = customers.find(c => c.phone === o.customer.phone);
+      if(!existing){
+        customers.push({
+          phone: o.customer.phone,
+          name: o.customer.name,
+          address: o.customer.address || '',
+          province: o.customer.province || '',
+          area: o.customer.area || '',
+          createdAt: new Date().toISOString()
+        });
+      }
+    }
+  });
+  
+  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+  
+  document.getElementById('custCount').textContent = customers.length;
   var el = document.getElementById('custList');
-  if(!custs.length){ el.innerHTML='<div class="no-items">📭 لا يوجد زبائن بعد</div>'; return; }
-  el.innerHTML = custs.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+c.name+'</div><div class="cust-phone">📱 '+c.phone+'</div></div><div class="cust-orders-count">'+c.count+' '+(c.count===1?'طلب':'طلبات')+'</div><button class="btn-del-order" onclick="deleteCustomer(\''+c.phone.replace(/'/g,"\\'")+'\')">🗑️</button></div>'; }).join('');
+  if(!customers.length){ el.innerHTML='<div class="no-items">📭 لا يوجد زبائن بعد</div>'; return; }
+  el.innerHTML = customers.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+esc(c.name)+'</div><div class="cust-phone">📱 '+esc(c.phone)+'</div><div class="cust-address">📍 '+esc(c.address)+'</div></div><button class="btn-del-order" onclick="deleteCustomer('+i+')">🗑️</button></div>'; }).join('');
 }
-function deleteCustomer(phone){
-  if(!confirm('حذف الزبون '+phone+' وجميع طلباته؟')) return;
+function deleteCustomer(i){
+  var customers = tryParse(CUSTOMERS_KEY, []);
+  if(!customers[i]) return;
+  if(!confirm('حذف الزبون '+customers[i].phone+'؟')) return;
+  var deletedPhone = customers[i].phone;
+  customers.splice(i, 1);
+  localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
+
+  // حذف الطلبات المتعلقة بهذا الزبون
   var orders = tryParse(ORDERS_KEY, []);
   var before = orders.length;
-  orders = orders.filter(function(o){ return !(o.customer && o.customer.phone === phone); });
+  var removedIds = orders.filter(function(o){ return o.customer && o.customer.phone === deletedPhone; }).map(function(o){ return String(o.id); });
+  orders = orders.filter(function(o){ return !(o.customer && o.customer.phone === deletedPhone); });
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
+
+  DirazCloud.remove('customers','phone=eq.'+encodeURIComponent(deletedPhone)).catch(cloudFail);
+  if(removedIds.length) DirazCloud.remove('orders','id=in.('+removedIds.map(encodeURIComponent).join(',')+')').catch(cloudFail);
+
   renderStats(); renderOrders(); renderCustomers();
   showToast('🗑️ تم حذف الزبون و'+(before-orders.length)+' طلب');
 }
@@ -427,16 +571,43 @@ function addCoupon(){
   if(!value){ showToast('❗ أدخل قيمة الخصم'); return; }
   var coupons = tryParse(COUPONS_KEY,[]);
   if(coupons.find(function(c){ return c.code===code; })){ showToast('❗ الكود موجود مسبقاً'); return; }
-  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString()});
+  var creatorName = (document.getElementById('cp_creator').value||'').trim();
+  var commission  = parseInt(document.getElementById('cp_commission').value||'0')||0;
+  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission:commission,creatorToken:genToken()});
   localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));
+  DirazCloud.upsert('coupons',[{code:code,data:coupons[0],total_uses:0}]).catch(cloudFail);
   renderCoupons();
   document.getElementById('cp_code').value = '';
   document.getElementById('cp_value').value = '';
   document.getElementById('cp_maxUses').value = '1';
-  showToast('✅ تم إنشاء كود: '+code);
+  document.getElementById('cp_creator').value = '';
+  document.getElementById('cp_commission').value = '5000';
+  showToast('✅ تم إنشاء كود: '+code+' — اضغط 🔗 لنسخ رابط المنشئ');
 }
-function toggleCouponActive(i){ var c=tryParse(COUPONS_KEY,[]); if(!c[i])return; c[i].active=!c[i].active; localStorage.setItem(COUPONS_KEY,JSON.stringify(c)); renderCoupons(); showToast(c[i].active?'✅ الكود مفعّل':'⏸️ الكود متوقف'); }
-function deleteCoupon(i){ if(!confirm('حذف الكود؟'))return; var c=tryParse(COUPONS_KEY,[]); c.splice(i,1); localStorage.setItem(COUPONS_KEY,JSON.stringify(c)); renderCoupons(); showToast('🗑️ تم حذف الكود'); }
+function genToken(){ var a=new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
+function creatorLink(c){ var base=location.href.split('?')[0].split('#')[0]; base=base.substring(0,base.lastIndexOf('/')+1); return base+'creator.html?c='+encodeURIComponent(c.code)+'&k='+c.creatorToken; }
+function copyText(t){ if(navigator.clipboard&&navigator.clipboard.writeText){ return navigator.clipboard.writeText(t); } return new Promise(function(res){ var ta=document.createElement('textarea'); ta.value=t; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); res(); }); }
+function copyCreatorLink(i,regen){
+  var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
+  if(regen && !confirm('إعادة توليد الرابط راح تلغي الرابط القديم. متأكد؟')) return;
+  if(!c.creatorToken || regen){
+    c.creatorToken=genToken(); if(c.commission===undefined) c.commission=5000;
+    localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
+    DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
+    renderCoupons();
+  }
+  copyText(creatorLink(c)).then(function(){ showToast('🔗 تم نسخ رابط المنشئ'); });
+}
+function editCommission(i){
+  var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
+  var v=prompt('عمولة المنشئ لكل طلب (دينار):', c.commission===undefined?5000:c.commission);
+  if(v===null) return; var n=parseInt(v)||0; c.commission=n;
+  localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
+  DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
+  renderCoupons();
+}
+function toggleCouponActive(i){ var c=tryParse(COUPONS_KEY,[]); if(!c[i])return; c[i].active=!c[i].active; localStorage.setItem(COUPONS_KEY,JSON.stringify(c)); DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c[i].code),{data:c[i],updated_at:new Date().toISOString()}).catch(cloudFail); renderCoupons(); showToast(c[i].active?'✅ الكود مفعّل':'⏸️ الكود متوقف'); }
+function deleteCoupon(i){ if(!confirm('حذف الكود؟'))return; var c=tryParse(COUPONS_KEY,[]); var gone=c.splice(i,1)[0]; localStorage.setItem(COUPONS_KEY,JSON.stringify(c)); if(gone){ DirazCloud.remove('coupons','code=eq.'+encodeURIComponent(gone.code)).catch(cloudFail); DirazCloud.remove('coupon_usage','code=eq.'+encodeURIComponent(gone.code)).catch(cloudFail); } renderCoupons(); showToast('🗑️ تم حذف الكود'); }
 function renderCoupons(){
   var coupons = tryParse(COUPONS_KEY,[]);
   var el = document.getElementById('couponsList');
@@ -444,10 +615,18 @@ function renderCoupons(){
   el.innerHTML = coupons.map(function(c,i){
     var v   = c.type==='percent' ? c.value+'%' : c.value.toLocaleString('en-US')+' دينار';
     var pct = Math.min(c.totalUses/Math.max(c.maxUses,1)*100,100).toFixed(0);
+    var os = tryParse(ORDERS_KEY,[]).filter(function(o){ return o && o.coupon && String(o.coupon.code||'').toUpperCase()===c.code; });
+    var sales = os.reduce(function(s,o){ return s+(Number(o.subtotal)||0); },0);
+    var dlv = os.filter(function(o){ return o.status==='delivered'; }).length;
+    var com = (c.commission===undefined?5000:c.commission);
+    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+(dlv*com).toLocaleString('en-US')+' (عمولة '+com.toLocaleString('en-US')+'/طلب)';
     return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
-      '<div class="coupon-code-big">'+c.code+'</div>' +
-      '<div class="coupon-meta"><strong>خصم '+v+'</strong><br>حد '+c.maxUses+' / شخص • استُخدم '+c.totalUses+' مرة<div class="uses-bar"><div class="uses-fill" style="width:'+pct+'%"></div></div></div>' +
+      '<div class="coupon-code-big">'+esc(c.code)+'</div>' +
+      '<div class="coupon-meta"><strong>خصم '+esc(v)+'</strong><br>حد '+esc(c.maxUses)+' / شخص • استُخدم '+esc(c.totalUses)+' مرة'+creatorLine+'<div class="uses-bar"><div class="uses-fill" style="width:'+pct+'%"></div></div></div>' +
       '<div class="coupon-actions">' +
+        '<button class="status-badge status-delivered" title="نسخ رابط المنشئ" onclick="copyCreatorLink('+i+')">🔗 رابط المنشئ</button>' +
+        '<button class="status-badge status-pending" title="تعديل العمولة" onclick="editCommission('+i+')">💰</button>' +
+        (c.creatorToken?'<button class="status-badge status-pending" title="إعادة توليد الرابط" onclick="copyCreatorLink('+i+',true)">♻️</button>':'') +
         '<button class="status-badge '+(c.active?'status-delivered':'status-pending')+'" onclick="toggleCouponActive('+i+')">'+(c.active?'🟢 فعال':'🔴 متوقف')+'</button>' +
         '<button class="btn-del-order" onclick="deleteCoupon('+i+')">🗑️</button>' +
       '</div></div>';
@@ -503,9 +682,9 @@ function savePerfume(){
     description:(document.getElementById('f_desc').value||'').trim()
   };
   var perfumes = tryParse(STORAGE_KEY,[]);
-  if(editIndex>=0){ perfumes[editIndex]=p; showToast('✅ تم تعديل العطر'); }
+  if(editIndex>=0){ perfumes[editIndex]=Object.assign({},perfumes[editIndex],p); showToast('✅ تم تعديل العطر'); }
   else { perfumes.push(p); showToast('✅ تمت إضافة العطر'); }
-  localStorage.setItem(STORAGE_KEY,JSON.stringify(perfumes));
+  persistPerfumes(perfumes);
   resetForm(); renderList(); updateStorageBar();
 }
 function editPerfume(i){
@@ -522,7 +701,7 @@ function editPerfume(i){
   editIndex=i; document.getElementById('formTitle').textContent='✏️ تعديل العطر'; document.getElementById('cancelBtn').style.display='inline-block';
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function deletePerfume(i){ if(!confirm('حذف العطر؟'))return; var p=tryParse(STORAGE_KEY,[]); p.splice(i,1); localStorage.setItem(STORAGE_KEY,JSON.stringify(p)); renderList(); updateStorageBar(); showToast('🗑️ تم حذف العطر'); }
+function deletePerfume(i){ if(!confirm('حذف العطر؟'))return; var p=tryParse(STORAGE_KEY,[]); p.splice(i,1); persistPerfumes(p); renderList(); updateStorageBar(); showToast('🗑️ تم حذف العطر'); }
 function resetForm(){
   ['f_name','f_nameEn','f_size','f_price','f_oldPrice','f_desc'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('f_type').value='نسائي'; document.getElementById('f_currency').value='دينار';
@@ -537,13 +716,18 @@ function renderList(){
   if(!perfumes.length){ list.innerHTML='<div class="no-items">لا توجد عطور بعد 🌸</div>'; return; }
   list.innerHTML = perfumes.map(function(p,i){
     return '<div class="perfume-item">' +
-      '<div class="item-thumb">'+(p.image?'<img src="'+p.image+'" onerror="this.parentElement.innerHTML=\'🌸\'">'+'':'🌸')+'</div>' +
-      '<div class="perfume-info"><div class="pname">'+p.name+(p.nameEn?' — '+p.nameEn:'')+'</div>' +
-      '<div class="pmeta">'+(p.type||'')+' '+(p.size?'• '+p.size:'')+' '+(p.price?'• '+parseInt(p.price).toLocaleString('en-US')+' '+(p.currency||''):'')+'</div></div>' +
+      '<div class="item-thumb">'+(p.image?'<img src="'+esc(p.image)+'" onerror="this.parentElement.innerHTML=\'🌸\'">'+'':'🌸')+'</div>' +
+      '<div class="perfume-info"><div class="pname">'+esc(p.name)+(p.nameEn?' — '+esc(p.nameEn):'')+'</div>' +
+      '<div class="pmeta">'+esc(p.type||'')+' '+(p.size?'• '+esc(p.size):'')+' '+(p.price?'• '+esc(parseInt(p.price).toLocaleString('en-US'))+' '+esc(p.currency||''):'')+'</div></div>' +
       '<div class="item-actions"><button class="btn-edit" onclick="editPerfume('+i+')">✏️ تعديل</button><button class="btn-delete" onclick="deletePerfume('+i+')">🗑️</button></div>' +
     '</div>';
   }).join('');
 }
+(async function(){
+  if(DirazCloud.hasSession()){
+    try{ if(await DirazCloud.rpc('am_i_admin')===true) enterPanel(); }catch(e){}
+  }
+})();
 </script>
 </body>
 </html>

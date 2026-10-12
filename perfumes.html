@@ -55,6 +55,8 @@ background-repeat:repeat;background-size:120px 60px;min-height:100vh}
 .popup-btn{width:100%;padding:14px;border:none;border-radius:50px;margin-top:6px;background:white;color:#c45a7a;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 20px rgba(255,255,255,0.25)}
 .popup-btn:hover{transform:translateY(-3px)}
 .popup-error{color:#ffd0d0;font-size:.84rem;margin-top:8px;display:none}
+.popup-back{width:100%;padding:12px;border:1.5px solid rgba(255,255,255,0.6);border-radius:50px;margin-top:10px;background:transparent;color:white;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s}
+.popup-back:hover{background:rgba(255,255,255,0.2)}
 .delivery-box{background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.5);border-radius:26px;padding:28px 24px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
 .delivery-box h2{color:white;font-size:1.35rem;margin-bottom:8px}.delivery-box p{color:rgba(255,255,255,.82);font-size:.86rem;margin-bottom:18px}
 .delivery-field{width:100%;padding:13px 16px;border-radius:50px;margin-bottom:11px;border:1.5px solid rgba(255,255,255,.45);background:rgba(255,255,255,.18);color:white;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none}
@@ -98,6 +100,16 @@ main{padding:50px 30px 100px;max-width:1200px;margin:0 auto}
 .card-name-ar{font-size:1.3rem;font-weight:900;color:white;text-shadow:0 1px 5px rgba(196,90,122,0.2);margin:10px 0 5px;line-height:1.3}
 .card-name-en{font-family:'Playfair Display',serif;font-size:.87rem;font-style:italic;color:rgba(255,255,255,0.75);margin-bottom:12px}
 .card-size{font-size:.84rem;color:rgba(255,255,255,0.7);margin-bottom:4px}
+.size-label{font-size:.8rem;font-weight:800;color:rgba(255,255,255,0.9);text-align:center;margin:4px 0 2px}
+.size-picker{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 8px;padding:8px;border-radius:50px;border:2px solid transparent;transition:border-color .2s,background .2s}
+.size-opt{min-width:92px;padding:9px 18px;border-radius:50px;border:2px solid white;background:rgba(255,255,255,0.88);color:#c45a7a;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(196,90,122,0.18)}
+.size-opt:hover{background:white;transform:translateY(-2px)}
+.size-opt.active{background:#c45a7a;color:white;border-color:#c45a7a;box-shadow:0 4px 14px rgba(196,90,122,0.45)}
+.size-opt.active::before{content:'✓ '}
+.size-opt:disabled{cursor:default;transform:none}
+.size-opt:disabled:not(.active){opacity:.45}
+.size-picker.size-error{border-color:#ff4757;background:rgba(255,71,87,0.18);animation:sizeShake .4s}
+@keyframes sizeShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
 .card-desc{font-size:.83rem;color:#fff;font-weight:600;line-height:1.7;margin-top:12px;text-shadow:0 1px 4px rgba(196,90,122,.18)}
 
 /* ══ Price ══ */
@@ -320,6 +332,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
     <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
     <button class="popup-btn" onclick="saveCustomer()">إنشاء الحساب والمتابعة ←</button>
+    <button type="button" class="popup-back" onclick="closeCustomerPopup()">→ رجوع</button>
     <div class="popup-error" id="popError">❗ يرجى إدخال الاسم الأول ورقم هاتف صحيح</div>
   </div>
 </div>
@@ -467,8 +480,8 @@ async function checkCustomer(){
   let c=tryParse(CUSTOMER_KEY,null);
   if(c?.phone&&window.DirazCloud){
     try{
-      const remote=await DirazCloud.list('customers','&phone=eq.'+encodeURIComponent(c.phone));
-      if(!remote.length){
+      const exists=await DirazCloud.rpc('customer_exists',{p_phone:c.phone});
+      if(exists===false){
         localStorage.removeItem(CUSTOMER_KEY);
         c=null;
       }
@@ -480,9 +493,20 @@ async function checkCustomer(){
     document.getElementById('customerPopup').style.display='none';
     return;
   }
+  popupForced=true;
   document.getElementById('customerPopup').style.display='flex';
 }
+let popupForced=false;
+function closeCustomerPopup(){
+  // أول زيارة بدون حساب: الرجوع يودي للصفحة الرئيسية
+  if(popupForced && !tryParse(CUSTOMER_KEY,null)?.phone){ window.location.href='index.html'; return; }
+  popupForced=false;
+  pendingCartOpen=false;
+  document.getElementById('popError').style.display='none';
+  document.getElementById('customerPopup').style.display='none';
+}
 function editCustomer(){
+  popupForced=false;
   const c=tryParse(CUSTOMER_KEY,{});
   document.getElementById('popName').value=c.name||'';
   document.getElementById('popPhone').value=c.phone||'';
@@ -515,8 +539,7 @@ function saveCustomer(){
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
   } catch(e) {}
   if(window.DirazCloud) {
-    DirazCloud.upsert('customers', [{phone:phoneDigits, data:customer}]).catch(()=>{});
-    DirazCloud.remove('deleted_customers', 'phone=eq.'+encodeURIComponent(phoneDigits)).catch(()=>{});
+    DirazCloud.rpc('save_customer', {p_phone:phoneDigits, p_data:customer}).catch(()=>{});
   }
   if(pendingCartOpen){
     pendingCartOpen=false;
@@ -530,16 +553,31 @@ let pendingCartOpen=false;
 function loadCart(){ cart=tryParse(CART_KEY,[]); }
 function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
 
+const selectedSizes={};
+function selectSize(idx,size){
+  if(cart.find(i=>i.idx===idx)) return;
+  selectedSizes[idx]=size;
+  const pk=document.getElementById('sizePicker_'+idx); if(!pk) return;
+  pk.classList.remove('size-error');
+  pk.querySelectorAll('.size-opt').forEach(b=>b.classList.toggle('active',b.dataset.size===size));
+}
 function addToCart(idx){
   const p=loadPerfumes()[idx]; if(!p) return;
   if(p.badge==='soldout'){showToast('❌ هذا العطر نافذ وغير متوفر حاليًا');return;}
   const ex=cart.find(i=>i.idx===idx);
   if(ex) return;
+  const size=selectedSizes[idx];
+  if(!size){
+    const pk=document.getElementById('sizePicker_'+idx);
+    if(pk){ pk.classList.remove('size-error'); void pk.offsetWidth; pk.classList.add('size-error'); setTimeout(()=>pk.classList.remove('size-error'),1800); }
+    showToast('⚠️ اختر حجم العطر');
+    return;
+  }
   const qtyEl=document.getElementById('cardQty_'+idx);
   const qty=Math.max(parseInt(qtyEl?.textContent||'1',10)||1,1);
-  cart.push({idx,name:p.name,price:parseInt((p.price||'0').replace(/[^0-9]/g,'')),currency:p.currency||'دينار',qty});
+  cart.push({idx,name:p.name,price:parseInt((p.price||'0').replace(/[^0-9]/g,'')),currency:p.currency||'دينار',qty,size});
   saveCart(); updateCartUI(); renderCards();
-  showToast(`🛍️ تمت إضافة ${qty} من ${p.name}`);
+  showToast(`🛍️ تمت إضافة ${qty} من ${p.name} (${size})`);
 }
 function adjustCardQty(idx,d){
   const item=cart.find(i=>i.idx===idx);
@@ -647,7 +685,7 @@ function updateCartUI(){
   itemsEl.innerHTML=cart.map(item=>`
     <div class="cart-item">
       <div class="ci-info">
-        <div class="ci-name">${item.name}</div>
+        <div class="ci-name">${item.name}${item.size?` <small>(${item.size})</small>`:''}</div>
         <div class="ci-price">${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}</div>
       </div>
       <div class="ci-qty">
@@ -670,28 +708,20 @@ async function applyCoupon(){
   if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو ثلاثة عطور أولاً','error');return;}
   if(itemCount>3){showCouponMsg('❌ الخصم يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط. عند 4 عطور أو أكثر لا يوجد خصم','error');return;}
   
-  // جلب الكوبونات من التخزين المحلي أو السحابة
-  let coupons=tryParse(COUPONS_KEY,[]);
-  if(window.DirazCloud){
-    try {
-      const cloudCoupons=await DirazCloud.list('coupons','&order=updated_at.desc');
-      const activeCloudCoupons=cloudCoupons.map(row=>row.data).filter(coupon=>coupon&&coupon.active);
-      if(activeCloudCoupons.length) coupons=activeCloudCoupons;
-    } catch(e) {
-      console.log('Error fetching cloud coupons:', e);
-    }
-  }
-  
-  const coupon=coupons.find(c=>c.code===code);
-  if(!coupon){showCouponMsg('❌ الكود غير صحيح','error');return;}
-  if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
-  
-  // التحقق من استخدامات الكود
-  const usageData=tryParse(USAGE_KEY,{});
+  // التحقق من الكود عبر السيرفر (يرجّع الكود المطلوب فقط)
   const customer=tryParse(CUSTOMER_KEY,{});
   const customerKey=customer.phone ? customer.phone.replace(/\D/g,'') : 'device';
-  const codeUsage=usageData[code];
-  const myUsage=codeUsage && typeof codeUsage==='object' ? (codeUsage[customerKey]||0) : 0;
+  let res=null;
+  try{
+    res=await DirazCloud.rpc('check_coupon',{p_code:code,p_customer_key:customerKey});
+  }catch(e){
+    showCouponMsg('❌ تعذر التحقق من الكود حالياً، حاول مرة ثانية','error');
+    return;
+  }
+  if(!res||!res.found){showCouponMsg('❌ الكود غير صحيح','error');return;}
+  const coupon=res.coupon;
+  if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
+  const myUsage=Number(res.myUses)||0;
   const totalUses=Number(coupon.totalUses)||0;
   
   if(totalUses>=coupon.maxUses){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
@@ -764,26 +794,22 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
 
   // حفظ الطلب
   if(appliedCoupon){
-    try{
-      const usage=tryParse(USAGE_KEY,{});
-      const customerKey=cust.phone ? cust.phone.replace(/\D/g,'') : 'device';
-      if(typeof usage[appliedCoupon.code]!=='object' || usage[appliedCoupon.code]===null) usage[appliedCoupon.code]={};
-      usage[appliedCoupon.code][customerKey]=(usage[appliedCoupon.code][customerKey]||0)+1;
-      localStorage.setItem(USAGE_KEY,JSON.stringify(usage));
-      await DirazCloud.upsert('coupon_usage', [{code:appliedCoupon.code, customer_key:customerKey, uses:usage[appliedCoupon.code][customerKey]}]).catch(()=>{});
-      const coupons=tryParse(COUPONS_KEY,[]);
-      const ci=coupons.findIndex(c=>c.code===appliedCoupon.code);
-      if(ci>=0){coupons[ci].totalUses=(Number(coupons[ci].totalUses)||0)+1;localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));}
-      await DirazCloud.update('coupons','code=eq.'+encodeURIComponent(appliedCoupon.code),{data:appliedCoupon,total_uses:(Number(appliedCoupon.totalUses)||0)+1,updated_at:new Date().toISOString()}).catch(()=>{});
-    }catch(e){}
+    const customerKey=cust.phone ? cust.phone.replace(/\D/g,'') : 'device';
+    let redeemed=false;
+    try{ redeemed=await DirazCloud.rpc('redeem_coupon',{p_code:appliedCoupon.code,p_customer_key:customerKey}); }catch(e){}
+    if(!redeemed){
+      removeCoupon();
+      showToast('❌ الكود لم يعد صالحاً، تم إلغاء الخصم');
+      return;
+    }
   }
   const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—'},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
-  DirazCloud.upsert('orders', [{id:String(order.id), data:order}]).catch(()=>{});
+  DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{});
 
   // رسالة واتساب
   let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
-  cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
+  cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name}${item.size?` (${item.size})`:''} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
   msg+='━━━━━━━━━━━━━━━━━━━━\n';
   if(appliedCoupon) msg+=`كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n`;
   msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
@@ -819,13 +845,17 @@ function renderCards(){
     const inCart=Boolean(item);
     const isSoldOut=p.badge==='soldout';
     const qty=item?.qty||1;
+    const curSize=item?.size||selectedSizes[idx]||'';
     return `<div class="card">
       ${p.image?`<div class="card-img-wrap"><img class="zoomable-perfume-image" src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
       ${buildStatusBadge(p.badge)}
       ${p.type?`<div class="badge">${p.type}</div>`:''}
       ${p.name?`<div class="card-name-ar">${p.name}</div>`:''}
       ${p.nameEn?`<div class="card-name-en">${p.nameEn}</div>`:''}
-      ${p.size?`<div class="card-size">📦 ${p.size}</div>`:''}
+      <div class="size-label">اختر حجم العطر</div>
+      <div class="size-picker" id="sizePicker_${idx}">
+        ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${(inCart||isSoldOut)?'disabled':''}>${sz}</button>`).join('')}
+      </div>
       ${buildPriceBlock(p.price,p.oldPrice,p.currency)}
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
       <div class="card-qty">
@@ -848,6 +878,7 @@ loadCart();
 renderCards();
 updateCartUI();
 hydrateCloudPerfumes();
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('customerPopup').style.display==='flex') closeCustomerPopup(); });
 </script>
 </body>
 </html>

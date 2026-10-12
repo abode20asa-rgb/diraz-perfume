@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <script>
@@ -444,9 +444,11 @@
         </div>
     </div>
 
-    <!-- الجانب الايسر: الزجاجة تنزل (RTL: order:2 = يسار) -->
-    <div class="bottle-wrap">
-        <img src="images/bottle_main.png" alt="DIRAZ Perfume Bottle" class="bottle-img">
+    <!-- الجانب الايسر: الزجاجة 360° -->
+    <div class="bottle-wrap" id="bottleViewer">
+        <img id="bottleImg" class="bottle-img"
+             src="images/bottle_main.png"
+             alt="DIRAZ Perfume Bottle">
     </div>
 
     <!-- سهم التمرير -->
@@ -456,6 +458,48 @@
 
 
 <footer style="background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.6);font-size:0.8rem;position:fixed;bottom:0;right:0;left:0;">&#169; 2026 &#1583;&#1610;&#1585;&#1575;&#1586; &#1604;&#1604;&#1593;&#1591;&#1608;&#1585; | DIRAZ PERFUME &mdash; &#1580;&#1605;&#1610;&#1593; &#1575;&#1604;&#1581;&#1602;&#1608;&#1602; &#1605;&#1581;&#1601;&#1608;&#1592;&#1577;</footer>
+
+<script>
+/* ---------- 360° Bottle Viewer (rotateY) ---------- */
+const bottleImg = document.getElementById('bottleImg');
+const bottleViewer = document.getElementById('bottleViewer');
+
+let isDragging = false;
+let startX = 0;
+let currentRotate = 0; // degrees
+
+function applyRotation() {
+    bottleImg.style.transform = `rotateY(${currentRotate}deg)`;
+}
+
+bottleViewer.addEventListener('mousedown', e => { isDragging = true; startX = e.clientX; });
+bottleViewer.addEventListener('touchstart', e => { isDragging = true; startX = e.touches[0].clientX; });
+
+function onMove(clientX) {
+    if (!isDragging) return;
+    const delta = clientX - startX;
+    const step = Math.round(delta / 3); // sensitivity: 3px per degree
+    if (step !== 0) {
+        currentRotate = (currentRotate + step) % 360;
+        applyRotation();
+        startX = clientX;
+    }
+}
+
+bottleViewer.addEventListener('mousemove', e => onMove(e.clientX));
+bottleViewer.addEventListener('touchmove', e => onMove(e.touches[0].clientX));
+
+bottleViewer.addEventListener('mouseup',   () => isDragging = false);
+bottleViewer.addEventListener('mouseleave',()=> isDragging = false);
+bottleViewer.addEventListener('touchend', () => isDragging = false);
+bottleViewer.addEventListener('touchcancel',()=> isDragging = false);
+
+window.addEventListener('load', () => {
+    // ensure transform-origin center
+    bottleImg.style.transformOrigin = 'center center';
+    applyRotation();
+});
+</script>
 
 </body>
 </html>
