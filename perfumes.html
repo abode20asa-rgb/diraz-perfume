@@ -513,7 +513,22 @@ function closeCustomerPopup(){
   document.getElementById('popError').style.display='none';
   document.getElementById('customerPopup').style.display='none';
 }
-function editCustomer(){
+// إذا انحذف الزبون من لوحة الأدمن، تُمسح بياناته المحفوظة بالجهاز أيضاً
+async function purgeIfDeleted(){
+  const c=tryParse(CUSTOMER_KEY,null);
+  if(!c||!c.phone||!window.DirazCloud) return;
+  try{
+    const exists=await DirazCloud.rpc('customer_exists',{p_phone:c.phone});
+    if(exists===false){
+      localStorage.removeItem(CUSTOMER_KEY);
+      const ph=String(c.phone).replace(/\D/g,'');
+      const list=tryParse(CUSTOMERS_KEY,[]).filter(x=>String(x.phone||'').replace(/\D/g,'')!==ph);
+      localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(list));
+    }
+  }catch(e){}
+}
+async function editCustomer(){
+  await purgeIfDeleted();
   popupForced=false;
   const c=tryParse(CUSTOMER_KEY,{});
   document.getElementById('popName').value=c.name||'';
@@ -633,7 +648,8 @@ function removeFromCart(idx,size){
   updateCartUI(); 
   renderCards(); 
 }
-function openCart(){
+async function openCart(){
+  await purgeIfDeleted();
   const customer=tryParse(CUSTOMER_KEY,null);
   if(!customer?.name||!customer?.phone){
     pendingCartOpen=true;
@@ -905,6 +921,7 @@ function renderCards(){
 }
 
 // ── Init ──
+purgeIfDeleted();
 loadCart();
 renderCards();
 updateCartUI();
