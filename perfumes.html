@@ -111,6 +111,8 @@ main{padding:50px 30px 30px;max-width:1200px;margin:0 auto}
 .size-label{font-size:.8rem;font-weight:800;color:rgba(255,255,255,0.9);text-align:center;margin:4px 0 2px}
 .size-picker{display:flex;align-items:center;justify-content:center;gap:12px;margin:2px 0 8px;padding:8px;border-radius:50px;border:2px solid transparent;transition:border-color .2s,background .2s}
 .size-opt{min-width:92px;padding:9px 18px;border-radius:50px;border:2px solid white;background:rgba(255,255,255,0.88);color:#c45a7a;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:900;cursor:pointer;transition:all .2s;box-shadow:0 2px 8px rgba(196,90,122,0.18)}
+.size-opt{white-space:nowrap;position:relative}
+.size-opt.in-cart::after{content:'';position:absolute;top:-3px;right:-3px;width:14px;height:14px;border-radius:50%;background:#25D366;border:2px solid white}
 .size-opt:hover{background:white;transform:translateY(-2px)}
 .size-opt.active{background:#c45a7a;color:white;border-color:#c45a7a;box-shadow:0 4px 14px rgba(196,90,122,0.45)}
 .size-opt.active::before{content:'✓ '}
@@ -919,7 +921,7 @@ function renderCards(){
       ${p.nameEn?`<div class="card-name-en">${p.nameEn}</div>`:''}
       <div class="size-label">اختر حجم العطر</div>
       <div class="size-picker" id="sizePicker_${idx}">
-        ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${isSoldOut?'disabled':''}>${sz}${findItem(idx,sz)?' 🛍️':''}</button>`).join('')}
+        ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}${findItem(idx,sz)?' in-cart':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${isSoldOut?'disabled':''}>${sz}</button>`).join('')}
       </div>
       <div id="priceWrap_${idx}">${curSize?(()=>{const sp=sizePrices(p,curSize);return buildPriceBlock(sp.price,sp.oldPrice,p.currency);})():'<div class="card-price-wrap"><div class="price-header"><div class="card-price-label">السعر</div></div><div class="price-pick">اختر الحجم لمعرفة السعر</div></div>'}</div>
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
