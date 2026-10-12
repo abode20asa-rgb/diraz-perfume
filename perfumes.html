@@ -756,11 +756,9 @@ async function applyCoupon(){
   if(!res||!res.found){showCouponMsg('❌ الكود غير صحيح','error');return;}
   const coupon=res.coupon;
   if(!coupon.active){showCouponMsg('❌ هذا الكود غير فعال حالياً','error');return;}
-  const myUsage=Number(res.myUses)||0;
-  const totalUses=Number(coupon.totalUses)||0;
-  
-  if(totalUses>=coupon.maxUses){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
-  if((coupon.usagePolicy||'once')==='once'&&myUsage>=1){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
+  // الحدود (عدد الاستخدامات والسياسة) تُحسب على السيرفر ولا تظهر للزبون
+  if(coupon.exhausted){showCouponMsg('❌ انتهت جميع استخدامات هذا الكود','error');return;}
+  if(coupon.blockedForMe){showCouponMsg('❌ لا يمكن استخدام هذا الكود أكثر من مرة لنفس العميل','error');return;}
   
   // حساب الخصم
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
@@ -775,11 +773,8 @@ async function applyCoupon(){
   }
   
   appliedCoupon=coupon;
-  const remaining=coupon.maxUses-totalUses-1;
   const valTxt=isDirazSpecial?(dirazD.free?'العطر الثالث مجاناً — ':'')+'سعر خاص '+dirazD.target.toLocaleString('en-US')+' دينار':coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
-  const policyTxt=(coupon.usagePolicy||'once')==='multiple'?'يمكنك استخدامه عدة مرات':'مرة واحدة لكل زبون';
-  
-  showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt}) — ${policyTxt} — متبقي للكود ${remaining} ${remaining===1?'استخدام':'استخدامات'}`,'success');
+  showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt})`,'success');
   updateCartUI();
 }
 function removeCoupon(){
