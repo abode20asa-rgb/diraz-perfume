@@ -661,10 +661,15 @@ function updateCartUI(){
       appliedCoupon=null; discountAmount=0;
       showCouponMsg('❌ تم إلغاء الخصم: يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط','error');
     } else {
-      const isDirazSpecial=String(appliedCoupon.code).toUpperCase()==='ديراز';
+      const isDirazSpecial=isDealCoupon(appliedCoupon);
       if(isDirazSpecial){
-        const targetTotal=currentItemCount===2?35000:45000;
-        discountAmount=Math.max(rawTotal-targetTotal,0);
+        const deal=dirazDeal();
+        if(deal.error){
+          appliedCoupon=null; discountAmount=0;
+          showCouponMsg(deal.error,'error');
+        } else {
+          discountAmount=Math.max(rawTotal-deal.target,0);
+        }
       } else {
         discountAmount=appliedCoupon.type==='percent'?Math.round(rawTotal*appliedCoupon.value/100):Math.min(appliedCoupon.value,rawTotal);
       }
@@ -712,6 +717,23 @@ function updateCartUI(){
     </div>`).join('');
 }
 
+// ── عرض ديراز: حساب السعر الخاص حسب الأحجام ──
+// عطرين 50مل = 35,000 | 3 عطور 50مل = 45,000 | 3 عطور 30مل (الثالث مجاني) = 30,000
+// عطر واحد أو خلط الأحجام (30 و50) = لا خصم
+// أي كود قيمته 12.5 يستلم هذه العروض، والأكواد الثانية ما تتأثر
+const DEAL_VALUE=12.5;
+function isDealCoupon(c){ return !!c && Number(c.value)===DEAL_VALUE; }
+const DIRAZ_DEALS={ two50:35000, three50:45000, three30:30000 };
+function dirazDeal(){
+  const cnt=sz=>cart.filter(i=>(i.size||'50ml')===sz).reduce((s,i)=>s+i.qty,0);
+  const n50=cnt('50ml'), n30=cnt('30ml'), n=n50+n30;
+  if(n===2&&n50===2) return {target:DIRAZ_DEALS.two50};
+  if(n===3&&n50===3) return {target:DIRAZ_DEALS.three50};
+  if(n===3&&n30===3) return {target:DIRAZ_DEALS.three30, free:true};
+  if(n===2&&n30===2) return {error:'❌ أضف عطراً ثالثاً حجم 30 مل ويكون مجاناً: 3 عطور 30 مل بسعر '+DIRAZ_DEALS.three30.toLocaleString('en-US')+' دينار بدل 45,000'};
+  return {error:'❌ الخصم يُطبّق على عطرين 50 مل، أو 3 عطور بنفس الحجم. لا يُطبّق عند خلط حجم 30 مل مع 50 مل'};
+}
+
 // ── Coupon ──
 let appliedCoupon=null, discountAmount=0;
 function toggleCouponInput(){ document.getElementById('couponArea').classList.toggle('open'); }
@@ -744,18 +766,19 @@ async function applyCoupon(){
   
   // حساب الخصم
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
-  const isDirazSpecial=code==='ديراز';
+  const isDirazSpecial=isDealCoupon(coupon);
+  if(isDirazSpecial){ const d0=dirazDeal(); if(d0.error){showCouponMsg(d0.error,'error');return;} }
   
+  const dirazD=isDirazSpecial?dirazDeal():null;
   if(isDirazSpecial){
-    const targetTotal=itemCount===2?35000:45000;
-    discountAmount=Math.max(rawTotal-targetTotal,0);
+    discountAmount=Math.max(rawTotal-dirazD.target,0);
   } else {
     discountAmount=coupon.type==='percent'?Math.round(rawTotal*coupon.value/100):Math.min(coupon.value,rawTotal);
   }
   
   appliedCoupon=coupon;
   const remaining=coupon.maxUses-totalUses-1;
-  const valTxt=isDirazSpecial?(itemCount===2?'سعر خاص 35,000 دينار':'سعر خاص 45,000 دينار'):coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
+  const valTxt=isDirazSpecial?(dirazD.free?'العطر الثالث مجاناً — ':'')+'سعر خاص '+dirazD.target.toLocaleString('en-US')+' دينار':coupon.type==='percent'?coupon.value+'%':coupon.value.toLocaleString('en-US')+' دينار';
   const policyTxt=(coupon.usagePolicy||'once')==='multiple'?'يمكنك استخدامه عدة مرات':'مرة واحدة لكل زبون';
   
   showCouponMsg(`✅ تم تطبيق الكود (خصم ${valTxt}) — ${policyTxt} — متبقي للكود ${remaining} ${remaining===1?'استخدام':'استخدامات'}`,'success');
