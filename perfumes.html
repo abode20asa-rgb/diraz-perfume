@@ -554,9 +554,16 @@ function loadCart(){ cart=tryParse(CART_KEY,[]); }
 function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
 
 const selectedSizes={};
+// سعر العطر حسب الحجم (30ml له سعر خاص إذا موجود، وإلا نفس سعر 50ml)
+function sizePrices(p,size){
+  if(size==='30ml' && String(p.price30||'').trim()) return {price:p.price30, oldPrice:p.oldPrice30||''};
+  return {price:p.price, oldPrice:p.oldPrice};
+}
 function selectSize(idx,size){
   if(cart.find(i=>i.idx===idx)) return;
   selectedSizes[idx]=size;
+  const pf=loadPerfumes()[idx], pw=document.getElementById('priceWrap_'+idx);
+  if(pf&&pw){ const sp=sizePrices(pf,size); pw.innerHTML=buildPriceBlock(sp.price,sp.oldPrice,pf.currency); }
   const pk=document.getElementById('sizePicker_'+idx); if(!pk) return;
   pk.classList.remove('size-error');
   pk.querySelectorAll('.size-opt').forEach(b=>b.classList.toggle('active',b.dataset.size===size));
@@ -575,7 +582,7 @@ function addToCart(idx){
   }
   const qtyEl=document.getElementById('cardQty_'+idx);
   const qty=Math.max(parseInt(qtyEl?.textContent||'1',10)||1,1);
-  cart.push({idx,name:p.name,price:parseInt((p.price||'0').replace(/[^0-9]/g,'')),currency:p.currency||'دينار',qty,size});
+  cart.push({idx,name:p.name,price:parseInt(String(sizePrices(p,size).price||'0').replace(/[^0-9]/g,''))||0,currency:p.currency||'دينار',qty,size});
   saveCart(); updateCartUI(); renderCards();
   showToast(`🛍️ تمت إضافة ${qty} من ${p.name} (${size})`);
 }
@@ -856,7 +863,7 @@ function renderCards(){
       <div class="size-picker" id="sizePicker_${idx}">
         ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${(inCart||isSoldOut)?'disabled':''}>${sz}</button>`).join('')}
       </div>
-      ${buildPriceBlock(p.price,p.oldPrice,p.currency)}
+      <div id="priceWrap_${idx}">${(()=>{const sp=sizePrices(p,curSize);return buildPriceBlock(sp.price,sp.oldPrice,p.currency);})()}</div>
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
       <div class="card-qty">
         <button class="card-qty-btn" onclick="adjustCardQty(${idx},-1)" aria-label="إنقاص الكمية" ${isSoldOut?'disabled':''}>−</button>
