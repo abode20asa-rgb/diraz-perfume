@@ -245,6 +245,9 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>العملة</label>
           <select id="f_currency"><option value="دينار">دينار</option><option value="ريال">ريال</option><option value="درهم">درهم</option><option value="دولار">دولار</option></select>
         </div>
+        <div class="form-group"><label>حالة العطر</label>
+          <select id="f_badge"><option value="">عادي</option><option value="bestseller">⭐ الأكثر مبيعاً</option><option value="limited">🔥 محدود</option><option value="soldout">🚫 نفذ</option></select>
+        </div>
         <div class="form-group full">
           <label>صورة العطر</label>
           <div class="file-upload-area" ondragover="event.preventDefault()" ondrop="handleDrop(event)">
@@ -697,7 +700,7 @@ function savePerfume(){
     type:document.getElementById('f_type').value, size:(document.getElementById('f_size').value||'').trim(),
     price:(document.getElementById('f_price').value||'').trim(), oldPrice:(document.getElementById('f_oldPrice').value||'').trim(),
     price30:(document.getElementById('f_price30').value||'').trim(), oldPrice30:(document.getElementById('f_oldPrice30').value||'').trim(),
-    currency:document.getElementById('f_currency').value, image:img,
+    currency:document.getElementById('f_currency').value, badge:document.getElementById('f_badge').value, image:img,
     description:(document.getElementById('f_desc').value||'').trim()
   };
   var perfumes = tryParse(STORAGE_KEY,[]);
@@ -717,6 +720,7 @@ function editPerfume(i){
   document.getElementById('f_price30').value = p.price30||'';
   document.getElementById('f_oldPrice30').value= p.oldPrice30||'';
   document.getElementById('f_currency').value= p.currency||'دينار';
+  document.getElementById('f_badge').value  = p.badge||'';
   document.getElementById('f_desc').value    = p.description||'';
   if(p.image){ document.getElementById('imgPreviewBig').src=p.image; document.getElementById('previewName').textContent='الصورة الحالية'; document.getElementById('previewSize').textContent='يمكنك تغييرها'; document.getElementById('previewWrap').classList.add('visible'); keepOldImage=true; selectedBase64=''; }
   editIndex=i; document.getElementById('formTitle').textContent='✏️ تعديل العطر'; document.getElementById('cancelBtn').style.display='inline-block';
@@ -728,7 +732,7 @@ function editPerfume(i){
 function deletePerfume(i){ if(!confirm('حذف العطر؟'))return; var p=tryParse(STORAGE_KEY,[]); p.splice(i,1); persistPerfumes(p); renderList(); updateStorageBar(); showToast('🗑️ تم حذف العطر'); }
 function resetForm(){
   ['f_name','f_nameEn','f_size','f_price','f_oldPrice','f_price30','f_oldPrice30','f_desc'].forEach(function(id){ document.getElementById(id).value=''; });
-  document.getElementById('f_type').value='نسائي'; document.getElementById('f_currency').value='دينار';
+  document.getElementById('f_type').value='نسائي'; document.getElementById('f_currency').value='دينار'; document.getElementById('f_badge').value='';
   document.getElementById('f_image').value=''; document.getElementById('previewWrap').classList.remove('visible');
   document.getElementById('formTitle').textContent='➕ إضافة عطر جديد'; document.getElementById('cancelBtn').style.display='none';
   selectedBase64=''; keepOldImage=false; editIndex=-1;
