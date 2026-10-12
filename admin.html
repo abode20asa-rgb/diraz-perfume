@@ -336,7 +336,21 @@ function logout(){
 function cloudFail(e){
   if(e && e.message === 'SESSION_EXPIRED'){ showToast('⚠️ انتهت الجلسة، سجّل الدخول من جديد'); logout(); return; }
   showToast('⚠️ فشل الحفظ على السيرفر');
+  refreshFromCloud();
 }
+// تحديث البيانات من السيرفر (حتى التلفون والحاسبة يشوفون نفس الشي)
+var _refreshing = false;
+function refreshFromCloud(){
+  if(_refreshing || !DirazCloud.hasSession()) return;
+  var panel = document.getElementById('adminPanel');
+  if(!panel || panel.style.display === 'none') return;
+  _refreshing = true;
+  pullFromCloud().then(function(){ renderStats(); renderOrders(); renderCustomers(); renderCoupons(); })
+    .catch(function(){}).then(function(){ _refreshing = false; });
+}
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
+window.addEventListener('focus', refreshFromCloud);
+setInterval(refreshFromCloud, 30000);
 function initAll(){
   initSiteToggle();
   pullFromCloud().then(function(){
@@ -376,8 +390,10 @@ async function migrateLocal(rows){
 async function pullFromCloud(){
   if(!DirazCloud.hasSession()) throw new Error('SESSION_EXPIRED');
   var rows = await fetchAllRows();
+  var cloudEmpty = !rows.orders.length && !rows.customers.length && !rows.coupons.length;
   if(localStorage.getItem(MIGRATED_KEY) !== '1'){
-    if(await migrateLocal(rows)) rows = await fetchAllRows();
+    // ارفع البيانات المحلية القديمة فقط إذا السيرفر فاضي (حتى ما ترجع بيانات انحذفت)
+    if(cloudEmpty && await migrateLocal(rows)) rows = await fetchAllRows();
     localStorage.setItem(MIGRATED_KEY,'1');
   }
   var orders = rows.orders.map(function(r){ return r.data; }).filter(Boolean)
