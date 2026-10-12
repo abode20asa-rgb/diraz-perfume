@@ -222,7 +222,8 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>القيمة *</label><input type="number" id="cp_value" placeholder="20"></div>
         <div class="form-group"><label>حد الاستخدام / شخص</label><input type="number" id="cp_maxUses" value="1" min="1"></div>
         <div class="form-group"><label>اسم منشئ المحتوى (اختياري)</label><input type="text" id="cp_creator" placeholder="مثال: سارة"></div>
-        <div class="form-group"><label>عمولة المنشئ لكل طلب (دينار)</label><input type="number" id="cp_commission" value="5000" min="0"></div>
+        <div class="form-group"><label>عمولة المنشئ على كل عطر 50 مل (دينار)</label><input type="number" id="cp_commission50" value="1000" min="0"></div>
+        <div class="form-group"><label>عمولة المنشئ على كل عطر 30 مل (دينار)</label><input type="number" id="cp_commission30" value="500" min="0"></div>
       </div>
       <div class="form-actions" style="margin-top:14px"><button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button></div>
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
@@ -595,8 +596,9 @@ function addCoupon(){
   var coupons = tryParse(COUPONS_KEY,[]);
   if(coupons.find(function(c){ return c.code===code; })){ showToast('❗ الكود موجود مسبقاً'); return; }
   var creatorName = (document.getElementById('cp_creator').value||'').trim();
-  var commission  = parseInt(document.getElementById('cp_commission').value||'0')||0;
-  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission:commission,creatorToken:genToken()});
+  var commission50 = parseInt(document.getElementById('cp_commission50').value||'0')||0;
+  var commission30 = parseInt(document.getElementById('cp_commission30').value||'0')||0;
+  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission50:commission50,commission30:commission30,creatorToken:genToken()});
   localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));
   DirazCloud.upsert('coupons',[{code:code,data:coupons[0],total_uses:0}]).catch(cloudFail);
   renderCoupons();
@@ -604,7 +606,8 @@ function addCoupon(){
   document.getElementById('cp_value').value = '';
   document.getElementById('cp_maxUses').value = '1';
   document.getElementById('cp_creator').value = '';
-  document.getElementById('cp_commission').value = '5000';
+  document.getElementById('cp_commission50').value = '1000';
+  document.getElementById('cp_commission30').value = '500';
   showToast('✅ تم إنشاء كود: '+code+' — اضغط 🔗 لنسخ رابط المنشئ');
 }
 function genToken(){ var a=new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
@@ -614,17 +617,31 @@ function copyCreatorLink(i,regen){
   var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
   if(regen && !confirm('إعادة توليد الرابط راح تلغي الرابط القديم. متأكد؟')) return;
   if(!c.creatorToken || regen){
-    c.creatorToken=genToken(); if(c.commission===undefined) c.commission=5000;
+    c.creatorToken=genToken(); if(c.commission===undefined && c.commission50===undefined && c.commission30===undefined){ c.commission50=1000; c.commission30=500; }
     localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
     DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
     renderCoupons();
   }
   copyText(creatorLink(c)).then(function(){ showToast('🔗 تم نسخ رابط المنشئ'); });
 }
+function comInfo(c){
+  var legacy = c.commission50===undefined && c.commission30===undefined;
+  return {legacy:legacy, c50:Number(c.commission50)||0, c30:Number(c.commission30)||0, old:(c.commission===undefined?5000:(Number(c.commission)||0))};
+}
+function orderEarn(c,o){
+  var k=comInfo(c); if(k.legacy) return k.old;
+  var n50=0,n30=0;
+  (Array.isArray(o.items)?o.items:[]).forEach(function(it){ var q=parseInt(it.qty)||1; if((it.size||'50ml')==='30ml') n30+=q; else n50+=q; });
+  return n50*k.c50+n30*k.c30;
+}
 function editCommission(i){
   var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
-  var v=prompt('عمولة المنشئ لكل طلب (دينار):', c.commission===undefined?5000:c.commission);
-  if(v===null) return; var n=parseInt(v)||0; c.commission=n;
+  var k=comInfo(c);
+  var v50=prompt('عمولة المنشئ على كل عطر 50 مل (دينار):', k.legacy?1000:k.c50);
+  if(v50===null) return;
+  var v30=prompt('عمولة المنشئ على كل عطر 30 مل (دينار):', k.legacy?500:k.c30);
+  if(v30===null) return;
+  c.commission50=parseInt(v50)||0; c.commission30=parseInt(v30)||0; delete c.commission;
   localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
   DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
   renderCoupons();
@@ -640,9 +657,10 @@ function renderCoupons(){
     var pct = Math.min(c.totalUses/Math.max(c.maxUses,1)*100,100).toFixed(0);
     var os = tryParse(ORDERS_KEY,[]).filter(function(o){ return o && o.coupon && String(o.coupon.code||'').toUpperCase()===c.code; });
     var sales = os.reduce(function(s,o){ return s+(Number(o.subtotal)||0); },0);
-    var dlv = os.filter(function(o){ return o.status==='delivered'; }).length;
-    var com = (c.commission===undefined?5000:c.commission);
-    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+(dlv*com).toLocaleString('en-US')+' (عمولة '+com.toLocaleString('en-US')+'/طلب)';
+    var earned = os.filter(function(o){ return o.status==='delivered'; }).reduce(function(s,o){ return s+orderEarn(c,o); },0);
+    var ki = comInfo(c);
+    var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('50مل: '+ki.c50.toLocaleString('en-US')+' • 30مل: '+ki.c30.toLocaleString('en-US')+' لكل عطر');
+    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+earned.toLocaleString('en-US')+' ('+comTxt+')';
     return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
       '<div class="coupon-code-big">'+esc(c.code)+'</div>' +
       '<div class="coupon-meta"><strong>خصم '+esc(v)+'</strong><br>حد '+esc(c.maxUses)+' / شخص • استُخدم '+esc(c.totalUses)+' مرة'+creatorLine+'<div class="uses-bar"><div class="uses-fill" style="width:'+pct+'%"></div></div></div>' +
