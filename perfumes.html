@@ -69,6 +69,13 @@ header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify
 .header-title .en{font-family:'Playfair Display',serif;font-size:1rem;color:white;letter-spacing:3px}
 .header-title .ar{font-size:.78rem;font-weight:700;color:rgba(255,255,255,0.88)}
 .header-actions{display:flex;gap:8px;align-items:center}
+/* عنوان الهيدر بالنص تماماً على الشاشات الكبيرة */
+@media(min-width:701px){
+  header{display:grid;grid-template-columns:1fr auto 1fr}
+  header .logo{justify-self:start}
+  header .header-title{flex:none;padding:0 12px}
+  header .header-actions{justify-self:end}
+}
 .cart-icon-btn{position:relative;background:white;color:#c45a7a;border:none;padding:8px 16px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;transition:transform .2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .cart-icon-btn:hover{transform:translateY(-2px)}
 .cart-badge{position:absolute;top:-7px;left:-7px;background:#ff4757;color:white;font-size:.7rem;font-weight:900;width:20px;height:20px;border-radius:50%;display:none;align-items:center;justify-content:center;border:2px solid white}
