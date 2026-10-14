@@ -648,6 +648,12 @@ function renderCustomers(){
   orders.forEach(function(o){
     if(o.customer && o.customer.phone && o.customer.name){
       var existing = customers.find(c => c.phone === o.customer.phone);
+      if(existing){
+        if(!existing.age && o.customer.age) existing.age=o.customer.age;
+        if(!existing.address && o.customer.address && o.customer.address!=='—') existing.address=o.customer.address;
+        if(!existing.province && o.customer.province && o.customer.province!=='—') existing.province=o.customer.province;
+        if(!existing.area && o.customer.area && o.customer.area!=='—') existing.area=o.customer.area;
+      }
       if(!existing){
         customers.push({
           phone: o.customer.phone,
@@ -667,7 +673,7 @@ function renderCustomers(){
   var statNum = document.querySelector('#statsGrid .stat-card:last-child .stat-num'); if(statNum) statNum.textContent = customers.length;
   var el = document.getElementById('custList');
   if(!customers.length){ el.innerHTML='<div class="no-items">📭 لا يوجد زبائن بعد</div>'; return; }
-  el.innerHTML = customers.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+esc(c.name)+'</div><div class="cust-phone">📱 '+esc(c.phone)+'</div><div class="cust-address">📍 '+esc(c.address)+'</div></div><button class="btn-del-order" onclick="deleteCustomer('+i+')">🗑️</button></div>'; }).join('');
+  el.innerHTML = customers.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+esc(c.name)+'</div><div class="cust-phone">📱 '+esc(c.phone)+'</div><div class="cust-phone">🎂 العمر: '+esc(c.age?c.age+' سنة':'—')+'</div><div class="cust-address">📍 '+esc([c.province,c.address].filter(function(x){return x&&x!=='—';}).join(' - '))+'</div></div><button class="btn-del-order" onclick="deleteCustomer('+i+')">🗑️</button></div>'; }).join('');
 }
 function deleteCustomer(i){
   var customers = tryParse(CUSTOMERS_KEY, []);

@@ -890,6 +890,14 @@ function confirmDelivery(){
   const customer=tryParse(CUSTOMER_KEY,{});
   const updated={...customer,address,province,area};
   localStorage.setItem(CUSTOMER_KEY,JSON.stringify(updated));
+  try{
+    const pd=String(updated.phone||'').replace(/\D/g,'');
+    const lst=tryParse(CUSTOMERS_KEY,[]);
+    const ix=lst.findIndex(x=>(x.phone||'').replace(/\D/g,'')===pd);
+    if(ix>=0) lst[ix]=updated; else lst.unshift(updated);
+    localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(lst));
+    if(window.DirazCloud && /^07[0-9]{9}$/.test(pd)) DirazCloud.rpc('save_customer',{p_phone:pd,p_data:updated}).catch(()=>{});
+  }catch(e){}
   document.getElementById('deliveryPopup').style.display='none';
   sendOrder(fee,updated);
 }
@@ -913,7 +921,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
       return;
     }
   }
-  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—'},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
   DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{});
 
