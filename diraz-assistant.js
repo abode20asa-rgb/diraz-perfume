@@ -244,6 +244,11 @@
     css.textContent=[
       '#dzA_btn{position:fixed;bottom:22px;right:22px;z-index:900;display:flex;align-items:center;gap:8px;border:none;cursor:pointer;background:#c45a7a;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.9rem;padding:13px 18px;border-radius:50px;box-shadow:0 8px 26px rgba(196,90,122,.45);transition:transform .2s}',
       '#dzA_btn:hover{transform:translateY(-3px)}',
+      '#dzA_btn{padding:8px 18px 8px 10px;gap:10px}',
+      '#dzA_btn .dzA_av{width:42px;height:42px;border-radius:50%;object-fit:cover;border:2px solid rgba(255,255,255,.85);flex-shrink:0;background:#fff}',
+      '#dzA_btn .dzA_tx{display:flex;flex-direction:column;align-items:flex-start;line-height:1.25;text-align:right}',
+      '#dzA_btn .dzA_t1{font-size:.95rem;font-weight:900}',
+      '#dzA_btn .dzA_t2{font-size:.72rem;font-weight:700;opacity:.92}',
       '#dzA_box{position:fixed;bottom:84px;right:22px;z-index:900;width:min(390px,calc(100vw - 24px));height:min(580px,calc(100vh - 110px));display:none;flex-direction:column;background:rgba(255,240,246,.97);border:1.5px solid rgba(255,255,255,.8);border-radius:24px;box-shadow:0 20px 60px rgba(120,30,70,.35);overflow:hidden;font-family:Cairo,sans-serif;direction:rtl}',
       '#dzA_box.open{display:flex}',
       '.dzA_head{background:#c45a7a;color:#fff;padding:13px 16px;display:flex;align-items:center;justify-content:space-between}',
@@ -277,12 +282,12 @@
       '.dzA_reg .dzA_err{color:#d32f2f;font-size:.75rem;font-weight:700;display:none}',
       '.dzA_flash{animation:dzAflash 1.8s ease}',
       '@keyframes dzAflash{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}25%,70%{box-shadow:0 0 0 6px rgba(255,255,255,.95),0 0 30px 8px rgba(196,90,122,.7)}}',
-      '@media(max-width:480px){#dzA_btn{bottom:14px;right:14px;padding:12px 15px}#dzA_box{right:12px;bottom:72px}}'
+      '@media(max-width:480px){#dzA_btn{bottom:14px;right:14px;padding:7px 14px 7px 8px}#dzA_box{right:12px;bottom:72px}}'
     ].join('\n');
     document.head.appendChild(css);
 
     var btn=document.createElement('button');
-    btn.id='dzA_btn'; btn.type='button'; btn.innerHTML='🌸 مساعد العطور';
+    btn.id='dzA_btn'; btn.type='button'; btn.innerHTML='<img class="dzA_av" src="images/logo.jpg" alt="Diraz" onerror="this.style.display=\'none\'"><span class="dzA_tx"><span class="dzA_t1">مساعد</span><span class="dzA_t2">Diraz الشخصي</span></span>';
     btn.onclick=toggle; document.body.appendChild(btn);
 
     var box=document.createElement('div');
