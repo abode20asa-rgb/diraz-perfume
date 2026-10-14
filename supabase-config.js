@@ -60,14 +60,15 @@ window.DirazCloud = {
         if (await this.refresh()) s = this.getSession(); else s = null;
       }
       if (s && s.access_token) return s.access_token;
+      // كانت في جلسة أدمن بس انتهت ولا يمكن تجديدها: لا تكمل كزائر (كان يفشل الحذف بصمت)
+      throw new Error('SESSION_EXPIRED');
     }
     return window.DIRAZ_SUPABASE_KEY;
   },
 
   // ── الطلبات ──
   async request(path, options = {}) {
-    const tok = await this.token();
-    const response = await fetch(window.DIRAZ_SUPABASE_URL + '/rest/v1/' + path, {
+    const send = async (tok) => fetch(window.DIRAZ_SUPABASE_URL + '/rest/v1/' + path, {
       ...options,
       headers: {
         apikey: window.DIRAZ_SUPABASE_KEY,
@@ -76,6 +77,11 @@ window.DirazCloud = {
         ...(options.headers || {})
       }
     });
+    let response = await send(await this.token());
+    if (response.status === 401 && this.hasSession()) {
+      if (await this.refresh()) response = await send(await this.token());
+      else throw new Error('SESSION_EXPIRED');
+    }
     if (!response.ok) throw new Error(await response.text());
     if (response.status === 204) return null;
     const txt = await response.text();

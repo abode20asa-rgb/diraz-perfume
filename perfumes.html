@@ -612,7 +612,7 @@ const pendingQty={};
 function cartSize(i){ return i.size||'50ml'; }
 function findItem(idx,size){ return cart.find(i=>i.idx===idx && cartSize(i)===size); }
 // أسعار موحدة لكل العطور حسب الحجم (غيّر الأرقام هنا إذا تغيّرت الأسعار)
-const SIZE_PRICES={'50ml':20000,'30ml':15000};
+const SIZE_PRICES={'50ml':20000,'35ml':15000};
 function sizePrices(p,size){
   return {price:SIZE_PRICES[size]||SIZE_PRICES['50ml'], oldPrice:''};
 }
@@ -785,13 +785,13 @@ function updateCartUI(){
 let appliedCoupon=null, discountAmount=0;
 function toggleCouponInput(){ document.getElementById('couponArea').classList.toggle('open'); }
 // ── عروض الباقات (كود 12.5% أو كود "ديراز") ──
-// 50ml: عطرين 35,000 / ثلاثة 45,000  •  30ml: ثلاثة عطور بـ30,000 (الثالث مجاني)
+// 50ml: عطرين 35,000 / ثلاثة 45,000  •  35ml: ثلاثة عطر بـ30,000 (الثالث مجاني)
 function isBundleCoupon(c){ return String(c.code).toUpperCase()==='ديراز' || (c.type==='percent' && Number(c.value)===12.5); }
 function bundleTarget(count){
   const sizes=new Set(cart.map(i=>i.size||'50ml'));
   if(sizes.size!==1) return {error:'mixed'};
   const size=[...sizes][0];
-  if(size==='30ml'){
+  if(size==='35ml'){
     if(count===3) return {target:30000,label:'عطر مجاني — 3 عطور بسعر 30,000 دينار'};
     return {error:'need3'};
   }
@@ -799,8 +799,8 @@ function bundleTarget(count){
   return {target:t,label:'سعر خاص '+t.toLocaleString('en-US')+' دينار'};
 }
 function bundleErrorMsg(e){
-  return e==='mixed' ? '❌ هذا العرض يشتغل إذا كل العطور بنفس الحجم (كلها 50ml أو كلها 30ml)'
-                     : 'ℹ️ عرض 30ml: اختر عطرين وأضف عطر ثالث بحجم 30ml يكون مجاني (3 عطور بـ30,000 دينار)، ثم طبّق الكود';
+  return e==='mixed' ? '❌ هذا العرض يشتغل إذا كل العطور بنفس الحجم (كلها 50ml أو كلها 35ml)'
+                     : 'ℹ️ عرض 35ml: اختر عطرين وأضف عطر ثالث بحجم 35ml يكون مجاني (3 عطر بـ30,000 دينار)، ثم طبّق الكود';
 }
 function showCouponMsg(msg,type){ const el=document.getElementById('couponMsg'); el.textContent=msg; el.className='coupon-msg '+type; }
 async function applyCoupon(){
@@ -956,7 +956,7 @@ function renderCards(){
     const inCart=Boolean(item);
     const isSoldOut=p.badge==='soldout';
     const qty=item?.qty||pendingQty[idx]||1;
-    const inCartSizes=['50ml','30ml'].filter(sz=>findItem(idx,sz));
+    const inCartSizes=['50ml','35ml'].filter(sz=>findItem(idx,sz));
     return `<div class="card">
       ${p.image?`<div class="card-img-wrap"><img class="zoomable-perfume-image" src="${p.image}" alt="${p.name||''}" loading="lazy" onerror="this.parentElement.style.display='none'"></div>`:''}
       ${buildStatusBadge(p.badge)}
@@ -965,7 +965,7 @@ function renderCards(){
       ${p.nameEn?`<div class="card-name-en">${p.nameEn}</div>`:''}
       <div class="size-label">اختر حجم العطر</div>
       <div class="size-picker" id="sizePicker_${idx}">
-        ${['50ml','30ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}${findItem(idx,sz)?' in-cart':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${isSoldOut?'disabled':''}>${sz}</button>`).join('')}
+        ${['50ml','35ml'].map(sz=>`<button type="button" class="size-opt${curSize===sz?' active':''}${findItem(idx,sz)?' in-cart':''}" data-size="${sz}" onclick="selectSize(${idx},'${sz}')" ${isSoldOut?'disabled':''}>${sz}</button>`).join('')}
       </div>
       <div id="priceWrap_${idx}">${curSize?(()=>{const sp=sizePrices(p,curSize);return buildPriceBlock(sp.price,sp.oldPrice,p.currency);})():'<div class="card-price-wrap"><div class="price-header"><div class="card-price-label">السعر</div></div><div class="price-pick">اختر الحجم لمعرفة السعر</div></div>'}</div>
       ${p.description?`<div class="card-desc">${p.description}</div>`:''}
@@ -991,5 +991,9 @@ updateCartUI();
 hydrateCloudPerfumes();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('customerPopup').style.display==='flex') closeCustomerPopup(); });
 </script>
+
+<!-- ═══ Diraz AI — مساعد العطور ═══ -->
+<script src="diraz-assistant.js"></script>
+
 </body>
 </html>
