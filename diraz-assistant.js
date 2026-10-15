@@ -335,7 +335,7 @@
 
   function welcome(){
     if(!hasCustomer()){
-      showAccountForm('هلا بيك في ديراز 🌸<br>حتى أخدمك، سجّل حسابك بثواني بالضغط على الزر:');
+      showAccountForm('هلا بيك في ديراز 🌸<br>حتى أخدمك، سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
       return;
     }
     say('هلا بيك في ديراز 🌸<br>أني مساعد العطور، احچيلي شنو تحب (هادئ، سويت، منعش، قوي...) أو للمناسبة أو الميزانية، وأرشحلك أحلى العطور من الموجودة عندنا.');
@@ -362,7 +362,7 @@
     if(THANKS.test(t)){ say('عفواً حبيبي 🌸 إذا تريد ترشيح ثاني أني حاضر.'); return; }
     if(GREET.test(t)){
       if(!hasCustomer()){
-        showAccountForm('هلا والله 🌸 حتى أخدمك، سجّل حسابك بثواني بالضغط على الزر:');
+        showAccountForm('هلا والله 🌸 حتى أخدمك، سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
         return;
       }
       say('هلا والله 🌸 شنو تحب من الروائح؟ أو إذا تريد أرشحلك، احچيلي نوع العطر اللي تريده وشكد عمرك حتى أختارلك الأنسب.');
@@ -372,7 +372,7 @@
 
     /* ── 3) التحقق من الاسم والرقم قبل أي خدمة ── */
     if(!hasCustomer()){
-      showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 اضغط الزر وسجّل حسابك:');
+      showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
       return;
     }
 
@@ -495,30 +495,16 @@
     }
 
     if(step==='name'){
-      // استخراج الاسم والرقم من النص
-      var phoneM=raw.match(/(07\d{9})/);
-      var phone=phoneM?phoneM[1]:'';
-      var name=raw.replace(/(07\d{9})/,'').replace(/[^\u0621-\u064Aa-zA-Z\s]/g,'').trim().split(/\s+/)[0]||'';
-      if(!name || !phone){
-        say('أحتاج الاسم الأول ورقم الهاتف معاً 🌸 اكتبهم هكذا: «علي 07701234567»');
-        return;
-      }
-      // حفظ الاسم والرقم
-      try{
-        var c=getCustomer()||{};
-        c.name=name; c.phone=phone;
-        localStorage.setItem('diraz_customer',JSON.stringify(c));
-        var list=[]; try{ list=JSON.parse(localStorage.getItem('diraz_customers')||'[]'); }catch(e){ list=[]; }
-        if(!Array.isArray(list)) list=[];
-        var key=phone;
-        var i=list.findIndex(function(x){ return (x.phone||'').replace(/\D/g,'')===key; });
-        if(i>=0) list[i]=c; else list.unshift(c);
-        localStorage.setItem('diraz_customers',JSON.stringify(list));
-        syncCustomerCloud(c);
-      }catch(e){}
+      // نفتح نافذة "بياناتي" الفعلية بدل ما نطلب الاسم والرقم بالشات
       flow=null;
-      say('أهلاً '+name+' 🌸 سجلتك. شنو نوع العطر اللي تريده؟ أو احچيلي شكد عمرك حتى أرشحلك الأنسب.');
-      chips(BASIC_CHIPS);
+      say('اضغط زر «👤 بياناتي» اللي طلعلك، أو سجّل اسمك ورقمك بالنافذة 🌸');
+      try{
+        if(typeof editCustomer==='function'){ editCustomer(); }
+        else{
+          var pop=document.getElementById('customerPopup');
+          if(pop) pop.style.display='flex';
+        }
+      }catch(e){}
       return;
     }
 
@@ -752,48 +738,18 @@
     }catch(e){ return Promise.resolve(false); }
   }
 
-  /* زر + نموذج إنشاء حساب داخل المحادثة (بدون ما يطلع الزبون من الصفحة) */
+  /* زر إنشاء حساب: يفتح نافذة "بياناتي" الفعلية بالصفحة (نفس زر 👤 بياناتي) */
   function showAccountForm(intro){
-    var old=document.querySelectorAll('.dzA_reg'); for(var k=0;k<old.length;k++){ var p=old[k].parentNode; if(p) p.remove(); }
-    var d=say(intro+'<div class="dzA_reg">'+
-      '<button type="button" class="dzA_regOpen">👤 إنشاء حساب</button>'+
-      '<div class="dzA_regBox" style="display:none;flex-direction:column;gap:8px">'+
-        '<input type="text" class="dzA_rn" placeholder="الاسم الأول *" autocomplete="given-name">'+
-        '<input type="tel" class="dzA_rp" placeholder="رقم الهاتف (07xxxxxxxxx) *" maxlength="11" inputmode="numeric">'+
-        '<div class="dzA_err"></div>'+
-        '<button type="button" class="dzA_regGo">إنشاء الحساب والمتابعة ←</button>'+
-      '</div></div>');
-    var openB=d.querySelector('.dzA_regOpen'), box=d.querySelector('.dzA_regBox'),
-        n=d.querySelector('.dzA_rn'), ph=d.querySelector('.dzA_rp'),
-        err=d.querySelector('.dzA_err'), go=d.querySelector('.dzA_regGo');
-    openB.onclick=function(){ openB.style.display='none'; box.style.display='flex'; scrollEnd(); setTimeout(function(){ n.focus(); },50); };
-    ph.addEventListener('input',function(){ ph.value=ph.value.replace(/\D/g,'').slice(0,11); });
-    function fail(m){ err.textContent=m; err.style.display='block'; scrollEnd(); }
-    go.onclick=function(){
-      var name=(n.value||'').trim().split(/\s+/)[0]||'';
-      var phone=(ph.value||'').replace(/\D/g,'');
-      if(!name){ fail('❗ اكتب اسمك الأول'); return; }
-      if(!/^07[0-9]{9}$/.test(phone)){ fail('❗ رقم الهاتف لازم يبدأ بـ 07 ويكون 11 رقم'); return; }
-      err.style.display='none'; go.disabled=true; go.textContent='جاري التسجيل...';
-      var c=getCustomer()||{}; c.name=name; c.phone=phone;
-      try{
-        localStorage.setItem('diraz_customer',JSON.stringify(c));
-        var list=[]; try{ list=JSON.parse(localStorage.getItem('diraz_customers')||'[]'); }catch(e){ list=[]; }
-        if(!Array.isArray(list)) list=[];
-        var i=list.findIndex(function(x){ return (x.phone||'').replace(/\D/g,'')===phone; });
-        if(i>=0) list[i]=c; else list.unshift(c);
-        localStorage.setItem('diraz_customers',JSON.stringify(list));
-        var del=[]; try{ del=JSON.parse(localStorage.getItem('diraz_deleted_customers')||'[]'); }catch(e){ del=[]; }
-        localStorage.setItem('diraz_deleted_customers',JSON.stringify((del||[]).filter(function(x){ return x!==phone; })));
-      }catch(e){}
-      syncCustomerCloud(c).then(function(){
-        var reg=d.querySelector('.dzA_reg'); if(reg) reg.innerHTML='<div style="font-weight:800;color:#2e7d32">✅ تم إنشاء حسابك</div>';
-        flow=null;
-        say('أهلاً '+esc(name)+' 🌸 تم تسجيلك. شنو نوع العطر اللي تريده؟ أو احچيلي شكد عمرك حتى أرشحلك الأنسب.');
-        chips(BASIC_CHIPS);
-      });
-    };
-    flow={step:'name'};
+    say(intro);
+    // نفتح نافذة بياناتي الفعلية
+    try{
+      if(typeof editCustomer==='function'){ editCustomer(); }
+      else{
+        var pop=document.getElementById('customerPopup');
+        if(pop) pop.style.display='flex';
+      }
+    }catch(e){}
+    flow=null;
   }
 
   /* ───────── حالة المحادثة الطبيعية (طلب/كود/عنوان) ───────── */
@@ -807,7 +763,7 @@
     if(flow){ _handle(text); return; }
     if(!hasCustomer()){
       say(esc(text),'me');
-      showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 اضغط الزر وسجّل حسابك:');
+      showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
       return;
     }
     if(ADJ[text]){
