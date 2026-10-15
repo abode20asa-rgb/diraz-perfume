@@ -278,6 +278,11 @@
       '.dzA_acts{display:flex;gap:6px;flex-wrap:wrap}',
       '.dzA_act{border:none;cursor:pointer;font-family:Cairo,sans-serif;font-weight:800;font-size:.74rem;padding:7px 12px;border-radius:50px;background:#fce4ef;color:#c45a7a}',
       '.dzA_act.main{background:#c45a7a;color:#fff}',
+      '.dzA_sz{display:inline-flex;direction:rtl;align-items:stretch;border-radius:50px;overflow:hidden;background:#c45a7a;color:#fff}',
+      '.dzA_sz button{border:none;background:transparent;color:#fff;cursor:pointer;font-family:Cairo,sans-serif;font-weight:800;font-size:.74rem;padding:7px 10px;line-height:1}',
+      '.dzA_sz button.pm{font-size:1.05rem;font-weight:900;padding:5px 12px}',
+      '.dzA_sz button:active{background:rgba(0,0,0,.15)}',
+      '.dzA_sz button[disabled]{opacity:.4;cursor:default}',
       '.dzA_form{display:flex;gap:8px;padding:10px;background:#fff;border-top:1px solid #f4c6d6}',
       '.dzA_form input{flex:1;border:1.5px solid #f4c6d6;border-radius:50px;padding:10px 15px;font-family:Cairo,sans-serif;font-size:.88rem;outline:none;direction:rtl}',
       '.dzA_form input:focus{border-color:#e07898}',
@@ -840,12 +845,10 @@
         '<div class="pr">💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 35 مل: '+fmt(priceOf(p,'35ml'))+' '+esc(p.currency||'دينار')+
         ((state.budget && priceOf(p,'50ml')>state.budget)?'<br><small>✅ يناسب ميزانيتك بحجم 35 مل</small>':'')+'</div>'+
         '<div class="dzA_acts"><button class="dzA_act" type="button" data-a="view">👁️ شوف العطر</button>'+
-        '<button class="dzA_act main" type="button" data-a="add50">🛒 50 مل</button>'+
-        '<button class="dzA_act main" type="button" data-a="add35">🛒 35 مل</button>'+
+        sizeCtl(x.idx,'50ml')+sizeCtl(x.idx,'35ml')+
         '<button class="dzA_act" type="button" data-a="cart">🛍️ سلة</button></div>';
       c.querySelector('[data-a=view]').onclick=function(){ goTo(x.idx); };
-      c.querySelector('[data-a=add50]').onclick=function(){ quickAdd(x.idx,'50ml'); };
-      c.querySelector('[data-a=add35]').onclick=function(){ quickAdd(x.idx,'35ml'); };
+      wireSizes(c);
       c.querySelector('[data-a=cart]').onclick=function(){
         var cs=cartSummary();
         if(!cs){ say('سلة المشتريات فاضية حالياً 🛒'); return; }
@@ -881,9 +884,9 @@
         (d?'<br><br>'+d:'')+'<br><br>💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 35 مل: '+fmt(priceOf(p,'35ml'))+' '+esc(p.currency||'دينار')+
         (soldout?'<br>❌ هذا العطر نافذ حالياً.':''));
     var w=document.createElement('div'); w.className='dzA_acts';
-    w.innerHTML='<button class="dzA_act" type="button">👁️ شوف العطر</button>'+(soldout?'':'<button class="dzA_act main" type="button" data-s="50ml">🛒 50 مل</button><button class="dzA_act main" type="button" data-s="35ml">🛒 35 مل</button>');
+    w.innerHTML='<button class="dzA_act" type="button">👁️ شوف العطر</button>'+(soldout?'':sizeCtl(idx,'50ml')+sizeCtl(idx,'35ml'));
     w.querySelector('.dzA_act').onclick=function(){ goTo(idx); };
-    w.querySelectorAll('[data-s]').forEach(function(b){ b.onclick=function(){ quickAdd(idx,b.dataset.s); }; });
+    wireSizes(w);
     $('dzA_msgs').appendChild(w); scrollEnd();
   }
 
@@ -921,6 +924,62 @@
       if(ch) localStorage.setItem('diraz_cart',JSON.stringify(arr));
     }catch(e){}
     return q;
+  }
+  /* ───────── أزرار الحجم: + على اليمين ، − على اليسار ───────── */
+  function qtyOf(idx,size){
+    try{ var ex=(typeof findItem==='function')?findItem(idx,size):null; return ex?(parseInt(ex.qty,10)||1):0; }catch(e){ return 0; }
+  }
+  function sizeCtl(idx,size){
+    var lbl=size.replace('ml',' مل');
+    return '<span class="dzA_sz" data-idx="'+idx+'" data-size="'+size+'">'+
+      '<button class="pm" type="button" data-op="plus" aria-label="زيادة '+lbl+'">+</button>'+
+      '<button class="mid" type="button" data-op="plus">🛒 '+lbl+'</button>'+
+      '<button class="pm" type="button" data-op="minus" aria-label="نقصان '+lbl+'">−</button></span>';
+  }
+  function refreshSizes(){
+    document.querySelectorAll('.dzA_sz').forEach(function(w){
+      var idx=parseInt(w.getAttribute('data-idx'),10), size=w.getAttribute('data-size'), q=qtyOf(idx,size);
+      w.querySelector('.mid').textContent='🛒 '+size.replace('ml',' مل')+(q>0?' ×'+q:'');
+      w.querySelector('[data-op=minus]').disabled=(q<1);
+    });
+  }
+  function wireSizes(root){
+    root.querySelectorAll('.dzA_sz').forEach(function(w){
+      var idx=parseInt(w.getAttribute('data-idx'),10), size=w.getAttribute('data-size');
+      w.querySelectorAll('button').forEach(function(b){
+        b.onclick=function(){
+          if(b.getAttribute('data-op')==='minus') quickRemove(idx,size); else quickAdd(idx,size);
+          setTimeout(refreshSizes,50);
+        };
+      });
+    });
+    refreshSizes();
+  }
+  /* نقص واحد من السلة؛ إذا كانت آخر قطعة نشيل العطر من السلة */
+  function quickRemove(idx,size){
+    try{
+      var ex=(typeof findItem==='function')?findItem(idx,size):null;
+      var pn=(getPerfumes()[idx]||{}).name||'العطر', lbl=size.replace('ml',' مل');
+      if(!ex){ say('«'+esc(pn)+'» ('+lbl+') مو موجود بالسلة 🌸'); return; }
+      var q=(parseInt(ex.qty,10)||1)-1, same=function(it){ return String(it.id)===String(ex.id) && (it.size||'50ml')===(ex.size||size); };
+      if(q<1){
+        try{ if(typeof cart!=='undefined' && Array.isArray(cart)){ for(var i=cart.length-1;i>=0;i--){ if(same(cart[i])) cart.splice(i,1); } } }catch(e){}
+      }else{
+        try{ ex.qty=q; }catch(e){}
+        try{ if(typeof cart!=='undefined' && Array.isArray(cart)) cart.forEach(function(it){ if(same(it)) it.qty=q; }); }catch(e){}
+      }
+      ['saveCart','persistCart','updateCartCount','updateCart','renderCart','updateCartUI','refreshCart','updateCartBadge'].forEach(function(f){
+        try{ if(typeof window[f]==='function') window[f](); }catch(e){}
+      });
+      try{
+        var arr=JSON.parse(localStorage.getItem('diraz_cart')||'[]');
+        arr=q<1?arr.filter(function(it){ return !same(it); }):arr.map(function(it){ if(same(it)) it.qty=q; return it; });
+        localStorage.setItem('diraz_cart',JSON.stringify(arr));
+      }catch(e){}
+      if(q<1) say('شلت «'+esc(pn)+'» ('+lbl+') من السلة 🗑️');
+      else say('نقصت واحد ✅ صار عندك '+q+' من «'+esc(pn)+'» ('+lbl+') 🛍️');
+      refreshOrderBar(); refreshSizes();
+    }catch(e){}
   }
   function quickAdd(idx,size){
     try{
