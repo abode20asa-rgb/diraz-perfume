@@ -951,7 +951,11 @@ async function pushSend(){
     if(mode==='now'){
       var tok=await DirazCloud.token();
       var r=await fetch(window.DIRAZ_SUPABASE_URL+'/functions/v1/push-sender',{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:window.DIRAZ_SUPABASE_KEY,'Content-Type':'application/json'},body:'{}'});
-      showToast(r.ok?'✅ تم الإرسال':'⚠️ انحفظت وستُرسل خلال 5 دقائق');
+      var j=null; try{ j=await r.json(); }catch(x){}
+      if(!r.ok||!j) showToast('⚠️ انحفظت وستُرسل خلال 5 دقائق');
+      else if(j.tried===0) showToast('⚠️ ما في رسالة للإرسال');
+      else if(j.sent===j.tried) showToast('✅ وصلت لـ '+j.sent+' من '+j.tried);
+      else { showToast('⚠️ وصلت لـ '+j.sent+' من '+j.tried); alert('سبب الفشل:\n'+(j.error||'غير معروف')); }
     } else showToast('✅ تمت الجدولة');
     document.getElementById('pn_title').value=''; document.getElementById('pn_body').value='';
     loadPushAdmin();
