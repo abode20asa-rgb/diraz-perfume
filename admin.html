@@ -920,7 +920,12 @@ async function loadPushAdmin(){
   try{
     var st = await DirazCloud.rpc('push_admin_stats');
     document.getElementById('pushStats').innerHTML = '👥 مشتركين بالإشعارات: <strong>'+(st.total||0)+'</strong> &nbsp;|&nbsp; 🛍️ عندهم سلة: <strong>'+(st.withCart||0)+'</strong>';
-    var rows = await DirazCloud.list('push_messages','&order=send_at.desc&limit=30');
+    var all = await DirazCloud.list('push_messages','&order=send_at.desc&limit=200');
+    var pend = all.filter(function(m){ return m.status==='scheduled'; });
+    var done = all.filter(function(m){ return m.status!=='scheduled'; });
+    var old = done.slice(3);
+    if(old.length){ try{ await DirazCloud.remove('push_messages','id=in.('+old.map(function(m){return m.id;}).join(',')+')'); }catch(e){} }
+    var rows = pend.concat(done.slice(0,3));
     var box = document.getElementById('pushList');
     if(!rows||!rows.length){ box.innerHTML='<div class="no-items">لا توجد رسائل بعد</div>'; return; }
     box.innerHTML = rows.map(function(m){
