@@ -211,7 +211,7 @@
         if(ty.indexOf(g)===-1 && ty.indexOf('للجنسين')===-1) return;
       }
       if(state.budget){
-        var minP=Math.min(priceOf(p,'50ml')||1e9,priceOf(p,'35ml')||1e9);
+        var minP=Math.min(priceOf(p,'50ml')||1e9,priceOf(p,'30ml')||1e9);
         if(minP>state.budget) return;
       }
       pool.push(idx);
@@ -842,10 +842,10 @@
       var c=document.createElement('div'); c.className='dzA_card';
       c.innerHTML='<h4>'+esc(p.name||'')+'</h4>'+(p.nameEn?'<div class="en">'+esc(p.nameEn)+'</div>':'')+
         (cl?'<div class="tags">🌿 '+esc(cl.split(/[،,]/).slice(0,4).join('، '))+'</div>':'')+why+
-        '<div class="pr">💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 35 مل: '+fmt(priceOf(p,'35ml'))+' '+esc(p.currency||'دينار')+
-        ((state.budget && priceOf(p,'50ml')>state.budget)?'<br><small>✅ يناسب ميزانيتك بحجم 35 مل</small>':'')+'</div>'+
+        '<div class="pr">💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 30 مل: '+fmt(priceOf(p,'30ml'))+' '+esc(p.currency||'دينار')+
+        ((state.budget && priceOf(p,'50ml')>state.budget)?'<br><small>✅ يناسب ميزانيتك بحجم 30 مل</small>':'')+'</div>'+
         '<div class="dzA_acts"><button class="dzA_act" type="button" data-a="view">👁️ شوف العطر</button>'+
-        sizeCtl(x.idx,'50ml')+sizeCtl(x.idx,'35ml')+
+        sizeCtl(x.idx,'50ml')+sizeCtl(x.idx,'30ml')+
         '<button class="dzA_act" type="button" data-a="cart">🛍️ سلة</button></div>';
       c.querySelector('[data-a=view]').onclick=function(){ goTo(x.idx); };
       wireSizes(c);
@@ -881,10 +881,10 @@
     var d=String(p.description||'').replace(/[\u200B-\u200F]/g,'').split(/\n+/).filter(Boolean).map(esc).join('<br>');
     var soldout=p.badge==='soldout';
     say('<b>'+esc(p.name)+'</b>'+(p.nameEn?' <small style="opacity:.7">('+esc(p.nameEn)+')</small>':'')+(p.type?'<br>النوع: '+esc(p.type):'')+
-        (d?'<br><br>'+d:'')+'<br><br>💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 35 مل: '+fmt(priceOf(p,'35ml'))+' '+esc(p.currency||'دينار')+
+        (d?'<br><br>'+d:'')+'<br><br>💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 30 مل: '+fmt(priceOf(p,'30ml'))+' '+esc(p.currency||'دينار')+
         (soldout?'<br>❌ هذا العطر نافذ حالياً.':''));
     var w=document.createElement('div'); w.className='dzA_acts';
-    w.innerHTML='<button class="dzA_act" type="button">👁️ شوف العطر</button>'+(soldout?'':sizeCtl(idx,'50ml')+sizeCtl(idx,'35ml'));
+    w.innerHTML='<button class="dzA_act" type="button">👁️ شوف العطر</button>'+(soldout?'':sizeCtl(idx,'50ml')+sizeCtl(idx,'30ml'));
     w.querySelector('.dzA_act').onclick=function(){ goTo(idx); };
     wireSizes(w);
     $('dzA_msgs').appendChild(w); scrollEnd();

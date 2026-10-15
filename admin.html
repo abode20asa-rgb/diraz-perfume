@@ -281,7 +281,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>حد الاستخدام / شخص</label><input type="number" id="cp_maxUses" value="1" min="1"></div>
         <div class="form-group"><label>اسم منشئ المحتوى (اختياري)</label><input type="text" id="cp_creator" placeholder="مثال: سارة"></div>
         <div class="form-group"><label>عمولة المنشئ على كل عطر 50 مل (دينار)</label><input type="number" id="cp_commission50" value="1000" min="0"></div>
-        <div class="form-group"><label>عمولة المنشئ على كل عطر 35 مل (دينار)</label><input type="number" id="cp_commission35" value="500" min="0"></div>
+        <div class="form-group"><label>عمولة المنشئ على كل عطر 30 مل (دينار)</label><input type="number" id="cp_commission30" value="500" min="0"></div>
       </div>
       <div class="form-actions" style="margin-top:14px"><button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button></div>
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
@@ -294,7 +294,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="coupon-form-grid">
         <div class="form-group" style="grid-column:1/-1"><label>اختر الكود *</label><select id="ext_code" onchange="extCalc();extRenderLog()"></select></div>
         <div class="form-group"><label>عدد عطور 50 مل</label><input type="number" id="ext_n50" min="0" value="0" oninput="extCalc()"></div>
-        <div class="form-group"><label>عدد عطور 35 مل</label><input type="number" id="ext_n35" min="0" value="0" oninput="extCalc()"></div>
+        <div class="form-group"><label>عدد عطور 30 مل</label><input type="number" id="ext_n30" min="0" value="0" oninput="extCalc()"></div>
         <div class="form-group" style="grid-column:1/-1"><label>ملاحظة (اختياري)</label><input type="text" id="ext_note" maxlength="60" placeholder="مثال: طلب أحمد من الانستا"></div>
       </div>
       <div id="ext_preview" style="margin:12px 0;color:white;font-weight:800"></div>
@@ -324,8 +324,8 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>الحجم</label><input type="text" id="f_size" placeholder="50ml"></div>
         <div class="form-group"><label>السعر الحالي</label><input type="number" id="f_price" placeholder="25000"></div>
         <div class="form-group"><label>السعر القديم (اختياري للخصم)</label><input type="number" id="f_oldPrice" placeholder="35000"></div>
-        <div class="form-group"><label>سعر حجم 35ml (إذا فارغ = نفس سعر 50ml)</label><input type="number" id="f_price35" placeholder="15000"></div>
-        <div class="form-group"><label>السعر القديم لحجم 35ml (اختياري)</label><input type="number" id="f_oldPrice35" placeholder="20000"></div>
+        <div class="form-group"><label>سعر حجم 30ml (إذا فارغ = نفس سعر 50ml)</label><input type="number" id="f_price30" placeholder="15000"></div>
+        <div class="form-group"><label>السعر القديم لحجم 30ml (اختياري)</label><input type="number" id="f_oldPrice30" placeholder="20000"></div>
         <div class="form-group"><label>العملة</label>
           <select id="f_currency"><option value="دينار">دينار</option><option value="ريال">ريال</option><option value="درهم">درهم</option><option value="دولار">دولار</option></select>
         </div>
@@ -757,8 +757,8 @@ function addCoupon(){
   if(coupons.find(function(c){ return c.code===code; })){ showToast('❗ الكود موجود مسبقاً'); return; }
   var creatorName = (document.getElementById('cp_creator').value||'').trim();
   var commission50 = parseInt(document.getElementById('cp_commission50').value||'0')||0;
-  var commission35 = parseInt(document.getElementById('cp_commission35').value||'0')||0;
-  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission50:commission50,commission35:commission35,creatorToken:genToken()});
+  var commission30 = parseInt(document.getElementById('cp_commission30').value||'0')||0;
+  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission50:commission50,commission30:commission30,creatorToken:genToken()});
   localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));
   DirazCloud.upsert('coupons',[{code:code,data:coupons[0],total_uses:0}]).catch(cloudFail);
   renderCoupons();
@@ -767,7 +767,7 @@ function addCoupon(){
   document.getElementById('cp_maxUses').value = '1';
   document.getElementById('cp_creator').value = '';
   document.getElementById('cp_commission50').value = '1000';
-  document.getElementById('cp_commission35').value = '500';
+  document.getElementById('cp_commission30').value = '500';
   showToast('✅ تم إنشاء كود: '+code+' — اضغط 🔗 لنسخ رابط المنشئ');
 }
 function genToken(){ var a=new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
@@ -777,7 +777,7 @@ function copyCreatorLink(i,regen){
   var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
   if(regen && !confirm('إعادة توليد الرابط راح تلغي الرابط القديم. متأكد؟')) return;
   if(!c.creatorToken || regen){
-    c.creatorToken=genToken(); if(c.commission===undefined && c.commission50===undefined && c.commission35===undefined){ c.commission50=1000; c.commission35=500; }
+    c.creatorToken=genToken(); if(c.commission===undefined && c.commission50===undefined && c.commission30===undefined){ c.commission50=1000; c.commission30=500; }
     localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
     DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
     renderCoupons();
@@ -785,23 +785,23 @@ function copyCreatorLink(i,regen){
   copyText(creatorLink(c)).then(function(){ showToast('🔗 تم نسخ رابط المنشئ'); });
 }
 function comInfo(c){
-  var legacy = c.commission50===undefined && c.commission35===undefined;
-  return {legacy:legacy, c50:Number(c.commission50)||0, c35:Number(c.commission35)||0, old:(c.commission===undefined?5000:(Number(c.commission)||0))};
+  var legacy = c.commission50===undefined && c.commission30===undefined;
+  return {legacy:legacy, c50:Number(c.commission50)||0, c30:Number(c.commission30)||0, old:(c.commission===undefined?5000:(Number(c.commission)||0))};
 }
 function orderEarn(c,o){
   var k=comInfo(c); if(k.legacy) return k.old;
-  var n50=0,n35=0;
-  (Array.isArray(o.items)?o.items:[]).forEach(function(it){ var q=parseInt(it.qty)||1; if((it.size||'50ml')==='35ml') n35+=q; else n50+=q; });
-  return n50*k.c50+n35*k.c35;
+  var n50=0,n30=0;
+  (Array.isArray(o.items)?o.items:[]).forEach(function(it){ var q=parseInt(it.qty)||1; if((it.size||'50ml')==='30ml') n30+=q; else n50+=q; });
+  return n50*k.c50+n30*k.c30;
 }
 function editCommission(i){
   var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
   var k=comInfo(c);
   var v50=prompt('عمولة المنشئ على كل عطر 50 مل (دينار):', k.legacy?1000:k.c50);
   if(v50===null) return;
-  var v35=prompt('عمولة المنشئ على كل عطر 35 مل (دينار):', k.legacy?500:k.c35);
-  if(v35===null) return;
-  c.commission50=parseInt(v50)||0; c.commission35=parseInt(v35)||0; delete c.commission;
+  var v30=prompt('عمولة المنشئ على كل عطر 30 مل (دينار):', k.legacy?500:k.c30);
+  if(v30===null) return;
+  c.commission50=parseInt(v50)||0; c.commission30=parseInt(v30)||0; delete c.commission;
   localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
   DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
   renderCoupons();
@@ -820,7 +820,7 @@ function renderCoupons(){
     var earned = os.filter(function(o){ return o.status==='delivered'; }).reduce(function(s,o){ return s+orderEarn(c,o); },0);
     var extra = extTotal(c); earned += extra;
     var ki = comInfo(c);
-    var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('50مل: '+ki.c50.toLocaleString('en-US')+' • 35مل: '+ki.c35.toLocaleString('en-US')+' لكل عطر');
+    var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('50مل: '+ki.c50.toLocaleString('en-US')+' • 30مل: '+ki.c30.toLocaleString('en-US')+' لكل عطر');
     var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+earned.toLocaleString('en-US')+(extra?' (منها خارجي '+extra.toLocaleString('en-US')+')':'')+' ('+comTxt+')';
     return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
       '<div class="coupon-code-big">'+esc(c.code)+'</div>' +
@@ -881,7 +881,7 @@ function savePerfume(){
     name:name, nameEn:(document.getElementById('f_nameEn').value||'').trim(),
     type:document.getElementById('f_type').value, size:(document.getElementById('f_size').value||'').trim(),
     price:(document.getElementById('f_price').value||'').trim(), oldPrice:(document.getElementById('f_oldPrice').value||'').trim(),
-    price35:(document.getElementById('f_price35').value||'').trim(), oldPrice35:(document.getElementById('f_oldPrice35').value||'').trim(),
+    price30:(document.getElementById('f_price30').value||'').trim(), oldPrice30:(document.getElementById('f_oldPrice30').value||'').trim(),
     currency:document.getElementById('f_currency').value, badge:document.getElementById('f_badge').value, image:img,
     description:(document.getElementById('f_desc').value||'').trim()
   };
@@ -899,8 +899,8 @@ function editPerfume(i){
   document.getElementById('f_size').value    = p.size||'';
   document.getElementById('f_price').value   = p.price||'';
   document.getElementById('f_oldPrice').value= p.oldPrice||'';
-  document.getElementById('f_price35').value = p.price35||'';
-  document.getElementById('f_oldPrice35').value= p.oldPrice35||'';
+  document.getElementById('f_price30').value = p.price30||'';
+  document.getElementById('f_oldPrice30').value= p.oldPrice30||'';
   document.getElementById('f_currency').value= p.currency||'دينار';
   document.getElementById('f_badge').value  = p.badge||'';
   document.getElementById('f_desc').value    = p.description||'';
@@ -913,7 +913,7 @@ function editPerfume(i){
 }
 function deletePerfume(i){ if(!confirm('حذف العطر؟'))return; var p=tryParse(STORAGE_KEY,[]); p.splice(i,1); persistPerfumes(p); renderList(); updateStorageBar(); showToast('🗑️ تم حذف العطر'); }
 function resetForm(){
-  ['f_name','f_nameEn','f_size','f_price','f_oldPrice','f_price35','f_oldPrice35','f_desc'].forEach(function(id){ document.getElementById(id).value=''; });
+  ['f_name','f_nameEn','f_size','f_price','f_oldPrice','f_price30','f_oldPrice30','f_desc'].forEach(function(id){ document.getElementById(id).value=''; });
   document.getElementById('f_type').value='نسائي'; document.getElementById('f_currency').value='دينار'; document.getElementById('f_badge').value='';
   document.getElementById('f_image').value=''; document.getElementById('previewWrap').classList.remove('visible');
   document.getElementById('formTitle').textContent='➕ إضافة عطر جديد'; document.getElementById('cancelBtn').style.display='none';
@@ -1041,20 +1041,20 @@ function extCalc(){
   var s=extSel(); if(!s){ box.textContent=''; return; }
   var k=comInfo(s.c);
   if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة حسب الحجم. اضغط 💰 عنده وحدد عمولة 50 و35 أولاً.'; return; }
-  var n50=parseInt(document.getElementById('ext_n50').value)||0, n35=parseInt(document.getElementById('ext_n35').value)||0;
-  var amt=n50*k.c50+n35*k.c35;
-  box.innerHTML='العمولة: '+n50+' × '+k.c50.toLocaleString('en-US')+' + '+n35+' × '+k.c35.toLocaleString('en-US')+' = <span style="font-size:1.15rem">'+amt.toLocaleString('en-US')+' دينار</span>';
+  var n50=parseInt(document.getElementById('ext_n50').value)||0, n30=parseInt(document.getElementById('ext_n30').value)||0;
+  var amt=n50*k.c50+n30*k.c30;
+  box.innerHTML='العمولة: '+n50+' × '+k.c50.toLocaleString('en-US')+' + '+n30+' × '+k.c30.toLocaleString('en-US')+' = <span style="font-size:1.15rem">'+amt.toLocaleString('en-US')+' دينار</span>';
 }
 function extAdd(){
   var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
   var k=comInfo(s.c);
   if(k.legacy){ showToast('⚠️ حدد عمولة 50/35 للكود أولاً (زر 💰)'); return; }
-  var n50=parseInt(document.getElementById('ext_n50').value)||0, n35=parseInt(document.getElementById('ext_n35').value)||0;
-  if(n50<0||n35<0||(n50+n35)===0){ showToast('❌ اكتب عدد العطور'); return; }
-  var amt=n50*k.c50+n35*k.c35;
+  var n50=parseInt(document.getElementById('ext_n50').value)||0, n30=parseInt(document.getElementById('ext_n30').value)||0;
+  if(n50<0||n30<0||(n50+n30)===0){ showToast('❌ اكتب عدد العطور'); return; }
+  var amt=n50*k.c50+n30*k.c30;
   if(!Array.isArray(s.c.externalLog)) s.c.externalLog=[];
-  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'external',n50:n50,n35:n35,amount:amt,note:document.getElementById('ext_note').value.trim()});
-  document.getElementById('ext_n50').value=0; document.getElementById('ext_n35').value=0; document.getElementById('ext_note').value='';
+  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'external',n50:n50,n30:n30,amount:amt,note:document.getElementById('ext_note').value.trim()});
+  document.getElementById('ext_n50').value=0; document.getElementById('ext_n30').value=0; document.getElementById('ext_note').value='';
   extPersist(s.cs,s.c);
   showToast('✅ انضاف '+amt.toLocaleString('en-US')+' دينار لحساب '+(s.c.creatorName||s.c.code));
 }
@@ -1063,7 +1063,7 @@ function extAddMoney(){
   var amt=parseInt(document.getElementById('ext_money').value)||0;
   if(amt<=0){ showToast('❌ اكتب مبلغ صحيح'); return; }
   if(!Array.isArray(s.c.externalLog)) s.c.externalLog=[];
-  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'manual',n50:0,n35:0,amount:amt,note:document.getElementById('ext_note2').value.trim()});
+  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'manual',n50:0,n30:0,amount:amt,note:document.getElementById('ext_note2').value.trim()});
   document.getElementById('ext_money').value=''; document.getElementById('ext_note2').value='';
   extPersist(s.cs,s.c);
   showToast('✅ انضاف '+amt.toLocaleString('en-US')+' دينار لحساب '+(s.c.creatorName||s.c.code));
@@ -1080,7 +1080,7 @@ function extRenderLog(){
   if(!log.length){ box.innerHTML='<div class="no-items" style="padding:10px 0">لا توجد إضافات بعد</div>'; return; }
   box.innerHTML=log.slice(0,15).map(function(e){
     var d=new Date(e.date).toLocaleDateString('en-GB');
-    var what=e.kind==='manual'?'💵 مبلغ مباشر':('🌐 '+(e.n50||0)+'×50مل + '+(e.n35||0)+'×35مل');
+    var what=e.kind==='manual'?'💵 مبلغ مباشر':('🌐 '+(e.n50||0)+'×50مل + '+(e.n30||0)+'×30مل');
     return '<div class="coupon-item" style="padding:10px 14px"><div class="coupon-meta"><strong>+'+(Number(e.amount)||0).toLocaleString('en-US')+' دينار</strong> — '+what+'<br><small>'+d+(e.note?' • '+esc(e.note):'')+'</small></div><div class="coupon-actions"><button class="btn-del-order" onclick="extDel('+e.id+')">🗑️</button></div></div>';
   }).join('');
 }

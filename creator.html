@@ -91,7 +91,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
         '<div class="stat"><div class="n">'+fmt(d.users)+'</div><div class="l">👥 عدد المستخدمين</div></div>'+
         '<div class="stat"><div class="n">'+fmt(d.orders)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
         '<div class="stat wide"><div class="n">'+fmt(d.salesTotal)+' دينار</div><div class="l">💰 مجموع المبيعات بالكود</div></div>'+
-        '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك (الطلبات المسلّمة + الخارجية) — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 35 مل: '+fmt(d.commission35)+' لكل عطر')+'</div></div>'+
+        '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك (الطلبات المسلّمة + الخارجية) — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>'+
         '<div class="stat"><div class="n">'+fmt(d.pendingEarn)+'</div><div class="l">⏳ أرباح بانتظار التسليم</div></div>'+
         '<div class="stat"><div class="n">'+fmt(d.discountTotal)+'</div><div class="l">🏷️ إجمالي الخصم للزبائن</div></div>'+
         (d.externalEarned>0?'<div class="stat wide"><div class="n">'+fmt(d.externalEarned)+' دينار</div><div class="l">🌐 منها أرباح من مبيعات خارجية</div></div>':'')+

@@ -1,12 +1,12 @@
 -- ═══════════════════════════════════════════════════════════
---  Diraz — عمولة المنشئ حسب حجم العطر (50 مل / 35 مل)
+--  Diraz — عمولة المنشئ حسب حجم العطر (50 مل / 30 مل)
 --  شغّل هذا الملف كامل في Supabase → SQL Editor → Run
 --  (بعد supabase-security.sql و supabase-creators.sql و supabase-hide-limits.sql)
 --  ⚠️ شغّله قبل رفع admin.html و creator.html الجديدين
 -- ═══════════════════════════════════════════════════════════
 
--- 1) إحصائيات المنشئ: العمولة = (عدد عطور 50مل × عمولة 50) + (عدد عطور 35مل × عمولة 35)
---    الأكواد القديمة (بدون commission50/commission35) تبقى على عمولة الطلب القديمة
+-- 1) إحصائيات المنشئ: العمولة = (عدد عطور 50مل × عمولة 50) + (عدد عطور 30مل × عمولة 30)
+--    الأكواد القديمة (بدون commission50/commission30) تبقى على عمولة الطلب القديمة
 create or replace function public.creator_stats(p_code text, p_token text)
 returns jsonb
 language plpgsql
@@ -18,7 +18,7 @@ declare
   c public.coupons%rowtype;
   v_old numeric;
   v_c50 numeric;
-  v_c35 numeric;
+  v_c30 numeric;
   v_legacy boolean;
   r jsonb;
 begin
@@ -29,13 +29,13 @@ begin
     return jsonb_build_object('ok', false);
   end if;
 
-  v_legacy := (c.data ->> 'commission50') is null and (c.data ->> 'commission35') is null;
+  v_legacy := (c.data ->> 'commission50') is null and (c.data ->> 'commission30') is null;
   v_old := case when coalesce(c.data ->> 'commission', '') ~ '^[0-9]+(\.[0-9]+)?$'
                 then (c.data ->> 'commission')::numeric else 5000 end;
   v_c50 := case when coalesce(c.data ->> 'commission50', '') ~ '^[0-9]+(\.[0-9]+)?$'
                 then (c.data ->> 'commission50')::numeric else 0 end;
-  v_c35 := case when coalesce(c.data ->> 'commission35', '') ~ '^[0-9]+(\.[0-9]+)?$'
-                then (c.data ->> 'commission35')::numeric else 0 end;
+  v_c30 := case when coalesce(c.data ->> 'commission30', '') ~ '^[0-9]+(\.[0-9]+)?$'
+                then (c.data ->> 'commission30')::numeric else 0 end;
 
   with o0 as (
     select
@@ -49,16 +49,16 @@ begin
       (select coalesce(sum(case when (it ->> 'qty') ~ '^[0-9]+$' then (it ->> 'qty')::int else 1 end), 0)
          from jsonb_array_elements(case when jsonb_typeof(data -> 'items') = 'array'
                                         then data -> 'items' else '[]'::jsonb end) it
-        where coalesce(it ->> 'size', '50ml') <> '35ml') as n50,
+        where coalesce(it ->> 'size', '50ml') <> '30ml') as n50,
       (select coalesce(sum(case when (it ->> 'qty') ~ '^[0-9]+$' then (it ->> 'qty')::int else 1 end), 0)
          from jsonb_array_elements(case when jsonb_typeof(data -> 'items') = 'array'
                                         then data -> 'items' else '[]'::jsonb end) it
-        where coalesce(it ->> 'size', '50ml') = '35ml') as n35
+        where coalesce(it ->> 'size', '50ml') = '30ml') as n30
     from public.orders
     where upper(data -> 'coupon' ->> 'code') = c.code
   ),
   o as (
-    select *, case when v_legacy then v_old else n50 * v_c50 + n35 * v_c35 end as earn
+    select *, case when v_legacy then v_old else n50 * v_c50 + n30 * v_c30 end as earn
     from o0
   )
   select jsonb_build_object(
@@ -71,7 +71,7 @@ begin
     'legacy', v_legacy,
     'commission', v_old,
     'commission50', v_c50,
-    'commission35', v_c35,
+    'commission30', v_c30,
     'users',          (select count(distinct phone) from o),
     'orders',         (select count(*) from o),
     'delivered',      (select count(*) from o where status = 'delivered'),
@@ -109,7 +109,7 @@ begin
   v_max := coalesce((c.data ->> 'maxUses')::integer, 1);
   return jsonb_build_object(
     'found', true,
-    'coupon', (c.data - 'creatorToken' - 'commission' - 'commission50' - 'commission35'
+    'coupon', (c.data - 'creatorToken' - 'commission' - 'commission50' - 'commission30'
                       - 'creatorName' - 'maxUses' - 'usagePolicy')
               || jsonb_build_object(
                    'exhausted',    c.total_uses >= v_max,

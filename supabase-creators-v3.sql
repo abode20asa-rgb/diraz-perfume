@@ -16,7 +16,7 @@ declare
   c public.coupons%rowtype;
   v_old numeric;
   v_c50 numeric;
-  v_c35 numeric;
+  v_c30 numeric;
   v_ext numeric;
   v_legacy boolean;
   r jsonb;
@@ -28,13 +28,13 @@ begin
     return jsonb_build_object('ok', false);
   end if;
 
-  v_legacy := (c.data ->> 'commission50') is null and (c.data ->> 'commission35') is null;
+  v_legacy := (c.data ->> 'commission50') is null and (c.data ->> 'commission30') is null;
   v_old := case when coalesce(c.data ->> 'commission', '') ~ '^[0-9]+(\.[0-9]+)?$'
                 then (c.data ->> 'commission')::numeric else 5000 end;
   v_c50 := case when coalesce(c.data ->> 'commission50', '') ~ '^[0-9]+(\.[0-9]+)?$'
                 then (c.data ->> 'commission50')::numeric else 0 end;
-  v_c35 := case when coalesce(c.data ->> 'commission35', '') ~ '^[0-9]+(\.[0-9]+)?$'
-                then (c.data ->> 'commission35')::numeric else 0 end;
+  v_c30 := case when coalesce(c.data ->> 'commission30', '') ~ '^[0-9]+(\.[0-9]+)?$'
+                then (c.data ->> 'commission30')::numeric else 0 end;
 
   -- أرباح المبيعات الخارجية والمبالغ المضافة يدوياً
   select coalesce(sum((e ->> 'amount')::numeric), 0) into v_ext
@@ -54,16 +54,16 @@ begin
       (select coalesce(sum(case when (it ->> 'qty') ~ '^[0-9]+$' then (it ->> 'qty')::int else 1 end), 0)
          from jsonb_array_elements(case when jsonb_typeof(data -> 'items') = 'array'
                                         then data -> 'items' else '[]'::jsonb end) it
-        where coalesce(it ->> 'size', '50ml') <> '35ml') as n50,
+        where coalesce(it ->> 'size', '50ml') <> '30ml') as n50,
       (select coalesce(sum(case when (it ->> 'qty') ~ '^[0-9]+$' then (it ->> 'qty')::int else 1 end), 0)
          from jsonb_array_elements(case when jsonb_typeof(data -> 'items') = 'array'
                                         then data -> 'items' else '[]'::jsonb end) it
-        where coalesce(it ->> 'size', '50ml') = '35ml') as n35
+        where coalesce(it ->> 'size', '50ml') = '30ml') as n30
     from public.orders
     where upper(data -> 'coupon' ->> 'code') = c.code
   ),
   o as (
-    select *, case when v_legacy then v_old else n50 * v_c50 + n35 * v_c35 end as earn
+    select *, case when v_legacy then v_old else n50 * v_c50 + n30 * v_c30 end as earn
     from o0
   )
   select jsonb_build_object(
@@ -76,7 +76,7 @@ begin
     'legacy', v_legacy,
     'commission', v_old,
     'commission50', v_c50,
-    'commission35', v_c35,
+    'commission30', v_c30,
     'users',          (select count(distinct phone) from o),
     'orders',         (select count(*) from o),
     'delivered',      (select count(*) from o where status = 'delivered'),
@@ -115,7 +115,7 @@ begin
   v_max := coalesce((c.data ->> 'maxUses')::integer, 1);
   return jsonb_build_object(
     'found', true,
-    'coupon', (c.data - 'creatorToken' - 'commission' - 'commission50' - 'commission35'
+    'coupon', (c.data - 'creatorToken' - 'commission' - 'commission50' - 'commission30'
                       - 'creatorName' - 'maxUses' - 'usagePolicy' - 'externalLog')
               || jsonb_build_object(
                    'exhausted',    c.total_uses >= v_max,
