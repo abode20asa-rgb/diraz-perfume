@@ -502,26 +502,23 @@ async function loadPerfumesFromSource(){
 
 // ══ Site Toggle ══
 function initSiteToggle(){
-  fetch('config.json?_=' + Date.now(), {cache:'no-store'})
-    .then(function(r){ return r.json(); })
-    .then(function(cfg){
-      var isOpen = cfg.open !== false && cfg.open !== 'false';
-      document.getElementById('siteToggle').checked = isOpen;
-      updateStatusBar(isOpen);
-    }).catch(function(){ updateStatusBar(true); });
+  DirazCloud.rpc('site_is_open').then(function(v){
+    var isOpen = v !== false;
+    document.getElementById('siteToggle').checked = isOpen;
+    updateStatusBar(isOpen);
+  }).catch(function(){ updateStatusBar(true); });
 }
-function toggleSite(){
-  var isOpen = document.getElementById('siteToggle').checked;
-  updateStatusBar(isOpen);
-  var val    = isOpen ? 'true' : 'false';
-  var action = isOpen ? 'فتح' : 'إغلاق';
-  var instr  = document.getElementById('githubInstr');
-  instr.style.display = 'block';
-  instr.innerHTML = '<strong>📋 خطوات ' + action + ' الموقع على GitHub:</strong><br>'
-    + '1. روح للـ repo ← اضغط على <code>config.json</code><br>'
-    + '2. اضغط ✏️ ثم غيّر القيمة إلى: <code>{"open": ' + val + '}</code><br>'
-    + '3. اضغط <strong>Commit changes</strong> ✅<br>'
-    + '<small style="opacity:.7">الموقع يتأثر خلال دقيقة لكل الزبائن</small>';
+async function toggleSite(){
+  var cb = document.getElementById('siteToggle');
+  var isOpen = cb.checked;
+  try{
+    await DirazCloud.upsert('site_config',[{key:'open', value:isOpen}]);
+    updateStatusBar(isOpen);
+    showToast(isOpen ? '✅ تم فتح الموقع' : '🔒 تم إغلاق الموقع');
+  }catch(e){
+    cb.checked = !isOpen;
+    showToast(/site_config|PGRST/i.test(String(e.message||e)) ? '⚠️ شغّل supabase-site.sql أولاً' : '❌ فشل التغيير');
+  }
 }
 function updateStatusBar(isOpen){
   var bar = document.getElementById('siteStatusBar');

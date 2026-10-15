@@ -3,21 +3,21 @@
 <head>
 <script>
 (function(){
-  // شاشة تحميل مؤقتة
   var ov=document.createElement('div');
   ov.id='siteCheckOverlay';
   ov.style.cssText='position:fixed;inset:0;background:#f4a7be;z-index:99999;display:flex;align-items:center;justify-content:center';
   ov.innerHTML='<div style="font-size:2.5rem;animation:spin 1.5s linear infinite">🌸</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
   document.documentElement.appendChild(ov);
-
-  fetch('config.json?_='+Date.now(),{cache:'no-store'})
-    .then(function(r){return r.json();})
-    .then(function(cfg){
-      if(cfg.open===false||cfg.open==='false'){
-        window.location.replace('maintenance.html');
-      } else { ov.remove(); }
-    })
-    .catch(function(){ ov.remove(); }); // لو فشل الفحص: اعرض الموقع
+  var U='https://knqtuvcvqsupltbivkfb.supabase.co',K='sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
+  function decide(open){ if(open===false){ window.location.replace('maintenance.html'); } else { ov.remove(); } }
+  fetch(U+'/rest/v1/rpc/site_is_open',{method:'POST',cache:'no-store',headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json'},body:'{}'})
+    .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+    .then(function(v){ decide(v!==false); })
+    .catch(function(){
+      fetch('config.json?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();})
+        .then(function(c){ decide(!(c.open===false||c.open==='false')); })
+        .catch(function(){ ov.remove(); });
+    });
 })();
 </script>
 

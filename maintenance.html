@@ -66,9 +66,14 @@ footer{margin-top:28px;color:rgba(255,255,255,0.55);font-size:.78rem}
 <script>
 // إذا أُعيد تشغيل الموقع، رجّع الزبائن تلقائياً
 (function(){
-  if(localStorage.getItem('diraz_site_status') !== 'closed'){
-    window.location.replace('index.html');
+  var U='https://knqtuvcvqsupltbivkfb.supabase.co',K='sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
+  function check(){
+    fetch(U+'/rest/v1/rpc/site_is_open',{method:'POST',cache:'no-store',headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json'},body:'{}'})
+      .then(function(r){ if(!r.ok) throw 0; return r.json(); })
+      .then(function(v){ if(v!==false) window.location.replace('index.html'); })
+      .catch(function(){});
   }
+  check(); setInterval(check, 60000);
 })();
 </script>
 </body>
