@@ -517,7 +517,9 @@ async function toggleSite(){
     showToast(isOpen ? '✅ تم فتح الموقع' : '🔒 تم إغلاق الموقع');
   }catch(e){
     cb.checked = !isOpen;
-    showToast(/site_config|PGRST/i.test(String(e.message||e)) ? '⚠️ شغّل supabase-site.sql أولاً' : '❌ فشل التغيير');
+    var em = String((e && e.message) || e);
+    showToast('❌ فشل التغيير');
+    alert('سبب الفشل:\n' + em.slice(0, 400));
   }
 }
 function updateStatusBar(isOpen){
