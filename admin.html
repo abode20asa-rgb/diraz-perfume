@@ -251,6 +251,10 @@ textarea{resize:vertical;min-height:80px}
     <div class="section-card">
       <h2>🔔 الإشعارات</h2>
       <div id="pushStats" class="no-items" style="padding:6px 0 14px">...</div>
+      <div style="margin-bottom:14px">
+        <label style="color:white;font-weight:700;font-size:.85rem;display:block;margin-bottom:8px">✨ عبارات جاهزة (اضغط على وحدة وتنكتب تلقائياً، وتكدر تعدلها)</label>
+        <div id="pn_templates" style="display:flex;flex-wrap:wrap;gap:8px"></div>
+      </div>
       <div class="coupon-form-grid">
         <div class="form-group"><label>عنوان الإشعار *</label><input type="text" id="pn_title" maxlength="60" placeholder="عطور فخمة بانتظارك 🌸"></div>
         <div class="form-group"><label>الرابط عند الضغط</label><input type="text" id="pn_url" value="/perfumes.html" dir="ltr"></div>
@@ -958,6 +962,29 @@ async function pushDelete(id){
   if(!confirm('إلغاء هذه الرسالة المجدولة؟')) return;
   try{ await DirazCloud.remove('push_messages','id=eq.'+id+'&status=eq.scheduled'); loadPushAdmin(); }catch(e){ showToast('❌ فشل الحذف'); }
 }
+
+// ── عبارات جاهزة ──
+var PN_TEMPLATES=[
+ {n:'عطور فخمة',t:'عطور فخمة بانتظارك 🌸',b:'تشكيلة فواحة تدوم طول اليوم، اكتشفها الآن من ديراز.'},
+ {n:'أصناف جديدة',t:'وصلت أصناف جديدة ✨',b:'عطور جديدة بثبات عالي ورائحة تلفت الانتباه، تعال شوف الجديد.'},
+ {n:'فواحة وثابتة',t:'رائحة تدوم وتبقى 💖',b:'عطور فواحة وثابتة تخليك مميز بكل مكان، جرّب عطرك القادم.'},
+ {n:'عطر الأكثر مبيعاً',t:'الأكثر طلباً هالأسبوع ⭐',b:'عطور حازت على إعجاب الزبائن، شوف شنو اختاروا.'},
+ {n:'للهدايا',t:'هدية تنذكر 🎁',b:'عطر من ديراز هو أجمل هدية لمن تحب، اختار هديتك الآن.'},
+ {n:'كمية محدودة',t:'الكمية محدودة 🔥',b:'بعض العطور قاربت على النفاذ، لا تفوّت عطرك المفضل.'},
+ {n:'صباح الخير',t:'صباحك عطر 🌷',b:'ابدأ يومك برائحة تحبها، عطورك المفضلة بانتظارك.'},
+ {n:'مساء الخير',t:'مساؤك ورد 🌹',b:'اختار عطر السهرة اللي يليق بك، تصفح تشكيلتنا الآن.'},
+ {n:'السلة بانتظارك',t:'سلتك بانتظارك 🛍️',b:'عطورك جاهزة بالسلة، أكمل طلبك قبل ما تنفذ الكمية.'},
+ {n:'شكراً لثقتكم',t:'شكراً لثقتكم 💕',b:'نفتخر بكم في ديراز، وبانتظاركم دائماً بأجمل العطور.'}
+];
+(function(){
+  var box=document.getElementById('pn_templates'); if(!box) return;
+  PN_TEMPLATES.forEach(function(x){
+    var b=document.createElement('button'); b.type='button'; b.textContent=x.n;
+    b.style.cssText='background:rgba(255,255,255,.25);color:white;border:1px solid rgba(255,255,255,.5);border-radius:50px;padding:6px 14px;font-family:inherit;font-weight:700;font-size:.8rem;cursor:pointer';
+    b.onclick=function(){ document.getElementById('pn_title').value=x.t; document.getElementById('pn_body').value=x.b; };
+    box.appendChild(b);
+  });
+})();
 </script>
 </body>
 </html>
