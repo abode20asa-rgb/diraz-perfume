@@ -287,6 +287,31 @@ textarea{resize:vertical;min-height:80px}
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
     </div>
 
+    <!-- المبيعات الخارجية -->
+    <div class="section-card">
+      <h2>🌐 الخصم الخارجي (طلبات الانستغرام)</h2>
+      <p style="color:rgba(255,255,255,.8);font-size:.83rem;margin-bottom:14px;line-height:1.7">لما زبون يطلب من الانستغرام باسم منشئ، اختر كوده وحدد عدد العطور، والعمولة تنحسب وتنضاف لحسابه تلقائياً.</p>
+      <div class="coupon-form-grid">
+        <div class="form-group" style="grid-column:1/-1"><label>اختر الكود *</label><select id="ext_code" onchange="extCalc();extRenderLog()"></select></div>
+        <div class="form-group"><label>عدد عطور 50 مل</label><input type="number" id="ext_n50" min="0" value="0" oninput="extCalc()"></div>
+        <div class="form-group"><label>عدد عطور 35 مل</label><input type="number" id="ext_n35" min="0" value="0" oninput="extCalc()"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>ملاحظة (اختياري)</label><input type="text" id="ext_note" maxlength="60" placeholder="مثال: طلب أحمد من الانستا"></div>
+      </div>
+      <div id="ext_preview" style="margin:12px 0;color:white;font-weight:800"></div>
+      <div class="form-actions"><button class="btn-save" onclick="extAdd()">➕ إضافة العمولة للمنشئ</button></div>
+
+      <div style="height:1px;background:rgba(255,255,255,.3);margin:22px 0"></div>
+      <h3 style="color:white;font-size:1rem;margin-bottom:10px">💵 إضافة مبلغ مباشر لصاحب الكود المحدد</h3>
+      <div class="coupon-form-grid">
+        <div class="form-group"><label>المبلغ (دينار)</label><input type="number" id="ext_money" min="1" placeholder="20000"></div>
+        <div class="form-group"><label>ملاحظة (اختياري)</label><input type="text" id="ext_note2" maxlength="60" placeholder="مثال: مكافأة"></div>
+      </div>
+      <div class="form-actions" style="margin-top:12px"><button class="btn-save" onclick="extAddMoney()">💵 إضافة المبلغ</button></div>
+
+      <h3 style="margin:22px 0 10px;color:white;font-size:1rem">آخر الإضافات لهذا الكود</h3>
+      <div style="display:flex;flex-direction:column;gap:8px" id="ext_log"></div>
+    </div>
+
     <!-- إضافة / تعديل عطر -->
     <div class="section-card">
       <h2 id="formTitle">➕ إضافة عطر جديد</h2>
@@ -793,9 +818,10 @@ function renderCoupons(){
     var os = tryParse(ORDERS_KEY,[]).filter(function(o){ return o && o.coupon && String(o.coupon.code||'').toUpperCase()===c.code; });
     var sales = os.reduce(function(s,o){ return s+(Number(o.subtotal)||0); },0);
     var earned = os.filter(function(o){ return o.status==='delivered'; }).reduce(function(s,o){ return s+orderEarn(c,o); },0);
+    var extra = extTotal(c); earned += extra;
     var ki = comInfo(c);
     var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('50مل: '+ki.c50.toLocaleString('en-US')+' • 35مل: '+ki.c35.toLocaleString('en-US')+' لكل عطر');
-    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+earned.toLocaleString('en-US')+' ('+comTxt+')';
+    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+earned.toLocaleString('en-US')+(extra?' (منها خارجي '+extra.toLocaleString('en-US')+')':'')+' ('+comTxt+')';
     return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
       '<div class="coupon-code-big">'+esc(c.code)+'</div>' +
       '<div class="coupon-meta"><strong>خصم '+esc(v)+'</strong><br>حد '+esc(c.maxUses)+' / شخص • استُخدم '+esc(c.totalUses)+' مرة'+creatorLine+'<div class="uses-bar"><div class="uses-fill" style="width:'+pct+'%"></div></div></div>' +
@@ -807,6 +833,7 @@ function renderCoupons(){
         '<button class="btn-del-order" onclick="deleteCoupon('+i+')">🗑️</button>' +
       '</div></div>';
   }).join('');
+  try{ extFill(); }catch(e){}
 }
 
 // ══ Perfumes ══
@@ -993,6 +1020,70 @@ var PN_TEMPLATES=[
     box.appendChild(b);
   });
 })();
+
+// ══ الخصم الخارجي ══
+function extTotal(c){ return (Array.isArray(c.externalLog)?c.externalLog:[]).reduce(function(s,e){ return s+(Number(e.amount)||0); },0); }
+function extSel(){ var cs=tryParse(COUPONS_KEY,[]); var code=document.getElementById('ext_code').value; for(var i=0;i<cs.length;i++){ if(cs[i].code===code) return {cs:cs,i:i,c:cs[i]}; } return null; }
+function extPersist(cs,c){
+  localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
+  DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
+  renderCoupons();
+}
+function extFill(){
+  var sel=document.getElementById('ext_code'); if(!sel) return;
+  var cur=sel.value, cs=tryParse(COUPONS_KEY,[]);
+  sel.innerHTML=cs.map(function(c){ return '<option value="'+esc(c.code)+'">'+esc(c.code)+(c.creatorName?' — '+esc(c.creatorName):'')+'</option>'; }).join('') || '<option value="">لا توجد أكواد</option>';
+  if(cur) sel.value=cur;
+  extCalc(); extRenderLog();
+}
+function extCalc(){
+  var box=document.getElementById('ext_preview'); if(!box) return;
+  var s=extSel(); if(!s){ box.textContent=''; return; }
+  var k=comInfo(s.c);
+  if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة حسب الحجم. اضغط 💰 عنده وحدد عمولة 50 و35 أولاً.'; return; }
+  var n50=parseInt(document.getElementById('ext_n50').value)||0, n35=parseInt(document.getElementById('ext_n35').value)||0;
+  var amt=n50*k.c50+n35*k.c35;
+  box.innerHTML='العمولة: '+n50+' × '+k.c50.toLocaleString('en-US')+' + '+n35+' × '+k.c35.toLocaleString('en-US')+' = <span style="font-size:1.15rem">'+amt.toLocaleString('en-US')+' دينار</span>';
+}
+function extAdd(){
+  var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
+  var k=comInfo(s.c);
+  if(k.legacy){ showToast('⚠️ حدد عمولة 50/35 للكود أولاً (زر 💰)'); return; }
+  var n50=parseInt(document.getElementById('ext_n50').value)||0, n35=parseInt(document.getElementById('ext_n35').value)||0;
+  if(n50<0||n35<0||(n50+n35)===0){ showToast('❌ اكتب عدد العطور'); return; }
+  var amt=n50*k.c50+n35*k.c35;
+  if(!Array.isArray(s.c.externalLog)) s.c.externalLog=[];
+  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'external',n50:n50,n35:n35,amount:amt,note:document.getElementById('ext_note').value.trim()});
+  document.getElementById('ext_n50').value=0; document.getElementById('ext_n35').value=0; document.getElementById('ext_note').value='';
+  extPersist(s.cs,s.c);
+  showToast('✅ انضاف '+amt.toLocaleString('en-US')+' دينار لحساب '+(s.c.creatorName||s.c.code));
+}
+function extAddMoney(){
+  var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
+  var amt=parseInt(document.getElementById('ext_money').value)||0;
+  if(amt<=0){ showToast('❌ اكتب مبلغ صحيح'); return; }
+  if(!Array.isArray(s.c.externalLog)) s.c.externalLog=[];
+  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'manual',n50:0,n35:0,amount:amt,note:document.getElementById('ext_note2').value.trim()});
+  document.getElementById('ext_money').value=''; document.getElementById('ext_note2').value='';
+  extPersist(s.cs,s.c);
+  showToast('✅ انضاف '+amt.toLocaleString('en-US')+' دينار لحساب '+(s.c.creatorName||s.c.code));
+}
+function extDel(id){
+  var s=extSel(); if(!s||!Array.isArray(s.c.externalLog)) return;
+  if(!confirm('حذف هذه الإضافة؟ راح تنخصم من أرباح المنشئ.')) return;
+  s.c.externalLog=s.c.externalLog.filter(function(e){ return e.id!==id; });
+  extPersist(s.cs,s.c);
+}
+function extRenderLog(){
+  var box=document.getElementById('ext_log'); if(!box) return;
+  var s=extSel(); var log=s&&Array.isArray(s.c.externalLog)?s.c.externalLog:[];
+  if(!log.length){ box.innerHTML='<div class="no-items" style="padding:10px 0">لا توجد إضافات بعد</div>'; return; }
+  box.innerHTML=log.slice(0,15).map(function(e){
+    var d=new Date(e.date).toLocaleDateString('en-GB');
+    var what=e.kind==='manual'?'💵 مبلغ مباشر':('🌐 '+(e.n50||0)+'×50مل + '+(e.n35||0)+'×35مل');
+    return '<div class="coupon-item" style="padding:10px 14px"><div class="coupon-meta"><strong>+'+(Number(e.amount)||0).toLocaleString('en-US')+' دينار</strong> — '+what+'<br><small>'+d+(e.note?' • '+esc(e.note):'')+'</small></div><div class="coupon-actions"><button class="btn-del-order" onclick="extDel('+e.id+')">🗑️</button></div></div>';
+  }).join('');
+}
 </script>
 </body>
 </html>
