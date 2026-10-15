@@ -22,14 +22,17 @@ const PROMO = [
   { title: "رائحة تتذكرها الناس 🌷", body: "عطور مختارة بعناية لتناسب ذوقك. شوف آخر الإضافات." },
 ];
 const CART = [
-  { title: "سلتك بانتظارك 🛍️", body: "عطورك جاهزة بالسلة، وخصومات تصل إلى 20%. أكمل طلبك الآن." },
-  { title: "لا تفوّت عطرك 💕", body: "سلتك جاهزة وتنتظرك، مع خصومات تصل إلى 20%." },
-  { title: "ما زالت السلة بانتظارك 🌸", body: "خلّص طلبك قبل ما ينفذ العطر — خصومات تصل إلى 20%." },
+  { title: "سلتك بانتظارك 🛍️", body: "عطورك جاهزة بالسلة، أكمل طلبك قبل ما تنفذ الكمية." },
+  { title: "لا تفوّت عطرك 💕", body: "اخترت الأفضل، وبقى خطوة وحدة ويوصلك لباب بيتك." },
+  { title: "ما زالت السلة تنتظرك 🌸", body: "العطور اللي عجبتك لسه موجودة، خلّص طلبك الآن." },
+  { title: "عطرك يشتاق إلك ✨", body: "سلتك جاهزة، اطلبها اليوم وخلّي رائحتك تحجي عنك." },
+  { title: "كمّل طلبك 🎀", body: "الكميات محدودة وسلتك بانتظارك، لا تخليها تروح منك." },
 ];
 
 const hash = (s: string) => [...s].reduce((a, c) => (a + c.charCodeAt(0)) % 100000, 0);
 const baghdadHour = () => new Date(Date.now() + 3 * 3600_000).getUTCHours(); // UTC+3 بدون توقيت صيفي
 
+let lastError = "";
 async function sendOne(sub: any, payload: unknown): Promise<boolean> {
   try {
     await webpush.sendNotification(
@@ -38,6 +41,8 @@ async function sendOne(sub: any, payload: unknown): Promise<boolean> {
     );
     return true;
   } catch (e: any) {
+    lastError = `status=${e?.statusCode ?? "?"} ${String(e?.body ?? e?.message ?? e).slice(0, 200)}`;
+    console.error("push failed:", lastError);
     if (e?.statusCode === 404 || e?.statusCode === 410) {
       await sb.from("push_subs").delete().eq("endpoint", sub.endpoint); // اشتراك منتهي
     }
@@ -69,7 +74,7 @@ async function inBatches<T>(items: T[], fn: (x: T) => Promise<boolean>, size = 4
 async function runDueMessages(subs: any[]) {
   const { data: due } = await sb.from("push_messages").select("*")
     .eq("status", "scheduled").lte("send_at", new Date().toISOString());
-  let n = 0;
+  let n = 0, totalSent = 0, totalTried = 0;
   for (const m of due ?? []) {
     // "حجز" الرسالة حتى ما تنرسل مرتين لو تزامن تشغيلان
     const { data: claimed } = await sb.from("push_messages")
@@ -77,9 +82,9 @@ async function runDueMessages(subs: any[]) {
     if (!claimed?.length) continue;
     const sent = await inBatches(subs, (s) => sendOne(s, { title: m.title, body: m.body, url: m.url }));
     await sb.from("push_messages").update({ status: "sent", sent_count: sent }).eq("id", m.id);
-    n++;
+    n++; totalSent += sent; totalTried += subs.length;
   }
-  return n;
+  return { n, totalSent, totalTried };
 }
 
 // 2) الإشعارات التلقائية: كل زبون مرة كل يومين، بوقت مختلف حسب حالته
@@ -126,8 +131,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (!(await authorized(req))) return new Response("unauthorized", { status: 401, headers: CORS });
   const subs = await allSubs();
-  const messages = await runDueMessages(subs);
+  const m = await runDueMessages(subs);
   const auto = await runAuto(subs);
-  return new Response(JSON.stringify({ ok: true, subs: subs.length, messages, auto }),
+  return new Response(JSON.stringify({ ok: true, subs: subs.length, messages: m.n, sent: m.totalSent, tried: m.totalTried, auto, error: lastError }),
     { headers: { ...CORS, "Content-Type": "application/json" } });
 });
