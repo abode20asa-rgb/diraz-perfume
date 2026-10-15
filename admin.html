@@ -247,6 +247,26 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
 
+    <!-- الإشعارات -->
+    <div class="section-card">
+      <h2>🔔 الإشعارات</h2>
+      <div id="pushStats" class="no-items" style="padding:6px 0 14px">...</div>
+      <div class="coupon-form-grid">
+        <div class="form-group"><label>عنوان الإشعار *</label><input type="text" id="pn_title" maxlength="60" placeholder="عطور فخمة بانتظارك 🌸"></div>
+        <div class="form-group"><label>الرابط عند الضغط</label><input type="text" id="pn_url" value="/perfumes.html" dir="ltr"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>نص الرسالة *</label><textarea id="pn_body" maxlength="180" placeholder="اكتب رسالتك للزبائن..."></textarea></div>
+        <div class="form-group"><label>وقت الإرسال</label>
+          <select id="pn_mode" onchange="document.getElementById('pn_when').style.display=this.value==='schedule'?'block':'none'">
+            <option value="now">إرسال الآن</option><option value="schedule">جدولة لوقت محدد</option>
+          </select>
+        </div>
+        <div class="form-group"><label>التاريخ والوقت</label><input type="datetime-local" id="pn_when" style="display:none"></div>
+      </div>
+      <div class="form-actions" style="margin-top:14px"><button class="btn-save" id="pn_btn" onclick="pushSend()">📣 إرسال / جدولة</button></div>
+      <h3 style="margin:22px 0 10px;color:white;font-size:1rem">الرسائل المجدولة والمرسلة</h3>
+      <div style="display:flex;flex-direction:column;gap:10px" id="pushList"></div>
+    </div>
+
     <!-- أكواد الخصم -->
     <div class="section-card">
       <h2>🏷️ أكواد الخصم</h2>
@@ -391,7 +411,7 @@ function refreshFromCloud(){
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
 window.addEventListener('focus', refreshFromCloud);
 setInterval(refreshFromCloud, 30000);
-function initAll(){
+function initAll(){ try{ loadPushAdmin(); }catch(e){}
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
@@ -888,6 +908,56 @@ function renderList(){
     try{ if(await DirazCloud.rpc('am_i_admin')===true) enterPanel(); }catch(e){}
   }
 })();
+</script>
+<script>
+// ══ الإشعارات ══
+function pnEsc(t){ return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+async function loadPushAdmin(){
+  try{
+    var st = await DirazCloud.rpc('push_admin_stats');
+    document.getElementById('pushStats').innerHTML = '👥 مشتركين بالإشعارات: <strong>'+(st.total||0)+'</strong> &nbsp;|&nbsp; 🛍️ عندهم سلة: <strong>'+(st.withCart||0)+'</strong>';
+    var rows = await DirazCloud.list('push_messages','&order=send_at.desc&limit=30');
+    var box = document.getElementById('pushList');
+    if(!rows||!rows.length){ box.innerHTML='<div class="no-items">لا توجد رسائل بعد</div>'; return; }
+    box.innerHTML = rows.map(function(m){
+      var when = new Date(m.send_at).toLocaleString('ar-IQ');
+      var tag = m.status==='sent' ? '✅ أُرسلت لـ '+(m.sent_count||0) : (m.status==='sending' ? '⏳ جاري الإرسال' : '🕒 مجدولة');
+      return '<div class="coupon-item"><div class="coupon-meta"><strong>'+pnEsc(m.title)+'</strong><br>'+pnEsc(m.body)+'<br><small>'+when+' — '+tag+'</small></div>'+
+        (m.status==='scheduled' ? '<div class="coupon-actions"><button class="btn-save" style="background:#e53935" onclick="pushDelete('+m.id+')">🗑️ إلغاء</button></div>' : '')+'</div>';
+    }).join('');
+  }catch(e){
+    document.getElementById('pushStats').textContent = /push_admin_stats|PGRST202|push_messages/i.test(String(e.message||e)) ? '⚠️ شغّل supabase-push.sql في Supabase' : '⚠️ تعذّر تحميل الإشعارات';
+  }
+}
+async function pushSend(){
+  var title=document.getElementById('pn_title').value.trim(), body=document.getElementById('pn_body').value.trim();
+  var url=document.getElementById('pn_url').value.trim()||'/perfumes.html';
+  var mode=document.getElementById('pn_mode').value, btn=document.getElementById('pn_btn');
+  if(!title||!body){ showToast('❌ اكتب العنوان والنص'); return; }
+  var at=new Date();
+  if(mode==='schedule'){
+    var v=document.getElementById('pn_when').value;
+    if(!v){ showToast('❌ اختر وقت الإرسال'); return; }
+    at=new Date(v);
+    if(at.getTime()<Date.now()-60000){ showToast('❌ الوقت بالماضي'); return; }
+  }
+  btn.disabled=true;
+  try{
+    await DirazCloud.insert('push_messages',[{title:title,body:body,url:url,send_at:at.toISOString()}]);
+    if(mode==='now'){
+      var tok=await DirazCloud.token();
+      var r=await fetch(window.DIRAZ_SUPABASE_URL+'/functions/v1/push-sender',{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:window.DIRAZ_SUPABASE_KEY,'Content-Type':'application/json'},body:'{}'});
+      showToast(r.ok?'✅ تم الإرسال':'⚠️ انحفظت وستُرسل خلال 5 دقائق');
+    } else showToast('✅ تمت الجدولة');
+    document.getElementById('pn_title').value=''; document.getElementById('pn_body').value='';
+    loadPushAdmin();
+  }catch(e){ showToast('❌ فشل: '+String(e.message||e).slice(0,60)); }
+  btn.disabled=false;
+}
+async function pushDelete(id){
+  if(!confirm('إلغاء هذه الرسالة المجدولة؟')) return;
+  try{ await DirazCloud.remove('push_messages','id=eq.'+id+'&status=eq.scheduled'); loadPushAdmin(); }catch(e){ showToast('❌ فشل الحذف'); }
+}
 </script>
 </body>
 </html>

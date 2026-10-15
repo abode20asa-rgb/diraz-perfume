@@ -330,6 +330,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
   .btn-checkout { font-size: .9rem; }
 }
 </style>
+<link rel="manifest" href="/manifest.webmanifest">
 </head>
 <body>
 
@@ -435,6 +436,7 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 
 <script src="perfumes-data.js"></script>
 <script src="supabase-config.js"></script>
+<script src="diraz-push.js"></script>
 <script>
 /* ---------- تتبع الزوار ---------- */
 function trackVisitor(){
@@ -605,7 +607,7 @@ function saveCustomer(){
 let cart=[];
 let pendingCartOpen=false;
 function loadCart(){ cart=tryParse(CART_KEY,[]); }
-function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); }
+function saveCart(){ localStorage.setItem(CART_KEY,JSON.stringify(cart)); if(window.DirazPush) DirazPush.cart(); }
 
 const selectedSizes={};
 const pendingQty={};
@@ -923,7 +925,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   }
   const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
-  DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{});
+  DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{}); if(window.DirazPush) DirazPush.ordered();
 
   // رسالة واتساب
   let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
