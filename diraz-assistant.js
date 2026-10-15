@@ -346,6 +346,233 @@
     i.value=''; handle(v.slice(0,300));
   }
 
+  /* ───────── كلام اجتماعي: سلام، شلونك، شكر، وداع ───────── */
+  var FILL = N(['هلا','هلو','هلاو','مرحبا','مرحبتين','اهلا','اهلين','وسهلا','سهلا','يا','وغلا','غلا','بيك','بيكم','بك','عليكم','وعليكم','عليك','السلام','سلام','سلامات','ورحمه','رحمه','الله','وبركاته','بركاته','حبيبي','حبيبتي','حبي','اخي','اخوي','خيي','اختي','استاذ','استاذه','عزيزي','صباح','مساء','الخير','النور','هاي','hi','hello','شلونك','شلونكم','شلونج','شخبارك','شخبارج','اخبارك','اخبارج','كيفك','كيف','حالك','الحال','شونك','عساك','طيب','والله','انت','وياك','شنو','شو','ديراز']);
+  var RX_SALAM=/(^| )(السلام|سلام|سلامات)( |$)/, RX_REPLYSALAM=/^و?عليكم/;
+  var RX_HOW=/(شلونك|شلونكم|شلونج|شخبارك|شخباركم|شخبارج|اخبارك|اخباركم|اخبارج|كيفك|كيف حالك|كيف الحال|كيف حالكم|شونك|شلون الحال)/;
+  var RX_FINE=/^(تمام|زين|كلش زين|كلش تمام|بخير|الحمد ?لله|والحمد ?لله|احسن|دلال|طيب|منيح|ماشي الحال)/;
+  var RX_TIRED=/(تعبان|تعبانه|مو زين|مب زين|مو تمام|زعلان|زعلانه|مضايق|مضايج|ضايج)/;
+  var RX_BYE=/^(مع السلامه|باي|bye|الي اللقاء|تصبح على خير|تصبحون على خير|يلا باي|اشوفك|الله معك|فمان الله)/;
+  var RX_WHO=/(منو انت|شنو اسمك|شكو اسمك|منو تكون|انت منو|اسمك شنو|شنو تكون|شتسوي|شنو تسوي)/;
+  var RX_BOT=/(انت روبوت|انت ذكاء|انت انسان|انت بشر|انت حقيقي|انت بوت|هذا بوت)/;
+  var RX_CHAT=/(وين تعيش|من وين انت|جنسيتك|شنو هوايتك|متزوج|عندك عيله|منو صنعك|شلون يومك|كيف يومك)/;
+  var RX_REC=/(ارشح|رشح|ترشيح|رشحلي|ارشحلي|انصحني|تنصحني|تنصح|اقترح|اقترحلي|ساعدني|ساعديني)/;
+  var RX_NO=/^(لا|كلا|ماكو|ما ?عندي|مو ?عندي|ما ?اريد|بدون|مافي|no|n)( |$)/;
+  var RX_YES=/^(نعم|ايه|اي|ايوه|ايوا|اكيد|عندي|yes|y)( |$)/;
+  var awaitHow=false;
+
+  function pick(a){ return a[Math.floor(Math.random()*a.length)]; }
+  function firstName(){ var c=getCustomer(); if(!c||!c.name) return ''; return String(c.name).trim().split(/\s+/)[0]; }
+  function inFill(w){ return FILL.indexOf(w)>-1 || (w.length>3 && /^[وب]/.test(w) && FILL.indexOf(w.slice(1))>-1); }
+  function isFillOnly(t){ var tk=t.split(' ').filter(Boolean); return tk.length>0 && tk.length<=8 && tk.every(inFill); }
+  function opener(t,nmS){
+    if(RX_REPLYSALAM.test(t)) return 'حياك الله'+nmS+' 🌸';
+    if(RX_SALAM.test(t)) return 'وعليكم السلام ورحمة الله وبركاته'+nmS+' 🌸';
+    if(/^صباح/.test(t)) return 'صباح النور والسرور'+nmS+' ☀️';
+    if(/^مساء/.test(t)) return 'مساء النور'+nmS+' 🌙';
+    return pick(['هلا والله وغلا','يا هلا ومرحبا بيك','أهلين وسهلين'])+nmS+' 🌸';
+  }
+  function offerChips(){
+    if(hasCustomer()) chips(['أريد ترشيح','هدية'].concat(BASIC_CHIPS.slice(1,4)));
+    else chips(['👤 سجّل بياناتي']);
+  }
+  function askWho(){
+    say('أكيد 🌸 حتى أختارلك الأنسب خلني أسألك: العطر لمن؟ (نسائي لو رجالي) وشنو المناسبة؟');
+    chips(['نسائي','رجالي','هدية','لسهرة','للدوام','للصيف']);
+  }
+  /* يرجع true إذا الرسالة كلام اجتماعي وانردّ عليها؛ socialOnly = للزبون اللي ما سجّل بعد */
+  function smallTalk(raw,t,socialOnly){
+    var nm=firstName(), nmS=nm?(' '+esc(nm)):'', tk=t.split(' ').filter(Boolean).length;
+    var regHint=hasCustomer()?'':'<br>وإذا تريد أرشحلك وأكمل لك الطلب، سجّل بياناتك بالزر 👇';
+
+    /* جواب الزبون على "شلونك؟" */
+    if(awaitHow && tk<=6){
+      if(RX_TIRED.test(t)){
+        awaitHow=false;
+        say('سلامتك'+nmS+' 🌸 الله يفرجها عليك. إذا تحب نسولف شوي، وأكيد ريحة حلوة تحسّن المود 💐'+regHint);
+        offerChips(); return true;
+      }
+      if(RX_FINE.test(t)){
+        awaitHow=false;
+        say(pick(['الله يديمها نعمة عليك 🌸','دوم الفرحة حبيبي 🌸','الحمد لله، يسعدني 🌸'])+' شنو أخدمك اليوم؟ تحب أرشحلك عطر، لو تدور على شي معيّن؟'+regHint);
+        offerChips(); return true;
+      }
+    }
+    /* وداع */
+    if(RX_BYE.test(t)){ say('الله يسلمك'+nmS+' 🌸 نورتنا، وإذا تحتاج شي أني هنا.'); return true; }
+    /* شكر */
+    if(THANKS.test(t) && tk<=6){ say(pick(['عفواً حبيبي 🌸 إذا تريد ترشيح ثاني أني حاضر.','تدلل 🌸 أي خدمة.','الله يسلمك، نورتنا 🌸'])); return true; }
+    /* تعارف */
+    if(tk<=8 && RX_BOT.test(t)){ say('أني مساعد ذكي من ديراز 🤖🌸 مو إنسان، بس أحب أسولف وياك وأختارلك أحلى ريحة. شنو نوع الريحة اللي تحبها؟'); chips(BASIC_CHIPS); return true; }
+    if(tk<=8 && RX_WHO.test(t)){ say('أني مساعد ديراز للعطور 🌸 أساعدك تختار الريحة المناسبة، أضيفها بالسلة، وأكمل لك الطلب. وانت شنو تحب من الروائح؟'); chips(BASIC_CHIPS); return true; }
+    if(tk<=8 && RX_CHAT.test(t)){ say('ههه سؤال حلو 😄 أني مساعد ديراز وشغلتي أختارلك أحلى الروائح 🌸 وانت شنو نوع الريحة اللي تحبها؟'); chips(BASIC_CHIPS); return true; }
+
+    /* سلام / تحية / شلونك */
+    var isGreet=RX_SALAM.test(t)||GREET.test(t)||RX_HOW.test(t)||/^(صباح|مساء)/.test(t);
+    if(isGreet){
+      var pure=isFillOnly(t) || (tk<=3 && !parseMessage(raw).any);
+      if(pure){
+        var tail=RX_HOW.test(t)?'الحمد لله تمام، دمت بخير 😊 وانت شلونك؟':'شلونك؟ إن شاء الله تمام؟';
+        say(opener(t,nmS)+'<br>نورت ديراز 🌸 '+tail+regHint);
+        awaitHow=true;
+        chips(hasCustomer()?['الحمد لله تمام 😊','أريد ترشيح','🛒 طلب']:['الحمد لله تمام 😊','👤 سجّل بياناتي']);
+        return true;
+      }
+      say(opener(t,nmS));   /* تحية + طلب بنفس الرسالة: نسلّم ونكمل */
+      return false;
+    }
+
+    /* "رشحلي" بدون تفاصيل: نسأله عن الشخص والمناسبة */
+    if(!socialOnly && tk<=5 && RX_REC.test(t)){
+      var pm=parseMessage(raw);
+      if(!Object.keys(pm.w).length && !pm.gender && !pm.budget && pm.free.every(function(f){ return RX_REC.test(f); })){ askWho(); return true; }
+    }
+    return false;
+  }
+
+  /* ───────── زر «طلب» + سؤال كود الخصم ───────── */
+  var orderCtx=null;
+
+  /* يفتح نافذة التوصيل الحقيقية (المحافظة/المنطقة/العنوان) ويخلي الزبون يعبّيها بنفسه */
+  function openDeliveryForm(){
+    var box=$('dzA_box'); if(box) box.classList.remove('open');
+    try{
+      if(typeof openDelivery==='function') openDelivery();
+      else if(typeof openCart==='function') openCart();
+    }catch(e){}
+  }
+  function extractCode(raw){
+    var m=String(raw).match(/[A-Za-z0-9][A-Za-z0-9_\-]{2,15}/);
+    if(m && !/^(yes|no)$/i.test(m[0])) return m[0].toUpperCase();
+    var s=String(raw).trim(), n=norm(s);
+    if(/^[\u0621-\u064A]{3,16}$/.test(s) && !RX_YES.test(n) && !RX_NO.test(n) && !GREET.test(n) && !THANKS.test(n)) return s;
+    return '';
+  }
+  function startOrder(){
+    var c0=cartSummary();
+    if(!c0){ orderCtx=null; say('سلتك فاضية 🌸 احچيلي شنو تحب وأضيفه لك، وبعدها نكمل الطلب.'); chips(BASIC_CHIPS); return; }
+    if(orderCtx && orderCtx.code){ showFinal('عندك كود الخصم «'+esc(orderCtx.code)+'» مطبق من قبل ✅ (كود واحد فقط لكل طلب)'); return; }
+    orderCtx={code:'',discount:0};
+    say('تمام 🌸 سلتك فيها:<br>'+c0.lines.join('<br>')+'<br><br>💰 المجموع: '+fmt(c0.total)+' دينار<br><br>عندك كود خصم؟');
+    chips(['نعم عندي كود','لا ما عندي']);
+    flow={step:'couponAsk'};
+  }
+
+  /* أرقام «المجموع» الظاهرة بصفحة الموقع (نستعملها نعرف إذا الخصم انطبق) */
+  function siteTotals(){
+    var out={};
+    try{
+      document.querySelectorAll('[id]').forEach(function(el){
+        if(!/total/i.test(el.id) || /count|item|qty/i.test(el.id)) return;
+        if(el.closest && el.closest('#dzA_box')) return;
+        var txt=String(el.textContent||'').replace(/[٠-٩]/g,function(d){return '٠١٢٣٤٥٦٧٨٩'.indexOf(d);});
+        var n=parseInt(txt.replace(/[^0-9]/g,''),10);
+        if(n>0) out[el.id]=n;
+      });
+    }catch(e){}
+    return out;
+  }
+
+  /* يتحقق من الكود عن طريق دالة الموقع applyCoupon ويقرأ النتيجة (رسالة/تنبيه/تغيّر المجموع) */
+  function verifyCoupon(code,cb){
+    var ci=document.getElementById('couponInput');
+    if(typeof applyCoupon!=='function' || !ci){ cb({status:'unknown'}); return; }
+    var captured=[], oldAlert=window.alert, obs=null, finished=false;
+    function grab(x){ x=String(x||'').replace(/\s+/g,' ').trim(); if(x && x.length<220) captured.push(x); }
+    window.alert=function(m){ grab(m); };
+    try{
+      obs=new MutationObserver(function(ms){
+        ms.forEach(function(m){
+          if(m.target && m.target.closest && m.target.closest('#dzA_box')) return;
+          for(var i=0;i<m.addedNodes.length;i++) grab(m.addedNodes[i].textContent);
+          if(m.type==='characterData') grab(m.target.textContent);
+        });
+      });
+      obs.observe(document.body,{childList:true,subtree:true,characterData:true});
+    }catch(e){}
+    var before=siteTotals();
+    function finish(){
+      if(finished) return; finished=true;
+      window.alert=oldAlert; try{ obs&&obs.disconnect(); }catch(e){}
+      var after=siteTotals(), disc=0;
+      Object.keys(after).forEach(function(id){
+        if(before[id] && after[id]<before[id]) disc=Math.max(disc,before[id]-after[id]);
+      });
+      var raw=captured.join(' | '), tn=norm(raw);
+      var invalid=/(غير صالح|غير صحيح|غير موجود|منتهي|منتهيه|خطا|خاطي|غلط|لا يوجد|مو صحيح|مو موجود|ما موجود|invalid|expired|not found)/.test(tn) || /[❌✖]/.test(raw);
+      var valid=/(تم تفعيل|تم تطبيق|تم الخصم|كود صحيح|الكود صحيح|مفعل|مطبق|applied|valid)/.test(tn) || /[✅🎉]/.test(raw);
+      if(!disc){
+        var pm=raw.match(/(\d{1,3})\s*%/);
+        if(pm && valid && !invalid){ var cs=cartSummary(); if(cs) disc=Math.round(cs.total*parseInt(pm[1],10)/100); }
+      }
+      var status='unknown';
+      if(disc>0 && !invalid) status='valid';
+      else if(invalid) status='invalid';
+      else if(valid) status='valid';
+      if(status!=='valid'){ try{ ci.value=''; }catch(e){} }
+      cb({status:status,discount:disc,msg:raw});
+    }
+    ci.value=code;
+    var rv=null;
+    try{ rv=applyCoupon(); }catch(e){}
+    if(rv && typeof rv.then==='function') rv.then(function(){ setTimeout(finish,500); },function(){ setTimeout(finish,300); });
+    setTimeout(finish,2200);
+  }
+
+  function checkCode(code){
+    if(!cartSummary()){ flow=null; orderCtx=null; say('سلتك فاضية 🌸 ضيف عطر للسلة أول وبعدها أطبق الكود.'); chips(BASIC_CHIPS); return; }
+    if(!orderCtx) orderCtx={code:'',discount:0};
+    if(orderCtx.code){ showFinal('ما يصير أكثر من كود خصم، الكود «'+esc(orderCtx.code)+'» مطبق من قبل ✅'); return; }
+    flow={step:'couponWait'};
+    var w=say('أتحقق من الكود «'+esc(code)+'» ⏳');
+    verifyCoupon(code,function(r){
+      if(w && w.remove) w.remove();
+      if(r.status==='valid'){
+        orderCtx.code=code; orderCtx.discount=r.discount||0;
+        showFinal('✅ الكود «'+esc(code)+'» موجود وانطبق'+(r.discount?' — خصم '+fmt(r.discount)+' دينار':'')+' 🎉');
+      }else if(r.status==='invalid'){
+        flow={step:'coupon'};
+        say('❌ الكود «'+esc(code)+'» غير موجود أو غير صالح.<br>جرّب كود ثاني، أو كمّل بدون كود.'+(r.msg?'<br><small style="opacity:.6">رد الموقع: '+esc(String(r.msg).slice(0,120))+'</small>':'<br><small style="opacity:.6">(الموقع ما رجّع أي رسالة)</small>'));
+        chips(['بدون كود']);
+      }else{
+        orderCtx.code=code; orderCtx.discount=0;
+        showFinal('سجلت الكود «'+esc(code)+'» 🌸 بس ما كدرت أتأكد منه تلقائياً، إذا انطبق الخصم يظهر بالسلة.');
+      }
+    });
+  }
+
+  /* الملخص النهائي: السلة + السعر ← نسأله يكمّل الطلب لو لا */
+  function showFinal(prefix){
+    var cs=cartSummary();
+    if(!cs){ flow=null; say('سلتك فاضية 🌸'); return; }
+    var h=(prefix?prefix+'<br><br>':'')+'🧾 ملخص طلبك:<br>'+cs.lines.join('<br>')+'<br><br>💰 المجموع: '+fmt(cs.total)+' دينار';
+    var d=(orderCtx&&orderCtx.discount)||0;
+    if(d>0) h+='<br>🎁 الخصم ('+esc(orderCtx.code)+'): -'+fmt(d)+' دينار<br>✅ <b>الصافي: '+fmt(Math.max(0,cs.total-d))+' دينار</b>';
+    else if(orderCtx&&orderCtx.code) h+='<br>🎁 كود الخصم: '+esc(orderCtx.code);
+    h+='<br><small>(سعر التوصيل يظهر بالنافذة الجاية حسب المحافظة)</small><br><br>تريد تكمّل الطلب؟';
+    say(h);
+    flow={step:'confirm'};
+    chips(['✅ نعم، كمّل الطلب','لا، مو هسه']);
+  }
+  function refreshOrderBar(){
+    var bar=$('dzA_orderbar'); if(!bar) return;
+    var cs=cartSummary();
+    if(!cs) orderCtx=null;
+    bar.style.display=cs?'block':'none';
+    var n=$('dzA_ordn'); if(n) n.textContent=cs?('('+cs.count+')'):'';
+  }
+  function addOrderBar(){
+    var box=$('dzA_box'); if(!box) return;
+    var st=document.createElement('style');
+    st.textContent='#dzA_orderbar{display:none;padding:8px 10px 0;background:#fff}#dzA_orderbtn{width:100%;border:none;cursor:pointer;background:#c45a7a;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.88rem;padding:10px;border-radius:50px}#dzA_orderbtn:hover{background:#b04b6b}';
+    document.head.appendChild(st);
+    var bar=document.createElement('div'); bar.id='dzA_orderbar';
+    bar.innerHTML='<button type="button" id="dzA_orderbtn">🛒 طلب <span id="dzA_ordn"></span></button>';
+    box.insertBefore(bar,box.querySelector('.dzA_form'));
+    $('dzA_orderbtn').onclick=function(){ flow=null; handle('إتمام الطلب'); };
+    refreshOrderBar(); setInterval(refreshOrderBar,1500);
+  }
+
   /* ───────── معالجة الرسالة ───────── */
   function handle(text){
     say(esc(text),'me');
@@ -358,17 +585,8 @@
     /* ── 1) المحادثة الطبيعية الجارية (طلب/كود/عنوان) ── */
     if(flow){ handleFlow(raw,t,perfumes); return; }
 
-    /* ── 2) تحية / شكر / أسئلة عامة — قبل أي تحليل ── */
-    if(THANKS.test(t)){ say('عفواً حبيبي 🌸 إذا تريد ترشيح ثاني أني حاضر.'); return; }
-    if(GREET.test(t)){
-      if(!hasCustomer()){
-        showAccountForm('هلا والله 🌸 حتى أخدمك، سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
-        return;
-      }
-      say('هلا والله 🌸 شنو تحب من الروائح؟ أو إذا تريد أرشحلك، احچيلي نوع العطر اللي تريده وشكد عمرك حتى أختارلك الأنسب.');
-      chips(BASIC_CHIPS);
-      return;
-    }
+    /* ── 2) كلام اجتماعي (سلام، شلونك، شكر، وداع…) — قبل أي تحليل ── */
+    if(smallTalk(raw,t)) return;
 
     /* ── 3) التحقق من الاسم والرقم قبل أي خدمة ── */
     if(!hasCustomer()){
@@ -385,12 +603,9 @@
       return;
     }
 
-    /* ── طلب إكمال الطلب (كملت اريد اطلبهم) ── */
-    if(/(كملت|خلصت|ابي اطلب|اريد اطلب|اطلبهم|اطلبهن|اطلب|خلص|كملي|سوي الطلب|ارسل الطلب|اطلب الحين|ابي اطلبهم|ابي اطلبهن)/.test(t)){
-      var c0=cartSummary();
-      if(!c0){ say('سلتك فاضية 🌸 احچيلي شنو تحب وأضيفه لك، وبعدها نكمل الطلب.'); chips(BASIC_CHIPS); return; }
-      say('تمام 🌸 سلتك فيها:<br>'+c0.lines.join('<br>')+'<br><br>💰 المجموع: '+fmt(c0.total)+' دينار<br><br>عندك كود خصم؟ إذا عندك اكتبه، وإذا ما عندك اكتب «ما عندي» أو «لا».');
-      flow={step:'coupon'};
+    /* ── طلب إكمال الطلب (زر «طلب» أو كلام) ── */
+    if(/(^طلب$|اتمام الطلب|اكمل الطلب|كمل الطلب|تاكيد الطلب|كملت|خلصت|ابي اطلب|اريد اطلب|اطلبهم|اطلبهن|اطلب|خلص|كملي|سوي الطلب|ارسل الطلب|اطلب الحين|ابي اطلبهم|ابي اطلبهن)/.test(t)){
+      startOrder();
       return;
     }
 
@@ -417,6 +632,15 @@
     if(named>-1){ showNamed(named,perfumes[named],raw); return; }
 
     var pm=parseMessage(raw);
+
+    /* كلمة واحدة تشبه كود خصم خارج مسار الطلب: ما ننفذ شي، نوجّهه للطلب */
+    if(t.split(' ').length===1 && !pm.any && extractCode(raw)){
+      var known=perfumes.some(function(p){ return profile(p).full.indexOf(t)>-1; });
+      if(!known){
+        say('إذا هذا كود خصم 🎁 اضغط «🛒 طلب» وأسألك عنه بوقته، وأتأكد من السلة قبل ما أطبقه 🌸');
+        chips(cartSummary()?['🛒 طلب']:BASIC_CHIPS); return;
+      }
+    }
 
     /* تحية / شكر */
     if(!pm.any && !pm.free.length){
@@ -524,51 +748,30 @@
       return;
     }
 
-    if(step==='coupon'){
-      var no=/(ما عندي|ما عندي كود|ماكو|لا|بدون|ماعندي|ما عندي شي|لا ما عندي|ما عندي خصم|لا كود|بدون كود)/.test(t);
-      if(no){
-        flow={step:'address'};
-        say('تمام، بدون كود 🌸 هسه أحتاج عنوانك: شنو المحافظة والمنطقة والعنوان بالتفصيل؟ (مثل: بغداد، الكرادة، شارع 62)');
-        return;
-      }
-      if(GREET.test(t)||THANKS.test(t)){ say('إذا عندك كود خصم اكتبه هني 🌸 وإذا ما عندك اكتب «ما عندي».'); return; }
-      // عنده كود — نكتبه بالسلة ونطبقه
-      var code=raw.replace(/[^\w\u0621-\u064A]/g,'').toUpperCase().trim();
-      if(code && code.length>=2 && code.length<=16){
-        // نحاول تطبيق الكود عبر دالة الصفحة
-        var applied=false;
-        try{
-          if(typeof applyCoupon==='function'){
-            var ci=document.getElementById('couponInput');
-            if(ci){ ci.value=code; applyCoupon(); applied=true; }
-          }
-        }catch(e){}
-        flow={step:'address'};
-        say((applied?'دخلت الكود «'+code+'» بالسلة وجاري التحقق 🌸 شوف النتيجة بفتح السلة. ':'سجلت الكود «'+code+'» 🌸 ')+'هسه أحتاج عنوانك: شنو المحافظة والمنطقة والعنوان بالتفصيل؟');
-        return;
-      }
-      say('اكتبلي كود الخصم 🌸 وإذا ما عندك اكتب «ما عندي».');
-      return;
+    if(step==='couponAsk' || step==='coupon'){
+      if(RX_NO.test(t)){ showFinal('تمام، بدون كود 🌸'); return; }
+      var code=extractCode(raw);
+      if(code){ checkCode(code); return; }
+      if(RX_YES.test(t)){ flow={step:'coupon'}; say('حلو 🌸 اكتب كود الخصم اللي عندك:'); chips(['بدون كود']); return; }
+      if(step==='couponAsk'){ say('عندك كود خصم؟ اختار نعم أو لا 🌸'); chips(['نعم عندي كود','لا ما عندي']); return; }
+      say('اكتبلي كود الخصم 🌸 وإذا ما عندك اضغط «بدون كود».'); chips(['بدون كود']); return;
     }
 
-    if(step==='address'){
-      var addr=raw.trim();
-      if(addr.length<5){
-        say('أحتاج عنوان أوضح 🌸 اكتب المحافظة والمنطقة والعنوان بالتفصيل.');
-        return;
+    if(step==='couponWait'){ say('لحظة، أتحقق من الكود ⏳'); return; }
+
+    if(step==='confirm'){
+      if(/(^| )(لا|كلا|الغي|لاحقا|بلاش)( |$)/.test(t) || /^مو هسه/.test(t) || /لا مو/.test(t)){
+        flow=null;
+        say('تمام، ما صار شي 🌸 سلتك تبقى محفوظة وتكدر تكمل الطلب بأي وقت.');
+        chips(['🛒 طلب','أضف لي عطر']); return;
       }
-      // حفظ العنوان
-      saveCustomerField('address',addr);
-      flow=null;
-      say('تمام، سجلت عنوانك 🌸 هسه افتحلك نافذة التوصيل حتى تكمل الطلب.');
-      // فتح نافذة التوصيل مع تعبئة العنوان
-      try{
-        var da=document.getElementById('deliveryAddress');
-        if(da) da.value=addr;
-        if(typeof openDelivery==='function'){ openDelivery(); }
-        else if(typeof openCart==='function'){ openCart(); }
-      }catch(e){}
-      return;
+      if(/(نعم|ايه|ايوه|ايوا|اكيد|كمل|اكمل|تاكيد|اطلب|موافق|يلا|تمام|yes)/.test(t) || /^اي( |$)/.test(t)){
+        flow=null;
+        if(!cartSummary()){ orderCtx=null; say('سلتك صارت فاضية 🌸 ضيف عطر وبعدها نكمل الطلب.'); chips(BASIC_CHIPS); return; }
+        say('تمام 🌸 هسه أفتحلك نافذة التوصيل، اختار المحافظة والمنطقة واكتب عنوانك وأكّد الطلب.');
+        setTimeout(openDeliveryForm,500); return;
+      }
+      say('تريد تكمّل الطلب؟ اختار نعم أو لا 🌸'); chips(['✅ نعم، كمّل الطلب','لا، مو هسه']); return;
     }
 
     if(step==='ageThenRecommend'){
@@ -645,7 +848,7 @@
     state.lastIdx=state.shown.slice();
     scrollEnd();
     var more=(state.pending||[]).length>0;
-    chips((more?['عطور ثانية']:[]).concat(['أخف','أحلى','أقوى','من جديد']));
+    chips((more?['عطور ثانية']:[]).concat(['أخف','أحلى','أقوى','من جديد']).concat(cartSummary()?['🛒 طلب']:[]));
   }
 
   function showMore(perfumes){
@@ -696,7 +899,7 @@
       if(ex){ say('هذا العطر بحجم '+size.replace('ml',' مل')+' موجود بالسلة من قبل 🛍️'); return; }
       selectedSizes[idx]=size;
       addToCart(idx);
-      say('تمت الإضافة للسلة ✅ ('+size.replace('ml',' مل')+')');
+      say('تمت الإضافة للسلة ✅ ('+size.replace('ml',' مل')+') — تحب تكمل الطلب لو تضيف شي ثاني؟'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']);
     }catch(e){ goTo(idx); }
   }
   function resetState(){ state={w:{},gender:null,budget:null,free:[],shown:[],lastIdx:[],pending:[]}; }
@@ -763,7 +966,11 @@
     if(flow){ _handle(text); return; }
     if(!hasCustomer()){
       say(esc(text),'me');
-      showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
+      var tt=norm(text);
+      setTimeout(function(){
+        if(smallTalk(text,tt,true)) return;
+        showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
+      },250);
       return;
     }
     if(ADJ[text]){
@@ -788,7 +995,7 @@
       if(named2>-1){
         var p2=getPerfumes()[named2];
         var r=addToCartDirect(named2,'50ml');
-        if(r===true){ say('تمت إضافة «'+esc(p2.name)+'» (50 مل) للسلة ✅'); }
+        if(r===true){ say('تمت إضافة «'+esc(p2.name)+'» (50 مل) للسلة ✅ تحب تكمل الطلب؟'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']); }
         else if(r==='exists'){ say('«'+esc(p2.name)+'» موجود بالسلة من قبل 🛍️'); }
         else { say('ما قدرت أضيفه تلقائياً، بس هاهو العطر 👇'); goTo(named2); }
         return;
@@ -800,6 +1007,6 @@
   /* للاختبار */
   window.DirazAssistant={_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
 
-  function init(){ if(document.getElementById('dzA_btn')) return; resetState(); injectUI(); }
+  function init(){ if(document.getElementById('dzA_btn')) return; resetState(); injectUI(); addOrderBar(); }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
