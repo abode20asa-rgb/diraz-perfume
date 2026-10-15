@@ -398,6 +398,14 @@
         offerChips(); return true;
       }
     }
+    /* «اكلك» ← كول */
+    if(tk<=3 && /^(اكلك|اكلج|اكلكم|اكولك|اكلك شي)( |$)/.test(t)){
+      say(pick(['كول حبيبي، أسمعك 🌸','كول كول، تفضل 💐','تفضل كول، أني كلي آذان صاغية 🌸'])); return true;
+    }
+    /* «احبك» */
+    if(tk<=4 && /(احبك|احبج|احبكم|بحبك)/.test(t)){
+      say(pick(['واحنا هم 🌸','واحنا هم، يا هلا بيك دوم 💐','وأني أكثر حبيبي 🌸 نورتنا','الله يخليك، وواحنا هم 💐'])); return true;
+    }
     /* وداع */
     if(RX_BYE.test(t)){ say('الله يسلمك'+nmS+' 🌸 نورتنا، وإذا تحتاج شي أني هنا.'); return true; }
     /* شكر */
@@ -892,11 +900,37 @@
     el.scrollIntoView({behavior:'smooth',block:'center'});
     el.classList.remove('dzA_flash'); void el.offsetWidth; el.classList.add('dzA_flash');
   }
+  /* زيادة كمية عطر موجود بالسلة (كل ضغطة = +1، لحد 10) */
+  function bumpQty(ex,size){
+    var q=(parseInt(ex.qty,10)||1)+1;
+    if(q>10) return -1;
+    try{ ex.qty=q; }catch(e){}
+    try{
+      if(typeof cart!=='undefined' && Array.isArray(cart)){
+        cart.forEach(function(it){ if(String(it.id)===String(ex.id) && (it.size||'50ml')===(ex.size||size)) it.qty=q; });
+      }
+    }catch(e){}
+    ['saveCart','persistCart','updateCartCount','updateCart','renderCart','updateCartUI','refreshCart','updateCartBadge'].forEach(function(f){
+      try{ if(typeof window[f]==='function') window[f](); }catch(e){}
+    });
+    try{
+      var arr=JSON.parse(localStorage.getItem('diraz_cart')||'[]'), ch=false;
+      arr.forEach(function(it){
+        if(String(it.id)===String(ex.id) && (it.size||'50ml')===(ex.size||size) && (parseInt(it.qty,10)||1)!==q){ it.qty=q; ch=true; }
+      });
+      if(ch) localStorage.setItem('diraz_cart',JSON.stringify(arr));
+    }catch(e){}
+    return q;
+  }
   function quickAdd(idx,size){
     try{
       if(typeof selectedSizes==='undefined'||typeof addToCart!=='function'){ goTo(idx); return; }
       var ex=(typeof findItem==='function')?findItem(idx,size):null;
-      if(ex){ say('هذا العطر بحجم '+size.replace('ml',' مل')+' موجود بالسلة من قبل 🛍️'); return; }
+      if(ex){
+        var pn=(getPerfumes()[idx]||{}).name||'العطر', nq=bumpQty(ex,size);
+        if(nq===-1){ say('وصلت للحد الأعلى (10 قطع) من «'+esc(pn)+'» 🌸'); return; }
+        say('زدت واحد ✅ صار عندك '+nq+' من «'+esc(pn)+'» ('+size.replace('ml',' مل')+') 🛍️'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']); return;
+      }
       selectedSizes[idx]=size;
       addToCart(idx);
       say('تمت الإضافة للسلة ✅ ('+size.replace('ml',' مل')+') — تحب تكمل الطلب لو تضيف شي ثاني؟'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']);
@@ -996,7 +1030,12 @@
         var p2=getPerfumes()[named2];
         var r=addToCartDirect(named2,'50ml');
         if(r===true){ say('تمت إضافة «'+esc(p2.name)+'» (50 مل) للسلة ✅ تحب تكمل الطلب؟'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']); }
-        else if(r==='exists'){ say('«'+esc(p2.name)+'» موجود بالسلة من قبل 🛍️'); }
+        else if(r==='exists'){
+          var ex2=(typeof findItem==='function')?findItem(named2,'50ml'):null, nq2=ex2?bumpQty(ex2,'50ml'):0;
+          if(nq2===-1) say('وصلت للحد الأعلى (10 قطع) من «'+esc(p2.name)+'» 🌸');
+          else if(nq2>0){ say('زدت واحد ✅ صار عندك '+nq2+' من «'+esc(p2.name)+'» (50 مل) 🛍️'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']); }
+          else say('«'+esc(p2.name)+'» موجود بالسلة من قبل 🛍️');
+        }
         else { say('ما قدرت أضيفه تلقائياً، بس هاهو العطر 👇'); goTo(named2); }
         return;
       }
