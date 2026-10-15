@@ -1,6 +1,6 @@
 // Diraz push client — اشتراك الزبون بالإشعارات + مزامنة حالة السلة
 (function(){
-  var VAPID_PUBLIC = 'PUT_VAPID_PUBLIC_KEY_HERE';   // ← من: npx web-push generate-vapid-keys
+  var VAPID_PUBLIC = 'BLdUpMEzQB01YmNCJ_J6jQgAYUsJKnkbztyB8FA5c2hZdw87P2o4ov-TLCmsjrB4hAvrSB8nHwhYC9srHY8Mmbk';   // ← من: npx web-push generate-vapid-keys
   var supported = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
   var timer = null;
 
