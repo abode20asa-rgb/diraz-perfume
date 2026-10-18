@@ -349,6 +349,23 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 .sec-tabs .sec-back{background:rgba(255,255,255,.3);opacity:1}
 .soon-box{max-width:380px;margin:30px auto;text-align:center;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.6);border-radius:14px;padding:36px 20px;color:#fff;font-weight:800;font-size:1.2rem;line-height:1.9}
 .soon-box small{display:block;font-size:.85rem;font-weight:600;opacity:.85}
+/* ── صفحة اختيار القسم: خلفية مزيج وردي + نيلي ── */
+body.sec-pick{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3Cpath d='M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"),linear-gradient(160deg,#f4a7be 0%,#f4a7be 22%,#c27bb0 50%,#3a4a9e 78%,#3a4a9e 100%);background-repeat:repeat,no-repeat;background-size:120px 60px,100% 100%;background-attachment:scroll,fixed}
+body.sec-pick header{background:linear-gradient(90deg,rgba(244,150,185,.92) 25%,rgba(58,74,158,.92) 75%)}
+body.sec-pick .sec-card{box-shadow:0 8px 24px rgba(10,16,50,.35)}
+/* ── ثيم قسم الرجالي (كحلي/أزرق) — يتفعّل عبر body.sec-men ── */
+body.sec-men{--pink:#4a5bb0;--pink-dark:#2f3d8a;--pink-deep:#1a2456;--pink-light:#e3e7fa}
+body.sec-men header{background:rgba(26,36,86,.92);box-shadow:0 2px 20px rgba(10,16,50,.35)}
+body.sec-men .cart-sidebar{background-color:#4a5bb0}
+body.sec-men .popup-overlay{background:rgba(14,20,60,.94)}
+body.sec-men .delivery-field option{background:#1a2456}
+body.sec-men .popup-btn,body.sec-men .cart-icon-btn,body.sec-men .badge,body.sec-men .size-opt,body.sec-men .coupon-apply-btn,body.sec-men .order-btn{color:#1a2456}
+body.sec-men .size-opt{box-shadow:0 2px 8px rgba(26,36,86,.18)}
+body.sec-men .size-opt.active{background:#1a2456;color:#fff;border-color:#1a2456;box-shadow:0 4px 14px rgba(26,36,86,.45)}
+body.sec-men .back-btn{box-shadow:0 3px 12px rgba(26,36,86,.2)}
+body.sec-men .order-btn{box-shadow:0 5px 22px rgba(26,36,86,.25)}
+body.sec-men .page-title h1{text-shadow:0 2px 10px rgba(26,36,86,.3)}
+body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26,36,86,.25)}
 
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
@@ -1035,6 +1052,11 @@ function renderCards(){
 // ── الأقسام (رجالي / نسائي) ──
 let sections = (function(){ try{ return Object.assign({men:true,women:true}, JSON.parse(localStorage.getItem('diraz_sections')||'{}')); }catch(e){ return {men:true,women:true}; } })();
 let curSection = null;
+function applySectionTheme(sec){
+  document.body.classList.toggle('sec-men',sec==='men');
+  document.body.classList.toggle('sec-pick',!sec);
+  try{ window.dispatchEvent(new CustomEvent('diraz-section',{detail:{section:sec}})); }catch(e){}
+}
 function perfumeSections(p){
   const t=String((p&&p.type)||'').trim();
   if(!t) return ['men','women'];
@@ -1058,6 +1080,7 @@ function showSection(sec){
     showPicker(); showToast('هذا القسم قريباً'); return;
   }
   curSection=sec;
+  applySectionTheme(sec);
   document.getElementById('sectionPicker').style.display='none';
   document.getElementById('sectionView').style.display='block';
   document.getElementById('tabMen').classList.toggle('active',sec==='men');
@@ -1070,6 +1093,7 @@ function showSection(sec){
 }
 function showPicker(){
   curSection=null;
+  applySectionTheme(null);
   document.getElementById('sectionPicker').style.display='flex';
   document.getElementById('sectionView').style.display='none';
   window.scrollTo({top:0});

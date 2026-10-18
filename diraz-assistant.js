@@ -63,7 +63,7 @@
   var NEG = N(['مو','مب','مش','ما','بدون','لا','ماحب','مااحب','مابي','ماريد','اكره']);
   var STOP = N(['اريد','ابي','ابغي','احب','احبه','عطر','عطور','شي','شيء','عندكم','عندك','يعني','هل','ايش','شنو','شلون','كيف','لو','سمحت','بس','كلش','مره','جدا','حلوه','ممكن','تنصحني','انصحني','رشح','رشحلي','اقترح','اقترحلي','نسائي','رجالي','يعجبني','يناسب','يناسبني','وياي','عليه','لي','لك','من','في','على','مع','الي','هذا','هذي','هاي','اني','انا','انت','ممكن','اطلب','ابغى','فيه','فيها','بها','ذات','تحت','حدود','اقل','لحد','فوق','يكون','تكون','دينار','سعر','بسعر','اخر','وين','اي','ايش','وياها','لزوجتي','لزوجي','لامي','لاختي','هديه','هدايا']);
   var MORE = /(غيرهم|غيرها|غيره|ثانيه|ثاني|المزيد|كمل|بعد|زيد|اخرين|اخري)/;
-  var GREET = /^(هلا|هلو|مرحبا|اهلا|السلام|سلام|صباح|مساء|هاي|hi|hello|يا هلا)/;
+  var GREET = /^(هلا|هلو|مرحبا|مرحبتين|اهلا|اهلين|السلام|سلام|صباح|مساء|هاي|hi|hello|يا هلا|حياك|حياكم|حياج|يسعد (صباحك|صباحكم|مساك|مساكم)|نهارك|تحياتي|الو( |$))/;
   var THANKS = /(شكرا|مشكور|يعطيك|تسلم|ممنون|عاشت|thanks)/;
 
   /* ───────── بيانات العطور ───────── */
@@ -138,6 +138,93 @@
 
   /* ───────── فهم الرسالة ───────── */
   var state = {w:{}, gender:null, budget:null, free:[], shown:[], lastIdx:[]};
+
+  /*SECTION-BLOCK-START*/
+  /* ───────── القسم (رجالي / نسائي): يغيّر اللهجة واللون وترشيحات المساعد ───────── */
+  var audience=null, selfSwitch=false, pendingRaw=null;
+  function audGender(){ return audience==='men'?'رجالي':audience==='women'?'نسائي':null; }
+  function secName(s){ return s==='men'?'الرجالي':'النسائي'; }
+
+  /* تحويل الخطاب من المذكر (الأساس) إلى المؤنث عند قسم النسائي */
+  var FEM_PAIRS={
+    'أختارلك':'أختارلج','أخدمك':'أخدمج','أرشحلك':'أرشحلج','أسألك':'أسألج','أساعدك':'أساعدج','أسمعك':'أسمعج','أعرفك':'أعرفج','أفتحلك':'أفتحلج',
+    'اخبارك':'اخبارج','اسمك':'اسمج','بك':'بج','بكلماتك':'بكلماتج','بياناتك':'بياناتج','بيك':'بيج','حالك':'حالج','حياك':'حياج','سلامتك':'سلامتج',
+    'سلتك':'سلتج','شخبارك':'شخبارج','شلونك':'شلونج','شونك':'شونج','طلبك':'طلبج','عساك':'عساج','عليك':'عليج','عمرك':'عمرج','عندك':'عندج',
+    'عنوانك':'عنوانج','كيفك':'كيفج','لطلبك':'لطلبج','لعمرك':'لعمرج','لك':'لج','ميزانيتك':'ميزانيتج','وياك':'وياج','يسلمك':'يسلمج','يناسبك':'يناسبج',
+    'يخليك':'يخليج','يعطيك':'يعطيج','منك':'منج','الك':'الج','إلك':'إلج','اكلك':'اكلج','احبك':'احبج',
+    'تحب':'تحبين','تحبها':'تحبينها','تحبه':'تحبينه','تريد':'تريدين','تريده':'تريدينه','تريدها':'تريدينها','تحتاج':'تحتاجين','تختار':'تختارين',
+    'تدور':'تدورين','تكمل':'تكملين','تكمّل':'تكملين','تضيف':'تضيفين','تفضل':'تفضلي','تعال':'تعالي','كول':'كولي','تدلل':'تدللي','تغيّر':'تغيّرين',
+    'تبي':'تبين','تقدر':'تقدرين','تكتب':'تكتبين','تسلم':'تسلمين','دمت':'دمتي','نورت':'نورتي','انت':'انتي',
+    'اكتب':'اكتبي','اكتبلي':'اكتبيلي','اختار':'اختاري','اختر':'اختاري','سجّل':'سجّلي','اضغط':'اضغطي','جرّب':'جرّبي','شوف':'شوفي','دز':'دزي','ادخل':'ادخلي',
+    'كمّل':'كمّلي','خلص':'خلصي','حبيبي':'حبيبتي'
+  };
+  function plainKey(w){ return String(w).replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا'); }
+  var FEMN={}; Object.keys(FEM_PAIRS).forEach(function(k){ FEMN[plainKey(k)]=FEM_PAIRS[k]; });
+  function femWord(w){
+    var k=plainKey(w);
+    if(FEMN.hasOwnProperty(k)) return FEMN[k];
+    if(k.length>3 && k.charAt(0)==='و' && FEMN.hasOwnProperty(k.slice(1))) return 'و'+FEMN[k.slice(1)];
+    return w;
+  }
+  function gx(html){
+    if(audience!=='men' && audience!=='women') return html;
+    return String(html).split(/(<[^>]+>)/).map(function(part){
+      if(part.charAt(0)==='<') return part;
+      if(audience==='men') return part.replace(/🌸|💐|🌷/g,'✨');
+      return part.replace(/[\u0621-\u065F\u0670\u0640]+/g,femWord);
+    }).join('');
+  }
+
+  /* كلمات القسم وأفعال التحويل (بعد التطبيع) */
+  var SEC_M=N(['رجالي','رجاليه','رجاليين','رجال','رجل','شباب','اولاد','ولد','ازواج','زوجي','ابوي','اخوي','خطيبي','ابني','صديقي','men','man','male','boys','boy']);
+  var SEC_W=N(['نسائي','نسائيه','نسائيات','نساء','نسوان','حريمي','حريم','بنات','بنت','زوجتي','مرتي','امي','اختي','خطيبتي','بنتي','صديقتي','women','woman','female','girls','girl']);
+  var SW_WORDS=N(['حول','حولني','حولي','روح','وديني','ودي','افتح','افتحلي','اعرض','اعرضلي','وريني','ورني','دخلني','خذني','انقلني','بدل','غير','قسم','اقسام',
+    'ارجع','اشوف','شوف','اكدر','ممكن','اريد','ابي','ابغي','احب','عندكم','عندك','عطور','عطر','متوفر','شكو','شنو','هل','لو','تقدر','فضلك','سمحت',
+    'هسه','الحين','اخي','اختي','حبيبي','يا','بس','فقط','كل','عن','على','الى','في','من','هذا','هاي','هذي','خلني','خل','لي','الي','ال','اي','ايش','وين']);
+  function hasAny(tk,set){ return tk.some(function(x){ return forms(x).some(function(f){ return set.indexOf(f)>-1; }); }); }
+  function detectSection(t){
+    var tk=String(t).split(' ').filter(Boolean);
+    var m=hasAny(tk,SEC_M), w=hasAny(tk,SEC_W);
+    if(m===w) return null;
+    var rest=tk.filter(function(x){ return !forms(x).some(function(f){ return SEC_M.indexOf(f)>-1||SEC_W.indexOf(f)>-1||SW_WORDS.indexOf(f)>-1; }); });
+    return {sec:m?'men':'women', only:rest.length===0};
+  }
+  var RX_SECTIONS=/(^| )(اقسام|الاقسام|قسمين|شنو الاقسام|شكو اقسام)( |$)/;
+
+  function sectionClosed(sec){ try{ return typeof sections!=='undefined' && sections[sec]===false; }catch(e){ return false; } }
+  function setAudience(sec){
+    audience=sec||null;
+    state.gender=audGender();
+    if(typeof openSection==='undefined') document.body.classList.toggle('sec-men',audience==='men');
+  }
+  function doSwitch(sec){
+    selfSwitch=true;
+    setAudience(sec);
+    try{ if(typeof openSection==='function') openSection(sec); }catch(e){}
+    selfSwitch=false;
+  }
+  function syncFromPage(){
+    try{ if(typeof curSection!=='undefined' && curSection && curSection!==audience) setAudience(curSection); }catch(e){}
+  }
+  function askSection(){
+    say('أكيد 🌸 حتى أجاوبك صح، العطر لقسم الرجالي لو النسائي؟');
+    chips(['رجالي','نسائي']);
+  }
+  function announceSwitch(sec){
+    say('تمام 🌸 حولتك لقسم '+secName(sec)+'<br>شنو تحب من الروائح؟ (قوي، منعش، سويت، لسهرة، للدوام...) أو احچيلي الميزانية.');
+    chips(BASIC_CHIPS);
+  }
+  function closedMsg(sec){
+    say('قسم '+secName(sec)+' قريباً 🔒 نجهّز لكم أجمل العطور، ترقّبونا.');
+    var other=sec==='men'?'women':'men';
+    if(!sectionClosed(other)) chips([sec==='men'?'نسائي':'رجالي']);
+  }
+  function resumePending(){
+    var pr=pendingRaw; pendingRaw=null;
+    if(pr) setTimeout(function(){ reply(pr,norm(pr),getPerfumes()); },300);
+  }
+  /*SECTION-BLOCK-END*/
+
 
   function parseMessage(raw){
     var t=norm(raw), toks=t.split(' ').filter(Boolean);
@@ -295,6 +382,23 @@
       '.dzA_reg .dzA_err{color:#d32f2f;font-size:.75rem;font-weight:700;display:none}',
       '.dzA_flash{animation:dzAflash 1.8s ease}',
       '@keyframes dzAflash{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}25%,70%{box-shadow:0 0 0 6px rgba(255,255,255,.95),0 0 30px 8px rgba(196,90,122,.7)}}',
+      'body.sec-men #dzA_btn{background:#1a2456;box-shadow:0 8px 26px rgba(10,16,50,.55)}',
+      'body.sec-men #dzA_box{background:rgba(228,232,250,.98);border-color:rgba(255,255,255,.6);box-shadow:0 20px 60px rgba(10,16,50,.5)}',
+      'body.sec-men .dzA_head{background:#1a2456}',
+      'body.sec-men .dzA_bot{color:#1a2456;box-shadow:0 2px 10px rgba(26,36,86,.15)}',
+      'body.sec-men .dzA_me{background:#4a5bb0;color:#fff}',
+      'body.sec-men .dzA_chip{border-color:#4a5bb0;color:#1a2456}',
+      'body.sec-men .dzA_chip:hover{background:#e3e7fa}',
+      'body.sec-men .dzA_card{border-color:#c5cbee;color:#1a2456}',
+      'body.sec-men .dzA_card .pr{color:#1a2456}',
+      'body.sec-men .dzA_act{background:#e3e7fa;color:#1a2456}',
+      'body.sec-men .dzA_act.main,body.sec-men .dzA_sz{background:#1a2456;color:#fff}',
+      'body.sec-men .dzA_form{border-top-color:#c5cbee}',
+      'body.sec-men .dzA_form input,body.sec-men .dzA_reg input{border-color:#c5cbee;color:#1a2456}',
+      'body.sec-men .dzA_form input:focus,body.sec-men .dzA_reg input:focus{border-color:#4a5bb0}',
+      'body.sec-men .dzA_form button,body.sec-men .dzA_reg button{background:#1a2456}',
+      'body.sec-men .dzA_flash{animation-name:dzAflashM}',
+      '@keyframes dzAflashM{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}25%,70%{box-shadow:0 0 0 6px rgba(255,255,255,.95),0 0 30px 8px rgba(26,36,86,.7)}}',
       '@media(max-width:480px){#dzA_btn{bottom:14px;right:14px;padding:7px 14px 7px 8px}#dzA_box{right:12px;bottom:72px}}'
     ].join('\n');
     document.head.appendChild(css);
@@ -324,7 +428,7 @@
   }
   function scrollEnd(){ var m=$('dzA_msgs'); m.scrollTop=m.scrollHeight; }
   function say(html,who){
-    var d=document.createElement('div'); d.className='dzA_m '+(who==='me'?'dzA_me':'dzA_bot'); d.innerHTML=html;
+    var d=document.createElement('div'); d.className='dzA_m '+(who==='me'?'dzA_me':'dzA_bot'); d.innerHTML=(who==='me'?html:gx(html));
     $('dzA_msgs').appendChild(d); scrollEnd(); return d;
   }
   function chips(list){
@@ -343,6 +447,12 @@
       showAccountForm('هلا بيك في ديراز 🌸<br>حتى أخدمك، سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
       return;
     }
+    syncFromPage();
+    if(!audience){
+      say('هلا بيك في ديراز 🌸<br>أني مساعد العطور. حتى أجاوبك صح، العطر لقسم الرجالي لو النسائي؟');
+      chips(['رجالي','نسائي']);
+      return;
+    }
     say('هلا بيك في ديراز 🌸<br>أني مساعد العطور، احچيلي شنو تحب (هادئ، سويت، منعش، قوي...) أو للمناسبة أو الميزانية، وأرشحلك أحلى العطور من الموجودة عندنا.');
     chips(BASIC_CHIPS);
   }
@@ -352,7 +462,7 @@
   }
 
   /* ───────── كلام اجتماعي: سلام، شلونك، شكر، وداع ───────── */
-  var FILL = N(['هلا','هلو','هلاو','مرحبا','مرحبتين','اهلا','اهلين','وسهلا','سهلا','يا','وغلا','غلا','بيك','بيكم','بك','عليكم','وعليكم','عليك','السلام','سلام','سلامات','ورحمه','رحمه','الله','وبركاته','بركاته','حبيبي','حبيبتي','حبي','اخي','اخوي','خيي','اختي','استاذ','استاذه','عزيزي','صباح','مساء','الخير','النور','هاي','hi','hello','شلونك','شلونكم','شلونج','شخبارك','شخبارج','اخبارك','اخبارج','كيفك','كيف','حالك','الحال','شونك','عساك','طيب','والله','انت','وياك','شنو','شو','ديراز']);
+  var FILL = N(['هلا','هلو','هلاو','مرحبا','مرحبتين','اهلا','اهلين','وسهلا','سهلا','يا','وغلا','غلا','بيك','بيكم','بك','عليكم','وعليكم','عليك','السلام','سلام','سلامات','ورحمه','رحمه','الله','وبركاته','بركاته','حبيبي','حبيبتي','حبي','اخي','اخوي','خيي','اختي','استاذ','استاذه','عزيزي','صباح','مساء','الخير','النور','هاي','hi','hello','شلونك','شلونكم','شلونج','شخبارك','شخبارج','اخبارك','اخبارج','كيفك','كيف','حالك','الحال','شونك','عساك','طيب','والله','انت','وياك','شنو','شو','ديراز','الورد','الفل','الياسمين','سعيد','نهارك','حياك','حياكم','حياج','يسعد','صباحك','صباحكم','مساك','مساكم','تحياتي','الو']);
   var RX_SALAM=/(^| )(السلام|سلام|سلامات)( |$)/, RX_REPLYSALAM=/^و?عليكم/;
   var RX_HOW=/(شلونك|شلونكم|شلونج|شخبارك|شخباركم|شخبارج|اخبارك|اخباركم|اخبارج|كيفك|كيف حالك|كيف الحال|كيف حالكم|شونك|شلون الحال)/;
   var RX_FINE=/^(تمام|زين|كلش زين|كلش تمام|بخير|الحمد ?لله|والحمد ?لله|احسن|دلال|طيب|منيح|ماشي الحال)/;
@@ -373,6 +483,10 @@
   function opener(t,nmS){
     if(RX_REPLYSALAM.test(t)) return 'حياك الله'+nmS+' 🌸';
     if(RX_SALAM.test(t)) return 'وعليكم السلام ورحمة الله وبركاته'+nmS+' 🌸';
+    if(/^(حياك|حياكم|حياج)/.test(t)) return 'الله يحييك'+nmS+' 🌸';
+    if(/^يسعد (صباحك|صباحكم)/.test(t)) return 'يسعدك الله بكل خير'+nmS+' ☀️';
+    if(/^يسعد (مساك|مساكم)/.test(t)) return 'يسعدك الله بكل خير'+nmS+' 🌙';
+    if(/^نهارك/.test(t)) return 'نهارك أسعد'+nmS+' ☀️';
     if(/^صباح/.test(t)) return 'صباح النور والسرور'+nmS+' ☀️';
     if(/^مساء/.test(t)) return 'مساء النور'+nmS+' 🌙';
     return pick(['هلا والله وغلا','يا هلا ومرحبا بيك','أهلين وسهلين'])+nmS+' 🌸';
@@ -382,6 +496,11 @@
     else chips(['👤 سجّل بياناتي']);
   }
   function askWho(){
+    if(audience){
+      say('أكيد 🌸 حتى أختارلك الأنسب خلني أسألك: شنو المناسبة؟ (سهرة، دوام، هدية...) وشنو نوع الريحة اللي تحبها؟');
+      chips(['هدية','لسهرة','للدوام','للصيف']);
+      return;
+    }
     say('أكيد 🌸 حتى أختارلك الأنسب خلني أسألك: العطر لمن؟ (نسائي لو رجالي) وشنو المناسبة؟');
     chips(['نسائي','رجالي','هدية','لسهرة','للدوام','للصيف']);
   }
@@ -577,7 +696,7 @@
   function addOrderBar(){
     var box=$('dzA_box'); if(!box) return;
     var st=document.createElement('style');
-    st.textContent='#dzA_orderbar{display:none;padding:8px 10px 0;background:#fff}#dzA_orderbtn{width:100%;border:none;cursor:pointer;background:#c45a7a;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.88rem;padding:10px;border-radius:50px}#dzA_orderbtn:hover{background:#b04b6b}';
+    st.textContent='#dzA_orderbar{display:none;padding:8px 10px 0;background:#fff}#dzA_orderbtn{width:100%;border:none;cursor:pointer;background:#c45a7a;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.88rem;padding:10px;border-radius:50px}#dzA_orderbtn:hover{background:#b04b6b}body.sec-men #dzA_orderbtn{background:#1a2456}body.sec-men #dzA_orderbtn:hover{background:#111a40}';
     document.head.appendChild(st);
     var bar=document.createElement('div'); bar.id='dzA_orderbar';
     bar.innerHTML='<button type="button" id="dzA_orderbtn">🛒 طلب <span id="dzA_ordn"></span></button>';
@@ -605,6 +724,19 @@
     if(!hasCustomer()){
       showAccountForm('حتى أخدمك لازم أعرفك أول 🌸 سجّل اسمك ورقمك بالنافذة اللي انفتحت لك:');
       return;
+    }
+
+    /* ── القسم: رجالي / نسائي (تحويل الصفحة + اللون + اللهجة) ── */
+    if(RX_SECTIONS.test(t) && !detectSection(t)){ askSection(); return; }
+    var sh=detectSection(t);
+    if(sh){
+      if(sectionClosed(sh.sec)){ closedMsg(sh.sec); return; }
+      if(sh.sec!==audience){
+        doSwitch(sh.sec);
+        if(sh.only){ announceSwitch(sh.sec); resumePending(); return; }
+      } else if(sh.only){
+        say('إنت هسه بقسم '+secName(sh.sec)+' 🌸 احچيلي شنو تحب من الروائح.'); chips(BASIC_CHIPS); return;
+      }
     }
 
     /* سؤال عن سلة الزبون */
@@ -643,6 +775,9 @@
     /* سؤال عن عطر معيّن */
     var named=findByName(raw,perfumes);
     if(named>-1){ showNamed(named,perfumes[named],raw); return; }
+
+    /* ما نعرف القسم بعد: نسأل أول حتى نجاوبه صح */
+    if(!audience){ pendingRaw=raw; askSection(); return; }
 
     var pm=parseMessage(raw);
 
@@ -698,7 +833,7 @@
       var hasType=perfumes.some(function(p){ return p.type && norm(p.type).indexOf(norm(state.gender||'-'))>-1; });
       if(state.gender && !hasType) say('حالياً ما عندنا عطور «'+state.gender+'» معروضة 😔 بس إذا تريد أرشحلك من العطور الموجودة، احچيلي شنو تحب.');
       else say('ما لقيت عطر متوفر بهالشروط ('+why.join(' + ')+') 😔 جرّب تغيّر الميزانية أو النوع.');
-      state.gender=null; chips(['من جديد'].concat(BASIC_CHIPS.slice(0,3))); return;
+      state.gender=audGender(); chips(['من جديد'].concat(BASIC_CHIPS.slice(0,3))); return;
     }
     var top=res.list.filter(function(x){return x.score>0.3;});
     var noTaste=!Object.keys(state.w).length && !state.free.length;
@@ -995,7 +1130,7 @@
       say('تمت الإضافة للسلة ✅ ('+size.replace('ml',' مل')+') — تحب تكمل الطلب لو تضيف شي ثاني؟'); refreshOrderBar(); chips(['🛒 طلب','أضف لي عطر']);
     }catch(e){ goTo(idx); }
   }
-  function resetState(){ state={w:{},gender:null,budget:null,free:[],shown:[],lastIdx:[],pending:[]}; }
+  function resetState(){ state={w:{},gender:audGender(),budget:null,free:[],shown:[],lastIdx:[],pending:[]}; }
 
   /* ───────── بيانات الزبون (اسم + رقم + عمر) ───────── */
   function getCustomer(){
@@ -1105,6 +1240,16 @@
   /* للاختبار */
   window.DirazAssistant={_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
 
-  function init(){ if(document.getElementById('dzA_btn')) return; resetState(); injectUI(); addOrderBar(); }
+  function init(){
+    if(document.getElementById('dzA_btn')) return;
+    syncFromPage(); resetState(); injectUI(); addOrderBar();
+    window.addEventListener('diraz-section',function(e){
+      var sec=(e.detail&&e.detail.section)||null, prev=audience;
+      setAudience(sec);
+      if(!selfSwitch && opened && sec && sec!==prev){
+        say('حولتك لقسم '+secName(sec)+' 🌸 شنو تحب من الروائح؟'); chips(BASIC_CHIPS);
+      }
+    });
+  }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
 })();
