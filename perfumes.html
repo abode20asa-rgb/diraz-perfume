@@ -329,6 +329,27 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
   .cart-foot { padding: 14px 14px 16px; }
   .btn-checkout { font-size: .9rem; }
 }
+
+/* ── أقسام رجالي / نسائي ── */
+.section-picker{display:flex;flex-direction:column;gap:12px;max-width:340px;margin:10px auto 40px;padding:0 6px}
+.sec-card{display:flex;align-items:center;justify-content:space-between;gap:10px;border:0;border-radius:14px;padding:14px 20px;color:#fff;cursor:pointer;font-family:'Cairo',sans-serif;box-shadow:0 6px 18px rgba(0,0,0,.18);transition:transform .2s,box-shadow .2s;text-align:right}
+.sec-card:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.25)}
+.sec-card.men{background:#1a2456}
+.sec-card.women{background:#e07898}
+.sec-card .sec-name{font-size:1.15rem;font-weight:900}
+.sec-card .sec-sub{font-size:.78rem;opacity:.85;font-weight:600}
+.sec-card .sec-text{display:flex;flex-direction:column}
+.sec-card.closed{opacity:.75}
+.sec-soon{display:none;background:rgba(255,255,255,.9);color:#333;font-weight:800;font-size:.75rem;padding:3px 12px;border-radius:50px}
+.sec-tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 auto 22px}
+.sec-tabs button{font-family:'Cairo',sans-serif;font-weight:800;font-size:.88rem;padding:8px 22px;border-radius:10px;border:0;color:#fff;cursor:pointer;opacity:.6}
+.sec-tabs #tabMen{background:#1a2456}
+.sec-tabs #tabWomen{background:#e07898}
+.sec-tabs button.active{opacity:1;box-shadow:0 4px 12px rgba(0,0,0,.25)}
+.sec-tabs .sec-back{background:rgba(255,255,255,.3);opacity:1}
+.soon-box{max-width:380px;margin:30px auto;text-align:center;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.6);border-radius:14px;padding:36px 20px;color:#fff;font-weight:800;font-size:1.2rem;line-height:1.9}
+.soon-box small{display:block;font-size:.85rem;font-weight:600;opacity:.85}
+
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
 </head>
@@ -425,7 +446,23 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
     <h1>🌺 عطورنا</h1>
     <p>اكتشف مجموعتنا المميزة من العطور الفاخرة</p>
   </div>
-  <div class="perfumes-grid" id="perfumesGrid"></div>
+  <div class="section-picker" id="sectionPicker">
+    <button type="button" class="sec-card men" id="secBtnMen" onclick="openSection('men')">
+      <span class="sec-text"><span class="sec-name">رجالي</span><span class="sec-sub">عطور الرجال</span></span><span class="sec-soon">قريباً</span>
+    </button>
+    <button type="button" class="sec-card women" id="secBtnWomen" onclick="openSection('women')">
+      <span class="sec-text"><span class="sec-name">نسائي</span><span class="sec-sub">عطور النساء</span></span><span class="sec-soon">قريباً</span>
+    </button>
+  </div>
+  <div id="sectionView" style="display:none">
+    <div class="sec-tabs">
+      <button type="button" id="tabMen" onclick="openSection('men')">رجالي</button>
+      <button type="button" id="tabWomen" onclick="openSection('women')">نسائي</button>
+      <button type="button" class="sec-back" onclick="backToSections()">الأقسام</button>
+    </div>
+    <div class="soon-box" id="soonBox" style="display:none">هذا القسم قريباً<small>نجهّز لكم أجمل العطور، ترقّبونا</small></div>
+    <div class="perfumes-grid" id="perfumesGrid"></div>
+  </div>
 </main>
 
 <div class="order-bar">
@@ -958,9 +995,10 @@ document.addEventListener('keydown',event=>{
 // ── Render Cards ──
 function renderCards(){
   const grid=document.getElementById('perfumesGrid'); if(!grid) return;
+  if(!curSection || sections[curSection]===false){ grid.innerHTML=''; return; }
   const perfumes=loadPerfumes();
   if(!perfumes.length){ grid.innerHTML='<p style="text-align:center;color:rgba(255,255,255,0.8);padding:40px;grid-column:1/-1">لا توجد عطور حتى الآن 🌸</p>'; return; }
-  grid.innerHTML=perfumes.map((p,idx)=>{
+  grid.innerHTML=perfumes.map((p,idx)=>{ if(!perfumeSections(p).includes(curSection)) return '';
     const curSize=selectedSizes[idx]||cart.find(i=>i.idx===idx)?.size||'';
     const item=curSize?findItem(idx,curSize):null;
     const inCart=Boolean(item);
@@ -988,10 +1026,64 @@ function renderCards(){
         ${isSoldOut?'🚫 غير متوفر':inCart?'🗑️ إزالة من السلة':'🛍️ أضف إلى السلة'}
       </button>
     </div>`;
-  }).join('');
+  }).join('') || '<p style="text-align:center;color:rgba(255,255,255,0.9);padding:40px;grid-column:1/-1;font-weight:700">لا توجد عطور بهذا القسم حالياً 🌸</p>';
   grid.querySelectorAll('.zoomable-perfume-image').forEach(image=>{
     image.addEventListener('click',()=>openImageLightbox(image.src));
   });
+}
+
+// ── الأقسام (رجالي / نسائي) ──
+let sections = (function(){ try{ return Object.assign({men:true,women:true}, JSON.parse(localStorage.getItem('diraz_sections')||'{}')); }catch(e){ return {men:true,women:true}; } })();
+let curSection = null;
+function perfumeSections(p){
+  const t=String((p&&p.type)||'').trim();
+  if(!t) return ['men','women'];
+  if(/جنس|unisex/i.test(t)) return ['men','women'];
+  const out=[];
+  if(/رجال|رجل|men|male/i.test(t)) out.push('men');
+  if(/نسا|women|female|girl/i.test(t)) out.push('women');
+  return out.length?out:['men','women'];
+}
+function applySectionsUI(){
+  [['men','secBtnMen'],['women','secBtnWomen']].forEach(function(x){
+    var b=document.getElementById(x[1]); if(!b) return;
+    var closed=sections[x[0]]===false;
+    b.classList.toggle('closed',closed);
+    b.querySelector('.sec-soon').style.display=closed?'inline-block':'none';
+  });
+}
+function showSection(sec){
+  curSection=sec;
+  document.getElementById('sectionPicker').style.display='none';
+  document.getElementById('sectionView').style.display='block';
+  document.getElementById('tabMen').classList.toggle('active',sec==='men');
+  document.getElementById('tabWomen').classList.toggle('active',sec==='women');
+  var closed=sections[sec]===false;
+  document.getElementById('soonBox').style.display=closed?'block':'none';
+  document.getElementById('perfumesGrid').style.display=closed?'none':'';
+  renderCards();
+  window.scrollTo({top:0});
+}
+function showPicker(){
+  curSection=null;
+  document.getElementById('sectionPicker').style.display='flex';
+  document.getElementById('sectionView').style.display='none';
+  window.scrollTo({top:0});
+}
+function openSection(sec){ if(location.hash.slice(1)===sec) showSection(sec); else location.hash=sec; }
+function backToSections(){ if(location.hash) location.hash=''; else showPicker(); }
+function applyHash(){ var h=location.hash.slice(1); if(h==='men'||h==='women') showSection(h); else showPicker(); }
+window.addEventListener('hashchange',applyHash);
+function initSections(){
+  applySectionsUI(); applyHash();
+  if(!window.DirazCloud) return;
+  DirazCloud.rpc('site_sections').then(function(r){
+    if(r && typeof r==='object'){
+      sections=Object.assign({men:true,women:true},r);
+      try{ localStorage.setItem('diraz_sections',JSON.stringify(sections)); }catch(e){}
+      applySectionsUI(); if(curSection) showSection(curSection);
+    }
+  }).catch(function(){});
 }
 
 // ── Init ──
@@ -999,6 +1091,7 @@ loadCart();
 renderCards();
 updateCartUI();
 hydrateCloudPerfumes();
+initSections();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('customerPopup').style.display==='flex') closeCustomerPopup(); });
 </script>
 

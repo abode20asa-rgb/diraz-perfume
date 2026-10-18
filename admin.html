@@ -203,6 +203,17 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
     <div id="githubInstr" class="github-instr"></div>
+    <!-- إغلاق الأقسام -->
+    <div id="secMenBar" class="site-status-bar on">
+      <div class="status-info"><h3 id="secMenTitle">قسم الرجالي: مفتوح</h3><p id="secMenDesc">الزبائن يشوفون عطور الرجال ويطلبون منها</p></div>
+      <div class="toggle-wrap"><span class="toggle-label" id="secMenLabel">مفتوح</span>
+        <label class="switch"><input type="checkbox" id="secMen" onchange="toggleSection()" checked><span class="slider-sw"></span></label></div>
+    </div>
+    <div id="secWomenBar" class="site-status-bar on">
+      <div class="status-info"><h3 id="secWomenTitle">قسم النسائي: مفتوح</h3><p id="secWomenDesc">الزبائن يشوفون عطور النساء ويطلبون منها</p></div>
+      <div class="toggle-wrap"><span class="toggle-label" id="secWomenLabel">مفتوح</span>
+        <label class="switch"><input type="checkbox" id="secWomen" onchange="toggleSection()" checked><span class="slider-sw"></span></label></div>
+    </div>
 
     <!-- إحصائيات -->
     <div class="stats-grid" id="statsGrid"></div>
@@ -440,7 +451,7 @@ function refreshFromCloud(){
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
 window.addEventListener('focus', refreshFromCloud);
 setInterval(refreshFromCloud, 30000);
-function initAll(){ try{ loadPushAdmin(); }catch(e){}
+function initAll(){ try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
@@ -1092,6 +1103,34 @@ function extRenderLog(){
     var what=e.kind==='manual'?'💵 مبلغ مباشر':('🌐 '+(e.n50||0)+'×50مل + '+(e.n30||0)+'×30مل');
     return '<div class="coupon-item" style="padding:10px 14px"><div class="coupon-meta"><strong>+'+(Number(e.amount)||0).toLocaleString('en-US')+' دينار</strong> — '+what+'<br><small>'+d+(e.note?' • '+esc(e.note):'')+'</small></div><div class="coupon-actions"><button class="btn-del-order" onclick="extDel('+e.id+')">🗑️</button></div></div>';
   }).join('');
+}
+
+// ══ أقسام الموقع (رجالي / نسائي) ══
+function updateSectionBars(s){
+  [['Men','men','','الرجالي'],['Women','women','','النسائي']].forEach(function(x){
+    var open = s[x[1]] !== false;
+    document.getElementById('sec'+x[0]).checked = open;
+    document.getElementById('sec'+x[0]+'Bar').className = 'site-status-bar ' + (open ? 'on' : 'off');
+    document.getElementById('sec'+x[0]+'Title').textContent = 'قسم '+x[3]+': '+(open ? 'مفتوح' : 'مغلق');
+    document.getElementById('sec'+x[0]+'Desc').textContent = open ? 'الزبائن يشوفون هذا القسم ويطلبون منه' : 'الزبائن يشوفون "قريباً" ولا يكدرون يدخلون';
+    document.getElementById('sec'+x[0]+'Label').textContent = open ? 'مفتوح' : 'مغلق';
+  });
+}
+function initSections(){
+  DirazCloud.rpc('site_sections').then(function(r){ updateSectionBars(r && typeof r==='object' ? r : {men:true,women:true}); })
+    .catch(function(){ updateSectionBars({men:true,women:true}); });
+}
+async function toggleSection(){
+  var s = { men: document.getElementById('secMen').checked, women: document.getElementById('secWomen').checked };
+  try{
+    await DirazCloud.upsert('site_config',[{key:'sections', value:s}]);
+    updateSectionBars(s);
+    showToast('✅ تم تحديث الأقسام');
+  }catch(e){
+    initSections();
+    showToast('❌ فشل التحديث');
+    alert('سبب الفشل:\n' + String((e && e.message) || e).slice(0, 300));
+  }
 }
 </script>
 </body>
