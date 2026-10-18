@@ -102,8 +102,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
       '</div>'+
       '<div class="grid" style="margin-bottom:18px">'+
         '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>'+
-        '<div class="stat"><div class="n">'+fmt(d.orders)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
-        '<div class="stat"><div class="n">'+fmt(d.pendingEarn)+'</div><div class="l">⏳ أرباح بانتظار التسليم</div></div>'+
+        '<div class="stat wide"><div class="n">'+fmt(d.orders)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
       '</div>'+
       '<div class="card"><h2>آخر 3 طلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>'+
       (ext?'<div class="card"><h2>🌐 إضافات الأموال الخارجية (آخر 3)</h2>'+ext+'</div>':'');
