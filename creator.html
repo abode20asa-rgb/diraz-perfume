@@ -33,6 +33,10 @@ h2{font-size:1rem;font-weight:900;margin-bottom:12px}
 .tag{font-size:.72rem;padding:3px 10px;border-radius:50px;background:rgba(255,193,7,.55)}
 .tag.d{background:rgba(37,211,102,.6)}
 .msg{text-align:center;padding:50px 20px;font-weight:700;line-height:1.9}
+.row .sub{font-size:.72rem;opacity:.85;font-weight:600;margin-top:2px}
+.row .amt{font-weight:900;font-size:.95rem}
+.row>div{flex:1}
+.row .tag{margin-inline-start:8px}
 .note{text-align:center;font-size:.75rem;opacity:.8;margin-top:6px}
 footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
 </style>
@@ -68,7 +72,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
     }catch(e){
       if(!first) return;
       var m = String((e && e.message) || e);
-      if(/PGRST202|creator_stats|Could not find/i.test(m)) fail('⚠️ دالة creator_stats غير موجودة — شغّل supabase-creators.sql في Supabase');
+      if(/PGRST202|creator_stats|Could not find/i.test(m)) fail('⚠️ دالة creator_stats غير موجودة — شغّل supabase-creators-v4.sql في Supabase');
       else if(/Failed to fetch|NetworkError|Load failed/i.test(m)) fail('⚠️ تعذّر الاتصال بـ Supabase');
       else fail('⚠️ تعذّر تحميل البيانات<br><small style="opacity:.8;word-break:break-all">'+esc(m.slice(0,200))+'</small>');
     }
@@ -79,8 +83,17 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
     var rec = (d.recent||[]).map(function(o){
       var dt = o.date ? new Date(o.date).toLocaleDateString('en-GB') : '';
       var done = o.status==='delivered';
-      return '<div class="row"><span>'+esc(dt)+'</span><span>'+fmt(o.subtotal)+' دينار</span><span class="tag '+(done?'d':'')+'">'+(done?'تم التسليم':'قيد الانتظار')+'</span></div>';
+      var parts = [];
+      if((o.n50||0)>0) parts.push('50 مل × '+o.n50);
+      if((o.n30||0)>0) parts.push('30 مل × '+o.n30);
+      return '<div class="row"><div><div>'+esc(dt)+'</div><div class="sub">'+esc(parts.join(' • ')||'—')+'</div></div>'+
+        '<span class="amt">+'+fmt(o.earn)+' دينار</span>'+
+        '<span class="tag '+(done?'d':'')+'">'+(done?'تم التسليم':'قيد الانتظار')+'</span></div>';
     }).join('') || '<div class="msg" style="padding:14px">لا توجد طلبات بعد</div>';
+    var ext = (d.externalRecent||[]).map(function(e){
+      var dt = e.date ? new Date(e.date).toLocaleDateString('en-GB') : '';
+      return '<div class="row"><div><div>🌐 إضافة أموال خارجية</div><div class="sub">'+esc(dt)+'</div></div><span class="amt">+'+fmt(e.amount)+' دينار</span></div>';
+    }).join('');
     app.innerHTML =
       '<div class="card">'+
         '<div class="hello">'+(d.creatorName?'أهلاً '+esc(d.creatorName)+' 👋':'أهلاً بك 👋')+'<br>كودك الخاص</div>'+
@@ -88,15 +101,12 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
         '<div class="meta"><span class="pill">خصم '+esc(disc)+'</span><span class="pill '+(d.active?'on':'off')+'">'+(d.active?'🟢 فعال':'🔴 متوقف')+'</span></div>'+
       '</div>'+
       '<div class="grid" style="margin-bottom:18px">'+
-        '<div class="stat"><div class="n">'+fmt(d.users)+'</div><div class="l">👥 عدد المستخدمين</div></div>'+
+        '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>'+
         '<div class="stat"><div class="n">'+fmt(d.orders)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
-        '<div class="stat wide"><div class="n">'+fmt(d.salesTotal)+' دينار</div><div class="l">💰 مجموع المبيعات بالكود</div></div>'+
-        '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك (الطلبات المسلّمة + الخارجية) — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>'+
         '<div class="stat"><div class="n">'+fmt(d.pendingEarn)+'</div><div class="l">⏳ أرباح بانتظار التسليم</div></div>'+
-        '<div class="stat"><div class="n">'+fmt(d.discountTotal)+'</div><div class="l">🏷️ إجمالي الخصم للزبائن</div></div>'+
-        (d.externalEarned>0?'<div class="stat wide"><div class="n">'+fmt(d.externalEarned)+' دينار</div><div class="l">🌐 منها أرباح من مبيعات خارجية</div></div>':'')+
       '</div>'+
-      '<div class="card"><h2>آخر الطلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>';
+      '<div class="card"><h2>آخر 3 طلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>'+
+      (ext?'<div class="card"><h2>🌐 إضافات الأموال الخارجية (آخر 3)</h2>'+ext+'</div>':'');
   }
 
   load(true);
