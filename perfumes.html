@@ -931,7 +931,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
   cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name}${item.size?` (${item.size})`:''} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
   msg+='━━━━━━━━━━━━━━━━━━━━\n';
-  if(appliedCoupon) msg+=`كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n`;
+  msg+= appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n` : 'كود الخصم: بدون كود خصم\n';
   msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
 
   window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg),'_blank');
