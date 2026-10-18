@@ -1053,6 +1053,10 @@ function applySectionsUI(){
   });
 }
 function showSection(sec){
+  if(sections[sec]===false){
+    if(location.hash) history.replaceState(null,'',location.pathname+location.search);
+    showPicker(); showToast('هذا القسم قريباً'); return;
+  }
   curSection=sec;
   document.getElementById('sectionPicker').style.display='none';
   document.getElementById('sectionView').style.display='block';
@@ -1070,7 +1074,10 @@ function showPicker(){
   document.getElementById('sectionView').style.display='none';
   window.scrollTo({top:0});
 }
-function openSection(sec){ if(location.hash.slice(1)===sec) showSection(sec); else location.hash=sec; }
+function openSection(sec){
+  if(sections[sec]===false){ showToast('هذا القسم قريباً'); return; }
+  if(location.hash.slice(1)===sec) showSection(sec); else location.hash=sec;
+}
 function backToSections(){ if(location.hash) location.hash=''; else showPicker(); }
 function applyHash(){ var h=location.hash.slice(1); if(h==='men'||h==='women') showSection(h); else showPicker(); }
 window.addEventListener('hashchange',applyHash);
