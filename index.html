@@ -230,16 +230,6 @@
                 .bottle-3d canvas { position:relative; z-index:1; display:block; width:100%; height:100%; pointer-events:none; }
                 .bottle-fallback { width:220px; max-width:90%; display:block; }
                 .bottle-fallback[hidden] { display:none; }
-                .bottle-hint {
-                    color:rgba(255,255,255,0.9);
-                    font-size:0.78rem; font-weight:700; letter-spacing:.3px;
-                    transition:opacity .4s ease;
-                    animation:hintPulse 2s ease-in-out infinite;
-                }
-                .bottle-hint.gone { opacity:0; animation:none; pointer-events:none; }
-                @keyframes hintPulse { 0%,100%{transform:translateX(0)} 50%{transform:translateX(6px)} }
-                @media (prefers-reduced-motion:reduce){ .bottle-hint{animation:none} }
-
         @keyframes dropBottle {
             from { transform:translateY(-115vh); opacity:0; }
             to   { transform:translateY(0);      opacity:1; }
@@ -482,7 +472,6 @@
             <div class="bottle-3d" id="bottle3d"></div>
             <img id="bottleFallback" class="bottle-fallback" src="images/bottle_main.png" alt="DIRAZ Perfume Bottle" hidden>
         </div>
-        <div class="bottle-hint" id="bottleHint">&#8596;&#8597; اسحب لتدوير العطر وتشوف فوق وتحت</div>
     </div>
 
     <!-- سهم التمرير -->
