@@ -175,6 +175,22 @@ main{padding:50px 30px 30px;max-width:1200px;margin:0 auto}
 .coupon-toggle-btn:hover{background:rgba(255,255,255,0.25)}
 .coupon-input-area{display:none;margin-top:10px}
 .coupon-input-area.open{display:block}
+/* نوع الدفع + حقول العنوان داخل بياناتي */
+.pay-opt{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;padding:11px 16px;border-radius:50px;border:1.5px solid rgba(255,255,255,.45);background:rgba(255,255,255,.15);color:#fff;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;text-align:right}
+.pay-opt.selected{background:rgba(255,255,255,.92);color:#c45a7a;border-color:#fff}
+.pay-opt:disabled{opacity:.6;cursor:not-allowed}
+.pay-opt .pay-check{visibility:hidden}.pay-opt.selected .pay-check{visibility:visible}
+#payOnline{opacity:.85}
+.pay-error{animation:sizeShake .4s}
+.pay-opt.pay-error{border-color:#ff4757;background:rgba(255,71,87,.25)}
+.pay-soon{background:#ffc107;color:#5b3b00;border-radius:50px;padding:2px 10px;font-size:.72rem;font-weight:900}
+.pay-note{margin-top:8px;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.92);text-align:center;line-height:1.7}
+body.sec-men .pay-opt.selected{color:#1a2456}
+.popup-box{max-height:92vh;overflow-y:auto}
+.addr-block{margin-top:6px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}
+.addr-hint{color:#fff;font-weight:800;font-size:.86rem;margin-bottom:12px}
+select.popup-input option{background:#c45a7a;color:#fff}
+body.sec-men select.popup-input option{background:#1a2456}
 .coupon-row{display:flex;gap:8px}
 .coupon-field{flex:1;padding:10px 14px;border-radius:50px;border:1.5px solid rgba(255,255,255,0.45);background:rgba(255,255,255,0.18);color:white;font-family:'Cairo',sans-serif;font-size:.9rem;outline:none;text-transform:uppercase}
 .coupon-field::placeholder{color:rgba(255,255,255,0.5);text-transform:none}
@@ -396,9 +412,15 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   <div class="popup-box">
     <div class="pop-icon">🌸</div>
     <h2>مرحباً بك!</h2>
-    <p>اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small></p>
+    <p id="popIntro">اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small></p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
     <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
+    <div class="addr-block" id="popAddrBlock" style="display:none">
+      <div class="addr-hint" id="popAddrHint">📍 عنوان التوصيل — يُحفظ مرة وحدة لكل طلباتك</div>
+      <select id="popProvince" class="popup-input"></select>
+      <select id="popArea" class="popup-input"></select>
+      <input type="text" id="popAddress" class="popup-input" placeholder="العنوان بالتفصيل *">
+    </div>
     <button class="popup-btn" onclick="saveCustomer()">متابعة ←</button>
     <button type="button" class="popup-back" onclick="closeCustomerPopup()">→ رجوع</button>
     <div class="popup-error" id="popError">❗ يرجى إدخال الاسم الأول ورقم هاتف صحيح</div>
@@ -443,13 +465,21 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
       </div>
     </div>
   </div>
+  <div class="coupon-section" id="paySection" style="display:none">
+    <button class="coupon-toggle-btn" id="payToggleBtn" type="button" onclick="togglePayArea()">💳 نوع الدفع: <span id="payLabel">اختر نوع الدفع</span></button>
+    <div class="coupon-input-area" id="payArea">
+      <button type="button" class="pay-opt" id="payCash" onclick="choosePay('cash')"><span>💵 دفع نقدي</span><span class="pay-check">✓</span></button>
+      <button type="button" class="pay-opt" id="payOnline" onclick="choosePay('online')"><span>💳 دفع إلكتروني</span><span class="pay-soon">قريباً</span></button>
+    </div>
+    <div class="pay-note" id="deliveryNote"></div>
+  </div>
   <div class="cart-foot">
     <div class="cart-total-row">
       <span>الإجمالي</span>
       <span class="cart-total-amount" id="cartTotalAmt">0 دينار</span>
     </div>
     <button class="btn-checkout" id="checkoutBtn" onclick="openDelivery()" disabled>
-      💬 متابعة بيانات التوصيل
+      ✅ متابعة
     </button>
   </div>
 </div>
@@ -650,11 +680,32 @@ function closeCustomerPopup(){
   document.getElementById('popError').style.display='none';
   document.getElementById('customerPopup').style.display='none';
 }
-function editCustomer(){
+function hasAddress(c){ c=c||tryParse(CUSTOMER_KEY,{}); return !!(c.province&&c.area&&c.address); }
+function calcFee(c){ c=c||tryParse(CUSTOMER_KEY,{}); return !c.province?0:(c.province==='ميسان'?(c.area==='center'?2000:3000):5000); }
+function initAddrFields(){
+  const pv=document.getElementById('popProvince'), ar=document.getElementById('popArea');
+  if(pv && !pv.options.length) pv.innerHTML=document.getElementById('deliveryProvince').innerHTML;
+  if(ar && !ar.options.length) ar.innerHTML=document.getElementById('deliveryArea').innerHTML;
+}
+function editCustomer(needAddr){
   popupForced=false;
   const c=tryParse(CUSTOMER_KEY,{});
+  const hasAcc=!!(c.name&&c.phone);
   document.getElementById('popName').value=c.name||'';
   document.getElementById('popPhone').value=c.phone||'';
+  // حقول العنوان: تظهر لمن عنده حساب (للتعديل) أو إذا جاي من السلة (لازم يسجل عنوان قبل ما يشتري)
+  const showAddr=hasAcc||pendingCartOpen||needAddr===true;
+  initAddrFields();
+  const popH=document.querySelector('#customerPopup h2'), popP=document.getElementById('popIntro');
+  if(hasAcc){ popH.textContent='بياناتي'; popP.textContent='تكدر تعدّل اسمك أو رقمك أو عنوانك من هنا'; }
+  else { popH.textContent='مرحباً بك!'; popP.innerHTML='اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small>'; }
+  document.getElementById('popAddrBlock').style.display=showAddr?'block':'none';
+  document.getElementById('popProvince').value=c.province||'';
+  document.getElementById('popArea').value=c.area||'';
+  document.getElementById('popAddress').value=c.address||'';
+  document.getElementById('popAddrHint').textContent=(pendingCartOpen&&!hasAddress(c))
+    ? '📍 سجّل عنوانك أول حتى نكمل طلبك — يُحفظ مرة وحدة'
+    : '📍 عنوان التوصيل — تكدر تغيّره من هنا بأي وقت';
   document.getElementById('customerPopup').style.display='flex';
 }
 const SYNC_KEY='diraz_synced_phone';
@@ -681,8 +732,21 @@ function saveCustomer(){
     return;
   }
 
+  // العنوان (إذا ظاهر): لازم يكتمل المحافظة + القضاء + العنوان، وإذا جاي من السلة مطلوب إجباري
+  let addrPatch={};
+  if(document.getElementById('popAddrBlock').style.display!=='none'){
+    const pv=document.getElementById('popProvince').value, ar=document.getElementById('popArea').value, ad=(document.getElementById('popAddress').value||'').trim();
+    const any=pv||ar||ad, all=pv&&ar&&ad;
+    if((any&&!all)||(pendingCartOpen&&!all)){
+      document.getElementById('popError').textContent='❗ أكمل المحافظة والقضاء والعنوان بالتفصيل';
+      document.getElementById('popError').style.display='block';
+      setTimeout(()=>document.getElementById('popError').style.display='none',2500);
+      return;
+    }
+    if(all) addrPatch={province:pv,area:ar,address:ad};
+  }
   const oldCustomer=tryParse(CUSTOMER_KEY,{});
-  const customer={...oldCustomer,name,phone:phoneDigits};
+  const customer={...oldCustomer,name,phone:phoneDigits,...addrPatch};
   document.getElementById('customerPopup').style.display='none';
   try {
     localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));
@@ -695,10 +759,10 @@ function saveCustomer(){
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
   } catch(e) {}
   syncCustomer(customer);
-  if(pendingCartOpen){
-    pendingCartOpen=false;
-    openDelivery();
-  }
+  const fromCart=pendingCartOpen;
+  pendingCartOpen=false;
+  refreshCheckoutUI();
+  if(fromCart) showToast('✅ تم حفظ عنوانك — اختر نوع الدفع ثم اضغط متابعة');
 }
 
 // ── Cart ──
@@ -855,6 +919,7 @@ function updateCartUI(){
 
   const btn=document.getElementById('checkoutBtn');
   if(btn) btn.disabled=cart.length===0;
+  refreshCheckoutUI();
 
   const dLine=document.getElementById('discountLine');
   const dAmt=document.getElementById('discountAmt');
@@ -972,17 +1037,67 @@ function updateDeliverySummary(){
   if(province) fee=province==='ميسان' ? (area==='district'?3000:2000) : 5000;
   document.getElementById('deliverySummary').textContent=fee ? `سعر التوصيل: ${fee.toLocaleString('en-US')} دينار` : 'اختر المحافظة والمنطقة لحساب التوصيل';
 }
+// ── نوع الدفع ──
+let payMethod=null;
+function togglePayArea(){ document.getElementById('payArea').classList.toggle('open'); }
+function choosePay(m){
+  if(m==='online'){                               // الدفع الإلكتروني "قريباً": ما ينختار بس نعلم الزبون
+    showToast('💳 الدفع الإلكتروني قريباً — حالياً متاح الدفع النقدي');
+    return;
+  }
+  payMethod='cash';
+  document.getElementById('payLabel').textContent='دفع نقدي';
+  document.getElementById('payCash').classList.add('selected');
+  document.getElementById('payCash').classList.remove('pay-error');
+  document.getElementById('payOnline').classList.remove('pay-error');
+  document.getElementById('payArea').classList.remove('open');
+}
+function resetPay(){
+  payMethod=null;
+  document.getElementById('payLabel').textContent='اختر نوع الدفع';
+  document.getElementById('payCash').classList.remove('selected');
+  document.getElementById('payArea').classList.remove('open');
+}
+// تنبيه: ما اختار نوع الدفع
+function requirePay(){
+  document.getElementById('payArea').classList.add('open');
+  ['payCash','payOnline'].forEach(function(id){
+    const b=document.getElementById(id); b.classList.remove('pay-error'); void b.offsetWidth; b.classList.add('pay-error');
+  });
+  const sec=document.getElementById('paySection'); if(sec) sec.scrollIntoView({behavior:'smooth',block:'center'});
+  showToast('⚠️ اختر نوع الدفع');
+}
+// يظهر "نوع الدفع" + سعر التوصيل فقط لمن مسجّل عنوانه
+function refreshCheckoutUI(){
+  const sec=document.getElementById('paySection'); if(!sec) return;
+  const c=tryParse(CUSTOMER_KEY,{});
+  const show=!!(c.name&&c.phone&&hasAddress(c)&&cart.length);
+  sec.style.display=show?'':'none';
+  if(show){
+    document.getElementById('deliveryNote').textContent='🚚 التوصيل إلى '+c.province+': '+calcFee(c).toLocaleString('en-US')+' دينار (يُضاف على الإجمالي) — لتغيير العنوان: زر «بياناتي»';
+  }
+}
 async function openDelivery(){
   if(!cart.length) return;
   const customer=tryParse(CUSTOMER_KEY,null);
-  // ما عنده حساب: اطلب منه يسوي حساب أول، وبعدها تطلع نافذة المحافظة والعنوان
+  // ما عنده حساب: نافذة الاسم والرقم + العنوان (مرة وحدة)
   if(!customer?.name||!customer?.phone){
     pendingCartOpen=true;
     editCustomer();
     return;
   }
   if(!(await verifyCustomer())) return;
-  document.getElementById('deliveryPopup').style.display='flex';
+  const c=tryParse(CUSTOMER_KEY,{});
+  // عنده حساب بس ما مسجّل عنوان: يسجّله أول وبعدها يرجع للسلة
+  if(!hasAddress(c)){
+    pendingCartOpen=true;
+    showToast('📍 سجّل عنوانك أول');
+    editCustomer(true);
+    return;
+  }
+  // مسجّل عنوانه من قبل: يكمل الطلب مباشرة (يغيّر العنوان من «بياناتي»)
+  if(!payMethod){ requirePay(); return; }
+  sendOrder(calcFee(c),c);
 }
 function confirmDelivery(){
   const province=document.getElementById('deliveryProvince').value;
@@ -1007,6 +1122,7 @@ function confirmDelivery(){
 async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{})){
   if(!cart.length) return;
   if(!(await verifyCustomer())) return;
+  if(!payMethod){ requirePay(); return; }
   const cust=deliveryCustomer;
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const subtotal=Math.max(rawTotal-discountAmount,0);
@@ -1024,7 +1140,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
       return;
     }
   }
-  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,payment:payMethod,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
   try{ if(window.DirazCloud) DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{}); }catch(e){}
   if(window.DirazPush) DirazPush.ordered();
@@ -1034,10 +1150,10 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name}${item.size?` (${item.size})`:''} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
   msg+='━━━━━━━━━━━━━━━━━━━━\n';
   msg+= appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n` : 'كود الخصم: بدون كود خصم\n';
-  msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
+  msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}\n● طريقة الدفع: ${payMethod==='cash'?'دفع نقدي':'دفع إلكتروني'}`;
 
   // الطلب انحفظ: نفرّغ السلة والكود حتى ما ينرسل نفس الطلب مرتين
-  cart=[]; saveCart();
+  cart=[]; saveCart(); resetPay();
   appliedCoupon=null; discountAmount=0;
   try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; }catch(e){}
   closeCart(); updateCartUI(); renderCards();
