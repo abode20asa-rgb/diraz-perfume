@@ -205,6 +205,23 @@ main{padding:50px 30px 30px;max-width:1200px;margin:0 auto}
 /* ══ Toast ══ */
 #cartToast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(40px);background:rgba(30,30,30,0.92);color:white;padding:10px 26px;border-radius:50px;font-size:.88rem;font-weight:700;z-index:9000;opacity:0;transition:all .35s;pointer-events:none}
 #cartToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── شاشة نجاح عملية الشراء ── */
+#orderSuccessOverlay{position:fixed;inset:0;background:#fff;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;direction:rtl;font-family:'Cairo',sans-serif;animation:dzSuccessFadeIn .3s ease}
+#orderSuccessOverlay.show{display:flex}
+#orderSuccessOverlay.hide{animation:dzSuccessFadeOut .35s ease forwards}
+@keyframes dzSuccessFadeIn{from{opacity:0}to{opacity:1}}
+@keyframes dzSuccessFadeOut{from{opacity:1}to{opacity:0}}
+.success-check-wrap{width:110px;height:110px;border-radius:50%;background:#34c759;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 40px rgba(52,199,89,.35);animation:dzSuccessPop .5s cubic-bezier(.2,1.4,.4,1)}
+@keyframes dzSuccessPop{0%{transform:scale(0)}100%{transform:scale(1)}}
+.success-check-wrap svg{width:60px;height:60px}
+.success-check-path{stroke:#fff;stroke-width:7;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:60;stroke-dashoffset:60;animation:dzSuccessDraw .45s .25s ease forwards}
+@keyframes dzSuccessDraw{to{stroke-dashoffset:0}}
+.success-title{margin-top:28px;font-size:1.5rem;font-weight:900;color:#1a1a1a}
+.success-sub{margin-top:10px;font-size:1.05rem;color:#8a8a8e;font-weight:700}
+.success-bar{width:min(280px,70vw);height:5px;background:#e8e8ed;border-radius:99px;margin-top:30px;overflow:hidden}
+.success-bar-fill{height:100%;width:0;background:#34c759;border-radius:99px;animation:dzSuccessBar 5s linear forwards}
+@keyframes dzSuccessBar{from{width:0}to{width:100%}}
 .image-lightbox{position:fixed;inset:0;z-index:5000;background:rgba(70,20,40,.88);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:22px;cursor:zoom-out}
 .image-lightbox.open{display:flex}
 .image-lightbox img{max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:14px;box-shadow:0 15px 50px rgba(0,0,0,.35);cursor:default}
@@ -436,6 +453,16 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 </div>
 
 <div id="cartToast"></div>
+
+<!-- شاشة نجاح عملية الشراء (تظهر 5 ثواني قبل فتح الواتساب) -->
+<div id="orderSuccessOverlay" role="dialog" aria-live="polite">
+  <div class="success-check-wrap">
+    <svg viewBox="0 0 52 52" aria-hidden="true"><path class="success-check-path" d="M14 27l8 8 16-16"/></svg>
+  </div>
+  <div class="success-title">تم اتمام عملية الشراء</div>
+  <div class="success-sub">جاري تحويلك الى القائمه الاخيره</div>
+  <div class="success-bar"><div class="success-bar-fill"></div></div>
+</div>
 
 <div class="image-lightbox" id="imageLightbox" onclick="closeImageLightbox()">
   <button class="image-lightbox-close" type="button" onclick="event.stopPropagation();closeImageLightbox()">✕</button>
@@ -988,11 +1015,60 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   msg+= appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n` : 'كود الخصم: بدون كود خصم\n';
   msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
 
-  window.open('https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg),'_blank');
+  // شاشة النجاح: 5 ثواني ثم فتح الواتساب
+  const waUrl='https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg);
+  showOrderSuccess(function(){
+    const w=window.open(waUrl,'_blank');
+    if(!w) window.location.href=waUrl; // احتياط إذا منع المتصفح النافذة الجديدة
+  });
 }
 
 // ── Toast ──
 function showToast(msg){ const t=document.getElementById('cartToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
+
+// ── شاشة نجاح الشراء + صوت Apple Pay ──
+let dzAudioCtx=null;
+function dzPrimeAudio(){
+  try{
+    if(!dzAudioCtx){
+      const AC=window.AudioContext||window.webkitAudioContext;
+      if(AC) dzAudioCtx=new AC();
+    }
+    if(dzAudioCtx&&dzAudioCtx.state==='suspended') dzAudioCtx.resume();
+  }catch(e){}
+}
+document.addEventListener('pointerdown',dzPrimeAudio);
+function playApplePayChime(){
+  try{
+    dzPrimeAudio();
+    if(!dzAudioCtx) return;
+    const ctx=dzAudioCtx, t0=ctx.currentTime+0.02;
+    // ثلاث نغمات صاعدة تعطي رنة نجاح شبيهة بصوت Apple Pay
+    [[1046.5,0,0.16,0.10],[1318.5,0.10,0.18,0.12],[1568,0.20,0.30,0.14]].forEach(n=>{
+      const o=ctx.createOscillator(),h=ctx.createOscillator(),g=ctx.createGain(),hg=ctx.createGain();
+      o.type='sine';o.frequency.value=n[0];
+      h.type='sine';h.frequency.value=n[0]*2;hg.gain.value=0.35;
+      g.gain.setValueAtTime(0,t0+n[1]);
+      g.gain.linearRampToValueAtTime(n[3],t0+n[1]+0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+n[1]+n[2]);
+      o.connect(g);h.connect(hg);hg.connect(g);g.connect(ctx.destination);
+      o.start(t0+n[1]);o.stop(t0+n[1]+n[2]+0.05);
+      h.start(t0+n[1]);h.stop(t0+n[1]+n[2]+0.05);
+    });
+  }catch(e){}
+}
+function showOrderSuccess(done){
+  const ov=document.getElementById('orderSuccessOverlay');
+  if(!ov){ done&&done(); return; }
+  ov.classList.remove('hide');
+  ov.classList.add('show');
+  playApplePayChime();
+  setTimeout(()=>{
+    done&&done();
+    ov.classList.add('hide');
+    setTimeout(()=>{ ov.classList.remove('show','hide'); },350);
+  },5000);
+}
 
 function openImageLightbox(src){
   const lightbox=document.getElementById('imageLightbox');
