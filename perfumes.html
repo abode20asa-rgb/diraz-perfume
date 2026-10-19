@@ -394,10 +394,10 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   <div class="popup-box">
     <div class="pop-icon">🌸</div>
     <h2>مرحباً بك!</h2>
-    <p>أنشئ حسابك بإدخال الاسم الأول ورقم الهاتف لتتمكن من إتمام طلبك</p>
+    <p>اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small></p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
     <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
-    <button class="popup-btn" onclick="saveCustomer()">إنشاء الحساب والمتابعة ←</button>
+    <button class="popup-btn" onclick="saveCustomer()">متابعة ←</button>
     <button type="button" class="popup-back" onclick="closeCustomerPopup()">→ رجوع</button>
     <div class="popup-error" id="popError">❗ يرجى إدخال الاسم الأول ورقم هاتف صحيح</div>
   </div>
@@ -506,12 +506,12 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
     </div>
     <div class="soon-box" id="soonBox" style="display:none">هذا القسم قريباً<small>نجهّز لكم أجمل العطور، ترقّبونا</small></div>
     <div class="perfumes-grid" id="perfumesGrid"></div>
+    <div class="order-bar">
+      <a href="contact.html" class="order-btn">&#128235; للاستفسار</a>
+    </div>
   </div>
 </main>
 
-<div class="order-bar">
-  <a href="contact.html" class="order-btn">&#128235; &#1591;&#1604;&#1576; &#1571;&#1608; &#1575;&#1587;&#1578;&#1601;&#1587;&#1575;&#1585;</a>
-</div>
 <footer>&#169; 2026 &#1583;&#1610;&#1585;&#1575;&#1586; &#1604;&#1604;&#1593;&#1591;&#1608;&#1585; | DIRAZ PERFUME &mdash; &#1580;&#1605;&#1610;&#1593; &#1575;&#1604;&#1581;&#1602;&#1608;&#1602; &#1605;&#1581;&#1601;&#1608;&#1592;&#1577;</footer>
 
 
@@ -581,7 +581,13 @@ const defaultPerfumes = window.DIRAZ_DEFAULT_PERFUMES || [
 
 // ── Helpers ──
 function tryParse(key, fallback){ try{ const d=localStorage.getItem(key); return d?JSON.parse(d):fallback; }catch(e){return fallback;} }
-function loadPerfumes(){ return tryParse(STORAGE_KEY, defaultPerfumes); }
+let _pRaw=null,_pVal=null;
+function loadPerfumes(){
+  let raw=null; try{ raw=localStorage.getItem(STORAGE_KEY); }catch(e){}
+  if(_pVal && raw===_pRaw) return _pVal;
+  _pRaw=raw; _pVal=tryParse(STORAGE_KEY, defaultPerfumes);
+  return _pVal;
+}
 async function hydrateCloudPerfumes(){
   if(!window.DirazCloud) return;
   try{
@@ -649,6 +655,17 @@ function editCustomer(){
   document.getElementById('popPhone').value=c.phone||'';
   document.getElementById('customerPopup').style.display='flex';
 }
+const SYNC_KEY='diraz_synced_phone';
+function syncCustomer(c){
+  const pd=String(c&&c.phone||'').replace(/\D/g,'');
+  if(!window.DirazCloud || !/^07[0-9]{9}$/.test(pd)) return Promise.resolve(false);
+  return DirazCloud.rpc('save_customer',{p_phone:pd,p_data:c})
+    .then(()=>{ try{ localStorage.setItem(SYNC_KEY,pd); }catch(e){} return true; })
+    .catch(()=>false);
+}
+function withTimeout(promise,ms,fallback){
+  return Promise.race([promise,new Promise(res=>setTimeout(()=>res(fallback),ms))]);
+}
 function saveCustomer(){
   const nameInput=(document.getElementById('popName').value||'').trim();
   const phone=(document.getElementById('popPhone').value||'').trim();
@@ -675,9 +692,7 @@ function saveCustomer(){
     if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
   } catch(e) {}
-  if(window.DirazCloud) {
-    DirazCloud.rpc('save_customer', {p_phone:phoneDigits, p_data:customer}).catch(()=>{});
-  }
+  syncCustomer(customer);
   if(pendingCartOpen){
     pendingCartOpen=false;
     openDelivery();
@@ -772,8 +787,13 @@ async function verifyCustomer(){
   const c=tryParse(CUSTOMER_KEY,null);
   if(!c?.phone||!window.DirazCloud) return true;
   try{
-    const exists=await DirazCloud.rpc('customer_exists',{p_phone:c.phone});
-    if(exists===false){ handleCustomerDeleted(); return false; }
+    const exists=await withTimeout(DirazCloud.rpc('customer_exists',{p_phone:c.phone}),4000,'timeout');
+    if(exists===true){ try{ localStorage.setItem(SYNC_KEY,String(c.phone).replace(/\D/g,'')); }catch(e){} return true; }
+    if(exists===false){
+      const synced=localStorage.getItem(SYNC_KEY)===String(c.phone).replace(/\D/g,'');
+      if(synced){ handleCustomerDeleted(); return false; }   // انحفظ قبل وانحذف من الأدمن: نطلب حساب جديد
+      syncCustomer(c);                                       // ما انحفظ أبداً (انقطع النت): نعيد الحفظ بصمت ونكمل
+    }
   }catch(e){}
   return true;
 }
@@ -786,8 +806,6 @@ function handleCustomerDeleted(){
   showToast('⚠️ تم حذف حسابك، سوّي حساب جديد حتى تكمل الطلب');
   editCustomer();
 }
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) verifyCustomer(); });
-window.addEventListener('focus',()=>{ verifyCustomer(); });
 async function openCart(){
   // السلة تنفتح عادي بدون حساب — الحساب يُطلب عند الضغط على "طلب"
   document.getElementById('cartSidebar').classList.add('open'); document.getElementById('cartOverlay').classList.add('open');
@@ -979,7 +997,7 @@ function confirmDelivery(){
     const ix=lst.findIndex(x=>(x.phone||'').replace(/\D/g,'')===pd);
     if(ix>=0) lst[ix]=updated; else lst.unshift(updated);
     localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(lst));
-    if(window.DirazCloud && /^07[0-9]{9}$/.test(pd)) DirazCloud.rpc('save_customer',{p_phone:pd,p_data:updated}).catch(()=>{});
+    syncCustomer(updated);
   }catch(e){}
   document.getElementById('deliveryPopup').style.display='none';
   sendOrder(fee,updated);
@@ -1006,7 +1024,8 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   }
   const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
-  DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{}); if(window.DirazPush) DirazPush.ordered();
+  try{ if(window.DirazCloud) DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{}); }catch(e){}
+  if(window.DirazPush) DirazPush.ordered();
 
   // رسالة واتساب
   let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
@@ -1014,6 +1033,12 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   msg+='━━━━━━━━━━━━━━━━━━━━\n';
   msg+= appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n` : 'كود الخصم: بدون كود خصم\n';
   msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}`;
+
+  // الطلب انحفظ: نفرّغ السلة والكود حتى ما ينرسل نفس الطلب مرتين
+  cart=[]; saveCart();
+  appliedCoupon=null; discountAmount=0;
+  try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; }catch(e){}
+  closeCart(); updateCartUI(); renderCards();
 
   // شاشة النجاح: 5 ثواني ثم فتح الواتساب
   const waUrl='https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg);
@@ -1202,8 +1227,6 @@ initSections();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('customerPopup').style.display==='flex') closeCustomerPopup(); });
 </script>
 
-<!-- ═══ Diraz AI — مساعد العطور ═══ -->
-<script src="diraz-assistant.js?v=2"></script>
 
 </body>
 </html>
