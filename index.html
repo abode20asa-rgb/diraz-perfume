@@ -213,8 +213,8 @@
                 .bottle-stage {
                     width:100%;
                     display:flex; justify-content:center;
-                    touch-action:none;             /* السحب بكل الاتجاهات للتدوير والإمالة */
-                    cursor:grab;
+                    touch-action:auto; pointer-events:none;   /* العطر ثابت: ما أحد يكدر يحركه، والصفحة تتمرر عادي */
+                    cursor:default;
                     user-select:none; -webkit-user-select:none;
                     -webkit-tap-highlight-color:transparent;
                     outline:none;
@@ -467,8 +467,8 @@
 
     <!-- الجانب الايسر: الزجاجة 360° -->
     <div class="bottle-wrap" id="bottleViewer">
-        <div class="bottle-stage" id="bottleStage" tabindex="0" role="img"
-             aria-label="زجاجة ديراز — اسحب لتدويرها، أو استخدم أسهم لوحة المفاتيح">
+        <div class="bottle-stage" id="bottleStage" role="img"
+             aria-label="زجاجة ديراز تدور">
             <div class="bottle-3d" id="bottle3d"></div>
             <img id="bottleFallback" class="bottle-fallback" src="images/bottle_main.png" alt="DIRAZ Perfume Bottle" hidden>
         </div>
@@ -543,8 +543,8 @@ trackVisitor();
   catch(e){ return fallback(); }
 
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var SENS = 0.012, AUTO = 0.45, IDLE = 2200;     // حساسية السحب | الدوران التلقائي | مدة الانتظار
-  var TILT_REST = 0.06, TILT_MAX = 1.52;          // الإمالة الافتراضية | أقصى إمالة (≈ 87°)
+  var AUTO = 0.5;                                  // سرعة الدوران التلقائي (راديان/ثانية)
+  var TILT_REST = 0.06;                            // ميلان ثابت خفيف (ما يتغيّر)
 
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setClearColor(0x000000, 0);
@@ -631,6 +631,13 @@ trackVisitor();
   }
   drawLabel();
   if(document.fonts && document.fonts.load) document.fonts.load('400 40px "Playfair Display"').then(drawLabel).catch(function(){});
+  // ===== الطباعة الخلفية: نفس الشعار تماماً (نفس الـ texture) حتى ما تبقى الزجاجة فارغة من ورا =====
+  var label2 = new THREE.Mesh(
+    new THREE.CylinderGeometry(LAB_R, LAB_R, LAB_H, 64, 1, true, -ARC/LAB_R/2, ARC/LAB_R),
+    new THREE.MeshBasicMaterial({ map:tex, transparent:true, opacity:0.95, depthWrite:false })
+  );
+  label2.position.y = LAB_BOTTOM + LAB_H/2; label2.renderOrder = 3; label2.rotation.y = Math.PI;   // الجهة الخلفية
+
   var label = new THREE.Mesh(
     new THREE.CylinderGeometry(LAB_R, LAB_R, LAB_H, 64, 1, true, -ARC/LAB_R/2, ARC/LAB_R),
     new THREE.MeshBasicMaterial({ map:tex, transparent:true, opacity:0.95, depthWrite:false })
@@ -639,7 +646,7 @@ trackVisitor();
 
   // ===== التجميع: yaw (دوران حول المحور العمودي) داخل tilt (إمالة لفوق وتحت) =====
   var bottle = new THREE.Group();
-  bottle.add(tube, cap, seam, bodyBack, bodyFront, label);
+  bottle.add(tube, cap, seam, bodyBack, bodyFront, label, label2);
   bottle.visible = false;                      // يظهر بعد تحميل لون الصورة
   bottle.position.y = -2.075;
   var yaw = new THREE.Group(); yaw.add(bottle);
@@ -653,65 +660,16 @@ trackVisitor();
   resize();
   if('ResizeObserver' in window) new ResizeObserver(resize).observe(box); else window.addEventListener('resize', resize);
 
-  // ===== التفاعل =====
-  var angle = 0, tiltA = TILT_REST, velA = 0, velT = 0;
-  var dragging = false, lastX = 0, lastY = 0, lastTime = 0;
-  var idleUntil = performance.now() + 2500, last = performance.now(), running = false;
-  function hideHint(){ if(hint) hint.classList.add('gone'); }
-  function clampT(v){ return Math.max(-TILT_MAX, Math.min(TILT_MAX, v)); }
-
-  stage.addEventListener('pointerdown', function(e){
-    if(e.pointerType === 'mouse' && e.button !== 0) return;
-    dragging = true; velA = velT = 0; lastX = e.clientX; lastY = e.clientY; lastTime = e.timeStamp;
-    try{ stage.setPointerCapture(e.pointerId); }catch(_){}
-    stage.classList.add('grabbing'); hideHint();
-  });
-  stage.addEventListener('pointermove', function(e){
-    if(!dragging) return;
-    var dx = e.clientX - lastX, dy = e.clientY - lastY, dt = Math.max(e.timeStamp - lastTime, 1);
-    angle += dx * SENS; tiltA = clampT(tiltA + dy * SENS);
-    velA = velA * 0.7 + (dx * SENS / dt * 1000) * 0.3;
-    velT = velT * 0.7 + (dy * SENS / dt * 1000) * 0.3;
-    lastX = e.clientX; lastY = e.clientY; lastTime = e.timeStamp;
-  });
-  function release(e){
-    if(!dragging) return;
-    dragging = false; stage.classList.remove('grabbing');
-    if(e && e.timeStamp - lastTime > 80){ velA = velT = 0; }
-    idleUntil = performance.now() + IDLE;
-  }
-  stage.addEventListener('pointerup', release);
-  stage.addEventListener('pointercancel', release);
-  stage.addEventListener('lostpointercapture', release);
-  stage.addEventListener('keydown', function(e){
-    var k = e.key, h = false;
-    if(k === 'ArrowLeft'){ angle -= 0.35; h = true; }
-    else if(k === 'ArrowRight'){ angle += 0.35; h = true; }
-    else if(k === 'ArrowUp'){ tiltA = clampT(tiltA - 0.3); h = true; }
-    else if(k === 'ArrowDown'){ tiltA = clampT(tiltA + 0.3); h = true; }
-    if(h){ hideHint(); idleUntil = performance.now() + IDLE; e.preventDefault(); }
-  });
+  // ===== الدوران فقط (بدون أي تحريك من المستخدم) =====
+  var angle = 0, last = performance.now(), running = false;
+  tilt.rotation.x = TILT_REST;
+  tilt.position.y = 0;
 
   function frame(now){
     if(!running) return;
     var dt = Math.min((now - last) / 1000, 0.05); last = now;
-    if(!dragging){
-      var moving = Math.abs(velA) > 0.02 || Math.abs(velT) > 0.02;
-      if(moving){
-        angle += velA * dt; tiltA = clampT(tiltA + velT * dt);
-        var d = Math.pow(0.04, dt); velA *= d; velT *= d;
-      } else {
-        velA = velT = 0;
-        if(now > idleUntil){
-          if(!reduce) angle += AUTO * dt;
-          tiltA += (TILT_REST - tiltA) * Math.min(1, 1.6 * dt);     // يرجع للوضع العادي تدريجياً
-        }
-      }
-    }
-    angle %= Math.PI * 2;
+    if(!reduce) angle = (angle + AUTO * dt) % (Math.PI * 2);
     yaw.rotation.y = angle;
-    tilt.rotation.x = tiltA;
-    tilt.position.y = (reduce || Math.abs(tiltA) > 0.3) ? 0 : Math.sin(now / 700) * 0.05;
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
