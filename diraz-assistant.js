@@ -612,6 +612,7 @@
 
   /* يفتح نافذة التوصيل الحقيقية (المحافظة/المنطقة/العنوان) ويخلي الزبون يعبّيها بنفسه */
   function openDeliveryForm(){
+    if(payChosen()!=='cash'){ askPay(); return; }   /* ما يسد المحادثة قبل ما يختار نوع الدفع */
     var box=$('dzA_box'); if(box) box.classList.remove('open');
     try{
       if(typeof openDelivery==='function') openDelivery();
