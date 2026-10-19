@@ -370,6 +370,8 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 body.sec-pick{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='60'%3E%3Cpath d='M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30' stroke='rgba(255,255,255,0.28)' stroke-width='2.5' fill='none'/%3E%3Cpath d='M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55' stroke='rgba(255,255,255,0.14)' stroke-width='1.5' fill='none'/%3E%3C/svg%3E"),linear-gradient(160deg,#f4a7be 0%,#f4a7be 22%,#c27bb0 50%,#3a4a9e 78%,#3a4a9e 100%);background-repeat:repeat,no-repeat;background-size:120px 60px,100% 100%;background-attachment:scroll,fixed}
 body.sec-pick header{background:linear-gradient(90deg,rgba(244,150,185,.92) 25%,rgba(58,74,158,.92) 75%)}
 body.sec-pick .sec-card{box-shadow:0 8px 24px rgba(10,16,50,.35)}
+/* مساعد ديراز: يختفي بصفحة اختيار القسم ويظهر فقط داخل رجالي / نسائي */
+body.sec-pick #dzA_btn, body.sec-pick #dzA_box, body.sec-pick #dzA_orderbar{display:none !important}
 /* ── ثيم قسم الرجالي (كحلي/أزرق) — يتفعّل عبر body.sec-men ── */
 body.sec-men{--pink:#4a5bb0;--pink-dark:#2f3d8a;--pink-deep:#1a2456;--pink-light:#e3e7fa}
 body.sec-men header{background:rgba(26,36,86,.92);box-shadow:0 2px 20px rgba(10,16,50,.35)}
@@ -1228,5 +1230,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 </script>
 
 
+<!-- ═══ Diraz AI — مساعد العطور (يظهر داخل القسم فقط) ═══ -->
+<script src="diraz-assistant.js?v=2"></script>
 </body>
 </html>
