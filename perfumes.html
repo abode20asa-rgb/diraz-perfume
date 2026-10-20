@@ -55,13 +55,6 @@ background-repeat:repeat;background-size:120px 60px;min-height:100vh}
 .popup-btn{width:100%;padding:14px;border:none;border-radius:50px;margin-top:6px;background:white;color:#c45a7a;font-family:'Cairo',sans-serif;font-size:1.05rem;font-weight:900;cursor:pointer;transition:transform .2s,box-shadow .2s;box-shadow:0 5px 20px rgba(255,255,255,0.25)}
 .popup-btn:hover{transform:translateY(-3px)}
 .popup-error{color:#ffd0d0;font-size:.84rem;margin-top:8px;display:none}
-.otp-send{width:100%;padding:12px;border-radius:50px;margin-bottom:12px;border:1.5px dashed rgba(255,255,255,.75);background:rgba(255,255,255,.12);color:#fff;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:800;cursor:pointer}
-.otp-send:disabled{opacity:.6;cursor:default}
-.otp-note{font-size:.82rem;color:#fff;margin:-4px 0 12px;min-height:1em}
-.otp-note.err{color:#ffd0d0}
-.otp-note a{color:#fff;font-weight:800;text-decoration:underline;cursor:pointer}
-.otp-ok{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#22a447;color:#fff;font-size:.8rem;font-weight:900;margin-left:6px;vertical-align:middle}
-#otpCode{text-align:center;letter-spacing:6px;font-weight:800}
 .popup-back{width:100%;padding:12px;border:1.5px solid rgba(255,255,255,0.6);border-radius:50px;margin-top:10px;background:transparent;color:white;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;transition:background .2s}
 .popup-back:hover{background:rgba(255,255,255,0.2)}
 .delivery-box{background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.5);border-radius:26px;padding:28px 24px;max-width:460px;width:100%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.2)}
@@ -421,12 +414,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
     <h2>مرحباً بك!</h2>
     <p id="popIntro">اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small></p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
-    <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11);otpRefresh()">
-    <div class="otp-box" id="otpBox" style="display:none">
-      <button type="button" class="otp-send" id="otpSendBtn" onclick="otpSend()">إرسال كود التحقق</button>
-      <input type="text" id="otpCode" class="popup-input" style="display:none" placeholder="اكتب الكود" maxlength="6" inputmode="numeric" autocomplete="one-time-code" oninput="otpCodeInput(this)">
-      <div class="otp-note" id="otpNote"></div>
-    </div>
+    <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
     <div class="addr-block" id="popAddrBlock" style="display:none">
       <div class="addr-hint" id="popAddrHint">📍 عنوان التوصيل — يُحفظ مرة وحدة لكل طلباتك</div>
       <select id="popProvince" class="popup-input"></select>
@@ -681,7 +669,7 @@ async function checkCustomer(){
     return;
   }
   popupForced=true;
-  document.getElementById('customerPopup').style.display='flex'; if(typeof otpLoadFlag==='function') otpLoadFlag();
+  document.getElementById('customerPopup').style.display='flex';
 }
 let popupForced=false;
 function closeCustomerPopup(){
@@ -719,7 +707,6 @@ function editCustomer(needAddr){
     ? '📍 سجّل عنوانك أول حتى نكمل طلبك — يُحفظ مرة وحدة'
     : '📍 عنوان التوصيل — تكدر تغيّره من هنا بأي وقت';
   document.getElementById('customerPopup').style.display='flex';
-  otpRefresh(); otpLoadFlag();
 }
 const SYNC_KEY='diraz_synced_phone';
 function syncCustomer(c){
@@ -733,98 +720,6 @@ function withTimeout(promise,ms,fallback){
   return Promise.race([promise,new Promise(res=>setTimeout(()=>res(fallback),ms))]);
 }
 
-/* ───────── التحقق من رقم الهاتف عبر واتساب ─────────
-   التشغيل والإيقاف من لوحة الأدمن (يقرأ الإعداد من Supabase) */
-let OTP_ENABLED = false;
-const OTP_BASE = 'https://knqtuvcvqsupltbivkfb.supabase.co/functions/v1';
-const OTP_KEY  = 'sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
-const OTP_VERIFIED_KEY = 'diraz_verified_phone';
-const OTP_VALID_MS = 25*60*1000;   // صلاحية التحقق (السيرفر يقبل 30 دقيقة)
-let otpTimer = null, otpSentTo = '';
-async function otpLoadFlag(){
-  try{ if(window.DirazCloud){ OTP_ENABLED = (await DirazCloud.rpc('otp_is_enabled'))===true; } }catch(e){ OTP_ENABLED=false; }
-  try{ otpRefresh(); }catch(e){}
-}
-function otpSavedPhone(){ try{ return String((tryParse(CUSTOMER_KEY,{})||{}).phone||'').replace(/\D/g,''); }catch(e){ return ''; } }
-function otpVerifiedRecent(p){ try{ var o=JSON.parse(localStorage.getItem(OTP_VERIFIED_KEY)||'null'); return !!o && o.p===p && (Date.now()-o.t)<OTP_VALID_MS; }catch(e){ return false; } }
-/* التحقق مطلوب للرقم الجديد أو المتغيّر فقط (الزبون المسجّل برقمه ما يحتاج) */
-function otpNeeded(p){ return OTP_ENABLED && p!==otpSavedPhone() && !otpVerifiedRecent(p); }
-function otpPhone(){ return (document.getElementById('popPhone').value||'').replace(/\D/g,''); }
-function otpNote(html, err){ const n=document.getElementById('otpNote'); n.innerHTML=html||''; n.className='otp-note'+(err?' err':''); }
-function otpReset(){
-  clearInterval(otpTimer); otpSentTo='';
-  const b=document.getElementById('otpSendBtn'), c=document.getElementById('otpCode');
-  b.style.display='block'; b.disabled=false; b.textContent='إرسال كود التحقق';
-  c.style.display='none'; c.value=''; otpNote('');
-}
-function otpRefresh(){
-  const box=document.getElementById('otpBox'); if(!box) return;
-  const p=otpPhone();
-  if(!OTP_ENABLED || !/^07\d{9}$/.test(p) || p===otpSavedPhone()){ box.style.display='none'; otpReset(); return; }
-  box.style.display='block';
-  if(otpVerifiedRecent(p)){
-    clearInterval(otpTimer); otpSentTo=p;
-    document.getElementById('otpSendBtn').style.display='none';
-    document.getElementById('otpCode').style.display='none';
-    otpNote('<span class="otp-ok">✓</span> تم التحقق من رقمك');
-  } else if(otpSentTo!==p){
-    otpReset();
-  }
-}
-function otpCountdown(sec){
-  clearInterval(otpTimer);
-  const tick=function(){
-    if(sec>0){ otpNote('وصلك الكود على واتساب 💬 — إعادة الإرسال بعد '+sec+' ث'); sec--; }
-    else { clearInterval(otpTimer); otpNote('ما وصلك؟ <a onclick="otpSend()">إعادة إرسال الكود</a>'); }
-  };
-  tick(); otpTimer=setInterval(tick,1000);
-}
-async function otpCall(fn, payload){
-  const r=await fetch(OTP_BASE+'/'+fn,{method:'POST',headers:{'Content-Type':'application/json',apikey:OTP_KEY},body:JSON.stringify(payload)});
-  let j={}; try{ j=await r.json(); }catch(e){}
-  return {ok:r.ok, data:j};
-}
-async function otpSend(){
-  const p=otpPhone(); if(!/^07\d{9}$/.test(p)) return;
-  const b=document.getElementById('otpSendBtn'), c=document.getElementById('otpCode');
-  b.disabled=true; b.textContent='جاري الإرسال...'; otpNote('');
-  try{
-    const {ok,data}=await otpCall('send-code',{phone:p});
-    if(ok){
-      otpSentTo=p;
-      b.style.display='none'; c.style.display='block'; c.value=''; c.focus();
-      otpCountdown(60);
-    } else {
-      b.disabled=false; b.textContent='إرسال كود التحقق';
-      if(data.error==='disabled'){ OTP_ENABLED=false; otpRefresh(); return; }
-      const m = data.error==='wait'  ? 'انتظر '+(data.wait||60)+' ثانية قبل إعادة الإرسال'
-              : data.error==='limit' ? 'تجاوزت عدد المحاولات، جرّب بعد ساعة'
-              : data.error==='busy'  ? 'الخدمة مشغولة هسه، جرّب بعد دقائق'
-              : 'تعذّر إرسال الكود، جرّب مرة ثانية';
-      otpNote('❗ '+m, true);
-    }
-  }catch(e){ b.disabled=false; b.textContent='إرسال كود التحقق'; otpNote('❗ تعذّر الاتصال، جرّب مرة ثانية', true); }
-}
-async function otpCodeInput(el){
-  el.value=el.value.replace(/\D/g,'').slice(0,6);
-  if(el.value.length!==6) return;
-  const p=otpPhone(); el.disabled=true;
-  try{
-    const {ok,data}=await otpCall('verify-code',{phone:p,code:el.value});
-    if(ok){
-      try{ localStorage.setItem(OTP_VERIFIED_KEY,JSON.stringify({p:p,t:Date.now()})); }catch(e){}
-      clearInterval(otpTimer); el.style.display='none';
-      otpNote('<span class="otp-ok">✓</span> تم التحقق من رقمك');
-    } else if(data.error==='expired' || data.error==='locked'){
-      el.style.display='none'; const b=document.getElementById('otpSendBtn'); b.style.display='block'; b.disabled=false; b.textContent='إرسال كود التحقق';
-      otpNote(data.error==='locked' ? '❗ محاولات كثيرة، اطلب كود جديد' : '❗ انتهت صلاحية الكود، اطلب كود جديد', true);
-    } else {
-      otpNote('❗ الكود غير صحيح'+(data.left!=null?' (باقي '+data.left+' محاولات)':''), true);
-    }
-  }catch(e){ otpNote('❗ تعذّر الاتصال، جرّب مرة ثانية', true); }
-  el.disabled=false; if(el.style.display!=='none'){ el.value=''; el.focus(); }
-}
-otpLoadFlag();
 function saveCustomer(){
   const nameInput=(document.getElementById('popName').value||'').trim();
   const phone=(document.getElementById('popPhone').value||'').trim();
@@ -838,12 +733,6 @@ function saveCustomer(){
     return;
   }
 
-  if(otpNeeded(phoneDigits)){
-    document.getElementById('popError').textContent='❗ تحقق من رقمك أول: اضغط «إرسال كود التحقق»';
-    document.getElementById('popError').style.display='block';
-    setTimeout(()=>document.getElementById('popError').style.display='none',2500);
-    return;
-  }
   // العنوان (إذا ظاهر): لازم يكتمل المحافظة + القضاء + العنوان، وإذا جاي من السلة مطلوب إجباري
   let addrPatch={};
   if(document.getElementById('popAddrBlock').style.display!=='none'){

@@ -258,35 +258,6 @@ textarea{resize:vertical;min-height:80px}
       </div>
     </div>
 
-    <!-- واتساب والتحقق من الأرقام -->
-    <div class="section-card" id="waCard">
-      <h2>💬 واتساب والتحقق من الأرقام</h2>
-      <div id="otpBar" class="site-status-bar off">
-        <div class="status-info"><h3 id="otpTitle">التحقق من الأرقام: متوقف</h3><p id="otpDesc">الزبون يسجل بأي رقم بدون كود تحقق</p></div>
-        <div class="toggle-wrap"><span class="toggle-label" id="otpLabel">متوقف</span>
-          <label class="switch"><input type="checkbox" id="otpToggle" onchange="toggleOtp()"><span class="slider-sw"></span></label></div>
-      </div>
-      <div id="waState" class="no-items" style="padding:6px 0 14px">⏳ جاري فحص ربط الواتساب...</div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px">
-        <button class="btn-save" onclick="waConnectQR()">🔗 ربط الرقم (QR)</button>
-        <button class="btn-save" onclick="waRefresh()">🔄 تحديث الحالة</button>
-        <button class="btn-save" style="background:#e53935" onclick="waLogout()">🔌 فصل الرقم</button>
-      </div>
-      <div id="waQrBox" style="display:none;text-align:center;background:rgba(255,255,255,.18);border-radius:16px;padding:16px;margin-bottom:14px">
-        <p id="waQrHelp" style="margin-bottom:10px"></p>
-        <img id="waQrImg" alt="QR" style="display:none;width:240px;max-width:100%;background:#fff;padding:10px;border-radius:12px;margin:0 auto">
-        <div id="waPair" style="display:none;font-size:1.8rem;font-weight:900;color:#fff;letter-spacing:6px;direction:ltr"></div>
-      </div>
-      <div class="coupon-form-grid">
-        <div class="form-group"><label>رقمك (07XXXXXXXXX) — للربط بالكود من نفس التلفون أو لرسالة تجربة</label>
-          <input type="tel" id="waNumber" dir="ltr" maxlength="11" inputmode="numeric" placeholder="07XXXXXXXXX" style="width:100%;padding:12px 18px;border-radius:50px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.35);color:#fff;font-family:inherit;font-size:1rem;text-align:center;outline:none"></div>
-      </div>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
-        <button class="btn-save" onclick="waConnectCode()">🔢 ربط بالكود (بدون QR)</button>
-        <button class="btn-save" onclick="waTest()">✉️ رسالة تجربة</button>
-      </div>
-    </div>
-
     <!-- الإشعارات -->
     <div class="section-card">
       <h2>🔔 الإشعارات</h2>
@@ -480,7 +451,7 @@ function refreshFromCloud(){
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
 window.addEventListener('focus', refreshFromCloud);
 setInterval(refreshFromCloud, 30000);
-function initAll(){ try{ loadPushAdmin(); }catch(e){} try{ waInit(); }catch(e){} try{ initSections(); }catch(e){}
+function initAll(){ try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
@@ -1160,90 +1131,6 @@ async function toggleSection(){
     showToast('❌ فشل التحديث');
     alert('سبب الفشل:\n' + String((e && e.message) || e).slice(0, 300));
   }
-}
-</script>
-<script>
-// ══ واتساب والتحقق من الأرقام ══
-var waPoll=null, waQrTimer=null, waState='unknown';
-async function waCall(action, extra){
-  var tok=await DirazCloud.token();
-  var r=await fetch(window.DIRAZ_SUPABASE_URL+'/functions/v1/wa-admin',{method:'POST',headers:{Authorization:'Bearer '+tok,apikey:window.DIRAZ_SUPABASE_KEY,'Content-Type':'application/json'},body:JSON.stringify(Object.assign({action:action},extra||{}))});
-  var j=null; try{ j=await r.json(); }catch(x){}
-  if(!r.ok) throw new Error((j&&j.error)||('HTTP '+r.status));
-  return j||{};
-}
-function waSetState(st, msg){
-  waState=st;
-  var map={open:'🟢 الواتساب مربوط ويشتغل',connecting:'🟡 بانتظار مسح الـ QR أو إدخال الكود...',close:'🔴 الواتساب غير متصل — اضغط «ربط الرقم»',none:'⚪ ما أكو رقم مربوط بعد — اضغط «ربط الرقم»',error:(/failed to fetch|networkerror|load failed/i.test(msg||'') ? '⚠️ دالة wa-admin مو مرفوعة على Supabase بعد (أو ما تنوصل). ارفعها من خطوات OTP-SETUP.md' : (/evo_/i.test(msg||'') ? '⚠️ دالة wa-admin شغّالة بس ما كدرت توصل لسيرفر Evolution — تأكد من EVO_URL و EVO_APIKEY ('+msg+')' : '⚠️ خطأ: '+(msg||'غير معروف')))};
-  document.getElementById('waState').textContent=map[st]||('حالة غير معروفة: '+st);
-}
-async function waRefresh(){
-  try{ var j=await waCall('status'); waSetState(j.state||'unknown'); return j.state; }
-  catch(e){ waSetState('error', String(e.message||e).slice(0,60)); return 'error'; }
-}
-function waStopPolling(){ clearInterval(waPoll); clearInterval(waQrTimer); waPoll=null; waQrTimer=null; }
-function waStartPolling(refreshQr, number){
-  waStopPolling();
-  var started=Date.now();
-  waPoll=setInterval(async function(){
-    var st=await waRefresh();
-    if(st==='open'){ waStopPolling(); document.getElementById('waQrBox').style.display='none'; showToast('✅ تم ربط الواتساب'); }
-    else if(Date.now()-started>180000){ waStopPolling(); document.getElementById('waQrBox').style.display='none'; showToast('⌛ انتهى الوقت، حاول مرة ثانية'); }
-  },4000);
-  if(refreshQr) waQrTimer=setInterval(function(){ waShowQR(number,true); },25000);
-}
-async function waShowQR(number, silent){
-  var box=document.getElementById('waQrBox'), img=document.getElementById('waQrImg'), pair=document.getElementById('waPair'), help=document.getElementById('waQrHelp');
-  if(!silent){ box.style.display='block'; img.style.display='none'; pair.style.display='none'; help.textContent='⏳ جاري التجهيز...'; }
-  try{
-    var j=await waCall('connect', number?{number:number}:{});
-    if(j.state==='open'){ box.style.display='none'; waSetState('open'); waStopPolling(); showToast('✅ الواتساب مربوط أصلاً'); return; }
-    if(number && j.pairingCode){
-      var c=String(j.pairingCode); if(c.length===8) c=c.slice(0,4)+'-'+c.slice(4);
-      img.style.display='none'; pair.style.display='block'; pair.textContent=c;
-      help.textContent='افتح واتساب Business بالتلفون ← الأجهزة المرتبطة ← ربط جهاز ← «الربط باستخدام رقم الهاتف بدلاً من ذلك» واكتب هذا الكود';
-    } else if(j.qr){
-      pair.style.display='none'; img.style.display='block'; img.src=j.qr;
-      help.textContent='افتح واتساب Business بالتلفون ← الأجهزة المرتبطة ← ربط جهاز ← امسح هذا الـ QR';
-    } else { help.textContent='ما رجع QR، اضغط تحديث الحالة أو جرّب من جديد'; }
-    waSetState('connecting');
-  }catch(e){ box.style.display='none'; waSetState('error', String(e.message||e).slice(0,60)); }
-}
-async function waConnectQR(){ await waShowQR(null,false); waStartPolling(true,null); }
-async function waConnectCode(){
-  var n=document.getElementById('waNumber').value.replace(/\D/g,'');
-  if(!/^07\d{9}$/.test(n)){ showToast('❌ اكتب رقمك بصيغة 07XXXXXXXXX'); return; }
-  await waShowQR(n,false); waStartPolling(false,n);
-}
-async function waLogout(){
-  if(!confirm('تفصل الرقم؟ التحقق بالواتساب يتوقف لحد ما تربطه من جديد.')) return;
-  try{ await waCall('logout'); waStopPolling(); document.getElementById('waQrBox').style.display='none'; showToast('🔌 تم فصل الرقم'); waRefresh(); }
-  catch(e){ showToast('❌ فشل الفصل'); }
-}
-async function waTest(){
-  var n=document.getElementById('waNumber').value.replace(/\D/g,'');
-  if(!/^07\d{9}$/.test(n)){ showToast('❌ اكتب رقمك بصيغة 07XXXXXXXXX'); return; }
-  try{ await waCall('test',{phone:n}); showToast('✅ انرسلت رسالة تجربة'); }
-  catch(e){ showToast('❌ فشل الإرسال: '+String(e.message||e).slice(0,50)); }
-}
-function updateOtpBar(on){
-  var bar=document.getElementById('otpBar'); bar.classList.toggle('on',on); bar.classList.toggle('off',!on);
-  document.getElementById('otpTitle').textContent=on?'التحقق من الأرقام: يعمل':'التحقق من الأرقام: متوقف';
-  document.getElementById('otpDesc').textContent=on?'الزبون الجديد لازم يتحقق من رقمه بكود واتساب قبل التسجيل':'الزبون يسجل بأي رقم بدون كود تحقق';
-  document.getElementById('otpLabel').textContent=on?'يعمل':'متوقف';
-}
-async function toggleOtp(){
-  var cb=document.getElementById('otpToggle'), on=cb.checked;
-  if(on && waState!=='open' && !confirm('الواتساب مو مربوط هسه، والزبائن الجدد ما راح يكدرون يسجلون لأن الكود ما يوصلهم. تكمل التشغيل؟')){ cb.checked=false; return; }
-  try{
-    await DirazCloud.upsert('site_config',[{key:'otp_enabled', value:on}]);
-    updateOtpBar(on); showToast(on?'✅ تم تشغيل التحقق من الأرقام':'⏸️ تم إيقاف التحقق من الأرقام');
-  }catch(e){ cb.checked=!on; showToast('❌ فشل التغيير'); }
-}
-async function waInit(){
-  try{ var v=await DirazCloud.rpc('otp_is_enabled'); document.getElementById('otpToggle').checked=(v===true); updateOtpBar(v===true); }
-  catch(e){ updateOtpBar(false); document.getElementById('waState').textContent='⚠️ شغّل supabase/otp.sql بـ Supabase أول'; return; }
-  waRefresh();
 }
 </script>
 </body>
