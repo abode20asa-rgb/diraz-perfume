@@ -279,7 +279,7 @@ textarea{resize:vertical;min-height:80px}
       </div>
       <div class="coupon-form-grid">
         <div class="form-group"><label>رقمك (07XXXXXXXXX) — للربط بالكود من نفس التلفون أو لرسالة تجربة</label>
-          <input type="tel" id="waNumber" dir="ltr" maxlength="11" inputmode="numeric" placeholder="07XXXXXXXXX"></div>
+          <input type="tel" id="waNumber" dir="ltr" maxlength="11" inputmode="numeric" placeholder="07XXXXXXXXX" style="width:100%;padding:12px 18px;border-radius:50px;border:1.5px solid rgba(255,255,255,.6);background:rgba(255,255,255,.35);color:#fff;font-family:inherit;font-size:1rem;text-align:center;outline:none"></div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:6px">
         <button class="btn-save" onclick="waConnectCode()">🔢 ربط بالكود (بدون QR)</button>
@@ -1174,7 +1174,7 @@ async function waCall(action, extra){
 }
 function waSetState(st, msg){
   waState=st;
-  var map={open:'🟢 الواتساب مربوط ويشتغل',connecting:'🟡 بانتظار مسح الـ QR أو إدخال الكود...',close:'🔴 الواتساب غير متصل — اضغط «ربط الرقم»',none:'⚪ ما أكو رقم مربوط بعد — اضغط «ربط الرقم»',error:'⚠️ تعذّر الاتصال بسيرفر Evolution'+(msg?(' ('+msg+')'):'')};
+  var map={open:'🟢 الواتساب مربوط ويشتغل',connecting:'🟡 بانتظار مسح الـ QR أو إدخال الكود...',close:'🔴 الواتساب غير متصل — اضغط «ربط الرقم»',none:'⚪ ما أكو رقم مربوط بعد — اضغط «ربط الرقم»',error:(/failed to fetch|networkerror|load failed/i.test(msg||'') ? '⚠️ دالة wa-admin مو مرفوعة على Supabase بعد (أو ما تنوصل). ارفعها من خطوات OTP-SETUP.md' : (/evo_/i.test(msg||'') ? '⚠️ دالة wa-admin شغّالة بس ما كدرت توصل لسيرفر Evolution — تأكد من EVO_URL و EVO_APIKEY ('+msg+')' : '⚠️ خطأ: '+(msg||'غير معروف')))};
   document.getElementById('waState').textContent=map[st]||('حالة غير معروفة: '+st);
 }
 async function waRefresh(){
