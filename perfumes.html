@@ -408,15 +408,19 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 /* ══ الدعم (محادثة مباشرة) ══ */
 .header-start{display:flex;align-items:center;gap:10px;min-width:0}
 @media(min-width:701px){ header .header-start{justify-self:start} }
-.support-btn{position:relative;background:rgba(255,255,255,.28);color:#fff;border:1.5px solid rgba(255,255,255,.7);padding:8px 16px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .2s,background .2s}
-.support-btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.4)}
+.support-btn{position:relative;background:#e8ecee;color:#111;border:0;padding:8px 14px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:transform .2s,background .2s}
+.support-btn svg{width:16px;height:16px;flex:none;display:block}
+.support-btn:hover{transform:translateY(-2px);background:#dde2e5}
 .support-dot{display:none;position:absolute;top:-4px;left:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e53935;color:#fff;font-size:.62rem;line-height:18px;text-align:center;font-weight:900;border:2px solid #fff}
 .support-dot.on{display:block}
-body.sec-men .support-btn{background:rgba(255,255,255,.14)}
-@media(max-width:768px){
+@media(max-width:900px){
   .header-start{gap:6px}
-  .support-btn{padding:7px 9px;font-size:.8rem}
-  .support-btn .sp-txt{display:none}
+  .support-btn{padding:7px 10px;font-size:.72rem;gap:5px}
+  .support-btn svg{width:15px;height:15px}
+}
+@media(max-width:480px){
+  .support-btn{padding:7px 9px;font-size:.65rem;gap:4px}
+  .support-btn svg{width:14px;height:14px}
 }
 #dzSupport{position:fixed;z-index:10050;top:84px;right:18px;width:min(380px,calc(100vw - 24px));height:min(540px,calc(100vh - 110px));display:none;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 18px 60px rgba(120,30,70,.38);direction:rtl;font-family:'Cairo',sans-serif}
 #dzSupport.open{display:flex;animation:dzSpIn .22s ease-out}
@@ -542,7 +546,8 @@ body.sec-men .support-btn{background:rgba(255,255,255,.14)}
   <div class="header-start">
     <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
     <button type="button" class="support-btn" id="supportBtn" onclick="dzSupportToggle()" aria-label="الدعم">
-      💬 <span class="sp-txt">الدعم</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13" width="4" height="6" rx="1.5" fill="currentColor"/><rect x="17.5" y="13" width="4" height="6" rx="1.5" fill="currentColor"/><path d="M19.5 19c0 1.7-1.5 3-4 3h-2"/></svg>
+      <span class="sp-txt">الدعم</span>
       <span class="support-dot" id="supportDot"></span>
     </button>
   </div>
