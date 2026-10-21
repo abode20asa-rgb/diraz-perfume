@@ -38,6 +38,7 @@
   }
 
   window.DirazPush = {
+    subscribe: subscribe,
     cart: function(){ clearTimeout(timer); timer = setTimeout(function(){ syncCart().catch(function(){}); }, 3000); },
     ordered: async function(){
       if (!supported || Notification.permission !== 'granted') return;
