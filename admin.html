@@ -180,7 +180,9 @@ textarea{resize:vertical;min-height:80px}
 .sp-m.u{align-self:flex-start;background:#fff;color:#4a2233}
 .sp-m.a{align-self:flex-end;background:var(--pink-deep);color:#fff}
 .sp-form{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.3);align-items:flex-end}
-.sp-form textarea{flex:1;border-radius:14px;border:1.5px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.85);padding:9px 12px;font-family:'Cairo',sans-serif;font-size:.92rem;resize:none;min-height:42px;max-height:100px;outline:none;direction:rtl}
+.sp-form textarea{flex:1;border-radius:14px;border:1.5px solid rgba(255,255,255,0.5);background:#fff !important;color:#1a1a1a !important;-webkit-text-fill-color:#1a1a1a;caret-color:#c45a7a;padding:9px 12px;font-family:'Cairo',sans-serif;font-size:.92rem;resize:none;min-height:42px;max-height:100px;outline:none;direction:rtl}
+.sp-form textarea::placeholder{color:#9a6a7c !important;-webkit-text-fill-color:#9a6a7c;opacity:1}
+.sp-form textarea:focus{border-color:#fff;box-shadow:0 0 0 3px rgba(196,90,122,.35)}
 .sp-form .btn-save{flex:none;padding:10px 22px}
 .sp-del{background:#e53935;color:#fff;border:none;border-radius:50px;padding:6px 14px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;font-size:.78rem}
 @media(max-width:760px){.sp-wrap{grid-template-columns:1fr}.sp-list{max-height:220px}}

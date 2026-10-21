@@ -1442,12 +1442,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 
   function render(){
     var box=$('dzspMsgs');
-    if(!msgs.length){
-      box.innerHTML='<div class="dzsp-empty">أهلاً بيك بديراز 🌸<br>اكتب سؤالك أو مشكلتك وفريق الدعم يرد عليك هنا.</div>';
-      return;
-    }
     var nearBottom = box.scrollHeight-box.scrollTop-box.clientHeight < 80;
-    box.innerHTML=msgs.map(function(m){
+    var welcome='<div class="dzsp-m ad"><b>فريق الدعم</b>أهلاً بك 🌸 شلون نكدر نساعدك؟</div>';
+    box.innerHTML=welcome+msgs.map(function(m){
       return m.sender==='admin'
         ? '<div class="dzsp-m ad"><b>فريق الدعم</b>'+esc(m.body)+'<small>'+hm(m.at)+'</small></div>'
         : '<div class="dzsp-m me">'+esc(m.body)+'<small>'+hm(m.at)+'</small></div>';
