@@ -528,13 +528,13 @@ body.sec-men .support-btn{background:rgba(255,255,255,.14)}
 
 <div id="cartToast"></div>
 
-<!-- شاشة نجاح عملية الشراء (تظهر 5 ثواني قبل فتح الواتساب) -->
+<!-- شاشة نجاح عملية الشراء -->
 <div id="orderSuccessOverlay" role="dialog" aria-live="polite">
   <div class="success-check-wrap">
     <svg viewBox="0 0 52 52" aria-hidden="true"><path class="success-check-path" d="M14 27l8 8 16-16"/></svg>
   </div>
   <div class="success-title">تم اتمام عملية الشراء</div>
-  <div class="success-sub">جاري تحويلك الى القائمه الاخيره</div>
+  <div class="success-sub">وصل طلبك بنجاح 🌸 راح نتواصل وياك</div>
   <div class="success-bar"><div class="success-bar-fill"></div></div>
 </div>
 
@@ -1181,8 +1181,9 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   // حفظ الطلب
   if(appliedCoupon){
     const customerKey=cust.phone ? cust.phone.replace(/\D/g,'') : 'device';
-    let redeemed=false;
-    try{ redeemed=await DirazCloud.rpc('redeem_coupon',{p_code:appliedCoupon.code,p_customer_key:customerKey}); }catch(e){}
+    let redeemed=(window.__dzRedeemed===appliedCoupon.code+'|'+customerKey); // انستهلك بمحاولة سابقة فشل إرسالها
+    if(!redeemed){ try{ redeemed=await DirazCloud.rpc('redeem_coupon',{p_code:appliedCoupon.code,p_customer_key:customerKey}); }catch(e){}
+      if(redeemed) window.__dzRedeemed=appliedCoupon.code+'|'+customerKey; }
     if(!redeemed){
       removeCoupon();
       showToast('❌ الكود لم يعد صالحاً، تم إلغاء الخصم');
@@ -1190,16 +1191,29 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
     }
   }
   const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,payment:payMethod,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  // بدون واتساب: الطلب لازم يوصل للسيرفر فعلاً قبل ما نأكد للزبون (محاولتين)
+  let saved=false, saveErr=null;
+  for(let a=0;a<2&&!saved;a++){
+    try{
+      if(!window.DirazCloud) throw new Error('no cloud');
+      await Promise.race([
+        DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),12000))
+      ]);
+      saved=true;
+    }catch(e){
+      saveErr=e;
+      if(/duplicate|23505|409/i.test(String((e&&e.message)||e))) saved=true; // وصل من المحاولة الأولى
+    }
+  }
+  if(!saved){
+    console.error('order save failed',saveErr);
+    showToast('❌ ما وصل طلبك، تأكد من الإنترنت وجرّب مرة ثانية');
+    return; // السلة تبقى كما هي
+  }
+  window.__dzRedeemed=null;
   try{const orders=tryParse(ORDERS_KEY,[]); orders.unshift(order); localStorage.setItem(ORDERS_KEY,JSON.stringify(orders));}catch(e){}
-  try{ if(window.DirazCloud) DirazCloud.insertMin('orders', [{id:String(order.id), data:order}]).catch(()=>{}); }catch(e){}
   if(window.DirazPush) DirazPush.ordered();
-
-  // رسالة واتساب
-  let msg=`● الاسم: ${cust.name||'—'}\n● الهاتف: ${cust.phone||'—'}\n● العنوان: ${cust.address||'—'}\n━━━━━━━━━━━━━━━━━━━━\n● العطور المطلوبة:\n`;
-  cart.forEach((item,i)=>{ msg+=`${i+1}. ${item.name}${item.size?` (${item.size})`:''} × ${item.qty}  ←  ${(item.price*item.qty).toLocaleString('en-US')} ${item.currency}\n`; });
-  msg+='━━━━━━━━━━━━━━━━━━━━\n';
-  msg+= appliedCoupon ? `كود الخصم: ${appliedCoupon.code} (- ${discountAmount.toLocaleString('en-US')} ${cur})\n` : 'كود الخصم: بدون كود خصم\n';
-  msg+=`● سعر العطور: ${subtotal.toLocaleString('en-US')} ${cur}\n● التوصيل: ${deliveryFee.toLocaleString('en-US')} ${cur}\n● الإجمالي: ${total.toLocaleString('en-US')} ${cur}\n● طريقة الدفع: ${payMethod==='cash'?'دفع نقدي':'دفع إلكتروني'}`;
 
   // الطلب انحفظ: نفرّغ السلة والكود حتى ما ينرسل نفس الطلب مرتين
   cart=[]; saveCart(); resetPay();
@@ -1207,12 +1221,8 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; }catch(e){}
   closeCart(); updateCartUI(); renderCards();
 
-  // شاشة النجاح: 5 ثواني ثم فتح الواتساب
-  const waUrl='https://wa.me/'+WA_NUMBER+'?text='+encodeURIComponent(msg);
-  showOrderSuccess(function(){
-    const w=window.open(waUrl,'_blank');
-    if(!w) window.location.href=waUrl; // احتياط إذا منع المتصفح النافذة الجديدة
-  });
+  // شاشة النجاح (الصح الأخضر) بدون تحويل لأي صفحة
+  showOrderSuccess();
 }
 
 // ── Toast ──
