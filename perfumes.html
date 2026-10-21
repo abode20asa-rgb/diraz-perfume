@@ -1573,6 +1573,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     document.addEventListener('keydown',function(e){ if(e.key==='Escape') dzSupportClose(); });
     document.addEventListener('visibilitychange',function(){ if(!document.hidden) loop(); });
     if(chatId(false)) setTimeout(loop,1500);
+    if(/[?&]support=1/.test(location.search)) setTimeout(function(){ dzSupportOpen(); },900);
   });
 })();
 </script>
