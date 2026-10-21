@@ -507,18 +507,18 @@ body.sec-men .support-btn{background:rgba(255,255,255,.14)}
       </div>
     </div>
   </div>
-  <div class="coupon-section" id="paySection" style="display:none">
-    <button class="coupon-toggle-btn" id="payToggleBtn" type="button" onclick="togglePayArea()">💳 نوع الدفع: <span id="payLabel">اختر نوع الدفع</span></button>
-    <div class="coupon-input-area" id="payArea">
-      <button type="button" class="pay-opt" id="payCash" onclick="choosePay('cash')"><span>💵 دفع نقدي</span><span class="pay-check">✓</span></button>
-      <button type="button" class="pay-opt" id="payOnline" onclick="choosePay('online')"><span>💳 دفع إلكتروني</span><span class="pay-soon">قريباً</span></button>
-    </div>
-    <div class="pay-note" id="deliveryNote"></div>
-  </div>
   <div class="cart-foot">
     <div class="cart-total-row">
       <span>الإجمالي</span>
       <span class="cart-total-amount" id="cartTotalAmt">0 دينار</span>
+    </div>
+    <div class="coupon-section" id="paySection" style="display:none;padding:0 0 12px;border-top:none">
+      <button class="coupon-toggle-btn" id="payToggleBtn" type="button" onclick="togglePayArea()">💳 نوع الدفع: <span id="payLabel">اختر نوع الدفع</span></button>
+      <div class="coupon-input-area" id="payArea">
+        <button type="button" class="pay-opt" id="payCash" onclick="choosePay('cash')"><span>💵 دفع نقدي</span><span class="pay-check">✓</span></button>
+        <button type="button" class="pay-opt" id="payOnline" onclick="choosePay('online')"><span>💳 دفع إلكتروني</span><span class="pay-soon">قريباً</span></button>
+      </div>
+      <div class="pay-note" id="deliveryNote"></div>
     </div>
     <button class="btn-checkout" id="checkoutBtn" onclick="openDelivery()" disabled>
       ✅ متابعة
