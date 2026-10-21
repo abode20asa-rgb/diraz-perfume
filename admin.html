@@ -161,6 +161,30 @@ textarea{resize:vertical;min-height:80px}
 #toast.show{transform:translateX(-50%) translateY(0)}
 @media(max-width:600px){.form-grid,.coupon-form-grid{grid-template-columns:1fr}.perfume-item{flex-direction:column;align-items:flex-start}}
 </style>
+<style id="spAdminCss">
+/* ══ الدعم ══ */
+.sp-wrap{display:grid;grid-template-columns:270px 1fr;gap:14px;align-items:start}
+.sp-list{display:flex;flex-direction:column;gap:8px;max-height:460px;overflow-y:auto}
+.sp-chat{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:14px;padding:10px 14px;cursor:pointer;color:#fff;text-align:right;font-family:'Cairo',sans-serif;transition:background .2s}
+.sp-chat:hover{background:rgba(255,255,255,0.32)}
+.sp-chat.act{background:rgba(255,255,255,0.45);border-color:#fff}
+.sp-chat .n{display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:900;font-size:.92rem}
+.sp-chat .l{font-size:.78rem;opacity:.85;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sp-un{background:#e53935;color:#fff;border-radius:50px;min-width:22px;height:22px;line-height:22px;padding:0 6px;text-align:center;font-size:.72rem;font-weight:900}
+.sp-thread{background:rgba(255,255,255,0.2);border:1.5px solid rgba(255,255,255,0.4);border-radius:16px;display:flex;flex-direction:column;min-height:300px;overflow:hidden}
+.sp-th-head{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;color:#fff;border-bottom:1px solid rgba(255,255,255,0.3);font-weight:900}
+.sp-th-head small{display:block;font-weight:600;opacity:.8;font-size:.75rem}
+.sp-msgs{flex:1;max-height:340px;min-height:200px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px}
+.sp-m{max-width:80%;padding:8px 12px;border-radius:14px;font-size:.9rem;line-height:1.6;word-break:break-word;white-space:pre-wrap}
+.sp-m small{display:block;font-size:.62rem;opacity:.7;margin-top:3px}
+.sp-m.u{align-self:flex-start;background:#fff;color:#4a2233}
+.sp-m.a{align-self:flex-end;background:var(--pink-deep);color:#fff}
+.sp-form{display:flex;gap:8px;padding:10px;border-top:1px solid rgba(255,255,255,0.3);align-items:flex-end}
+.sp-form textarea{flex:1;border-radius:14px;border:1.5px solid rgba(255,255,255,0.5);background:rgba(255,255,255,0.85);padding:9px 12px;font-family:'Cairo',sans-serif;font-size:.92rem;resize:none;min-height:42px;max-height:100px;outline:none;direction:rtl}
+.sp-form .btn-save{flex:none;padding:10px 22px}
+.sp-del{background:#e53935;color:#fff;border:none;border-radius:50px;padding:6px 14px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;font-size:.78rem}
+@media(max-width:760px){.sp-wrap{grid-template-columns:1fr}.sp-list{max-height:220px}}
+</style>
 </head>
 <body>
 
@@ -217,6 +241,20 @@ textarea{resize:vertical;min-height:80px}
 
     <!-- إحصائيات -->
     <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- الدعم -->
+    <div class="section-card" id="supportCard">
+      <h2>💬 الدعم <span class="sp-un" id="spTotal" style="display:none;vertical-align:middle">0</span></h2>
+      <div id="spStatus" class="no-items" style="padding:0 0 10px;display:none"></div>
+      <div class="sp-wrap">
+        <div class="sp-list" id="spList"><div class="no-items">...</div></div>
+        <div class="sp-thread" id="spThread">
+          <div class="sp-th-head"><div id="spWho">اختر محادثة من القائمة</div><button type="button" class="sp-del" id="spDel" style="display:none" onclick="spDelete()">🗑️ حذف المحادثة</button></div>
+          <div class="sp-msgs" id="spMsgs"></div>
+          <div class="sp-form"><textarea id="spIn" rows="1" maxlength="1000" placeholder="اكتب ردك هنا..." disabled></textarea><button type="button" class="btn-save" id="spSendBtn" onclick="spSend()" disabled>إرسال</button></div>
+        </div>
+      </div>
+    </div>
 
     <!-- الطلبات -->
     <div class="section-card">
@@ -451,7 +489,7 @@ function refreshFromCloud(){
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
 window.addEventListener('focus', refreshFromCloud);
 setInterval(refreshFromCloud, 30000);
-function initAll(){ try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
+function initAll(){ try{ spStart(); }catch(e){} try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
@@ -958,6 +996,95 @@ function renderList(){
     try{ if(await DirazCloud.rpc('am_i_admin')===true) enterPanel(); }catch(e){}
   }
 })();
+</script>
+<script>
+// ══ الدعم (محادثات الزبائن) ══
+var spChats = [], spCur = null, spPrevTotal = null, spTimer = null;
+function spEsc(t){ return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function spTime(at){ try{ return new Date(at).toLocaleString('ar-IQ',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'numeric'}); }catch(e){ return ''; } }
+function spFail(e){
+  var st = document.getElementById('spStatus'), m = String((e && e.message) || e);
+  st.style.display = 'block';
+  st.textContent = /support_admin|PGRST202|404/i.test(m) ? '⚠️ شغّل supabase-support.sql في Supabase حتى يشتغل الدعم' : '⚠️ تعذّر تحميل الدعم';
+}
+async function spLoadChats(){
+  try{
+    var rows = await DirazCloud.rpc('support_admin_chats');
+    spChats = Array.isArray(rows) ? rows : [];
+    document.getElementById('spStatus').style.display = 'none';
+    var total = spChats.reduce(function(a,c){ return a + (Number(c.unread)||0); }, 0);
+    var tb = document.getElementById('spTotal');
+    tb.textContent = total; tb.style.display = total ? 'inline-block' : 'none';
+    if(spPrevTotal !== null && total > spPrevTotal) showToast('💬 رسالة جديدة بالدعم');
+    spPrevTotal = total;
+    var box = document.getElementById('spList');
+    if(!spChats.length){ box.innerHTML = '<div class="no-items">ما كو محادثات بعد</div>'; return; }
+    box.innerHTML = spChats.map(function(c){
+      var un = Number(c.unread)||0;
+      return '<button type="button" class="sp-chat'+(c.chat_id===spCur?' act':'')+'" data-id="'+spEsc(c.chat_id)+'">'+
+        '<div class="n"><span>'+(un?'🔴 ':'')+spEsc(c.name||'زائر')+'</span>'+(un?'<span class="sp-un">'+un+'</span>':'')+'</div>'+
+        '<div class="l">'+(c.last_sender==='admin'?'أنت: ':'')+spEsc(c.last_body)+'</div></button>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('.sp-chat'), function(b){ b.onclick = function(){ spOpen(b.getAttribute('data-id')); }; });
+  }catch(e){ spFail(e); }
+}
+async function spOpen(id){
+  spCur = id;
+  var c = spChats.filter(function(x){ return x.chat_id===id; })[0] || {};
+  document.getElementById('spWho').innerHTML = '👤 '+spEsc(c.name||'زائر')+(c.phone?'<small dir="ltr" style="text-align:right">'+spEsc(c.phone)+'</small>':'');
+  document.getElementById('spDel').style.display = 'inline-block';
+  document.getElementById('spIn').disabled = false; document.getElementById('spSendBtn').disabled = false;
+  await spLoadThread(true);
+  spLoadChats();
+}
+async function spLoadThread(scroll){
+  if(!spCur) return;
+  try{
+    var rows = await DirazCloud.rpc('support_admin_thread', {p_chat: spCur});
+    rows = Array.isArray(rows) ? rows : [];
+    var box = document.getElementById('spMsgs');
+    var near = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    box.innerHTML = rows.map(function(m){
+      return '<div class="sp-m '+(m.sender==='admin'?'a':'u')+'">'+spEsc(m.body)+'<small>'+spTime(m.at)+'</small></div>';
+    }).join('') || '<div class="no-items">ما كو رسائل</div>';
+    if(scroll || near) box.scrollTop = box.scrollHeight;
+  }catch(e){ spFail(e); }
+}
+async function spSend(){
+  var inp = document.getElementById('spIn'), v = inp.value.trim();
+  if(!spCur || !v) return;
+  var b = document.getElementById('spSendBtn'); b.disabled = true;
+  try{
+    await DirazCloud.rpc('support_admin_reply', {p_chat: spCur, p_body: v});
+    inp.value = '';
+    await spLoadThread(true); spLoadChats();
+  }catch(e){ showToast('❌ فشل إرسال الرد'); }
+  finally{ b.disabled = false; }
+}
+async function spDelete(){
+  if(!spCur || !confirm('هل أنت متأكد تريد تحذف هذه المحادثة بالكامل؟\nما يمكن التراجع بعد الحذف.')) return;
+  try{
+    await DirazCloud.rpc('support_admin_delete', {p_chat: spCur});
+    spCur = null;
+    document.getElementById('spMsgs').innerHTML = '';
+    document.getElementById('spWho').textContent = 'اختر محادثة من القائمة';
+    document.getElementById('spDel').style.display = 'none';
+    document.getElementById('spIn').disabled = true; document.getElementById('spSendBtn').disabled = true;
+    showToast('🗑️ انحذفت المحادثة'); spLoadChats();
+  }catch(e){ showToast('❌ فشل الحذف'); }
+}
+function spStart(){
+  spLoadChats();
+  clearInterval(spTimer);
+  spTimer = setInterval(function(){
+    if(document.hidden || document.getElementById('adminPanel').style.display === 'none') return;
+    spLoadChats(); if(spCur) spLoadThread(false);
+  }, 6000);
+}
+document.addEventListener('DOMContentLoaded', function(){
+  var i = document.getElementById('spIn');
+  if(i) i.addEventListener('keydown', function(e){ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); spSend(); } });
+});
 </script>
 <script>
 // ══ الإشعارات ══

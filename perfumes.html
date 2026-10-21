@@ -404,6 +404,48 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 
 </style>
 <link rel="manifest" href="/manifest.webmanifest">
+<style id="dzSupportCss">
+/* ══ الدعم (محادثة مباشرة) ══ */
+.header-start{display:flex;align-items:center;gap:10px;min-width:0}
+@media(min-width:701px){ header .header-start{justify-self:start} }
+.support-btn{position:relative;background:rgba(255,255,255,.28);color:#fff;border:1.5px solid rgba(255,255,255,.7);padding:8px 16px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform .2s,background .2s}
+.support-btn:hover{transform:translateY(-2px);background:rgba(255,255,255,.4)}
+.support-dot{display:none;position:absolute;top:-4px;left:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#e53935;color:#fff;font-size:.62rem;line-height:18px;text-align:center;font-weight:900;border:2px solid #fff}
+.support-dot.on{display:block}
+body.sec-men .support-btn{background:rgba(255,255,255,.14)}
+@media(max-width:768px){
+  .header-start{gap:6px}
+  .support-btn{padding:7px 9px;font-size:.8rem}
+  .support-btn .sp-txt{display:none}
+}
+#dzSupport{position:fixed;z-index:10050;top:84px;right:18px;width:min(380px,calc(100vw - 24px));height:min(540px,calc(100vh - 110px));display:none;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 18px 60px rgba(120,30,70,.38);direction:rtl;font-family:'Cairo',sans-serif}
+#dzSupport.open{display:flex;animation:dzSpIn .22s ease-out}
+@keyframes dzSpIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
+.dzsp-head{display:flex;align-items:center;gap:10px;padding:12px 14px;background:linear-gradient(135deg,#f08db0,#c45a7a);color:#fff}
+.dzsp-head .t{flex:1;font-weight:900;font-size:1rem;line-height:1.3}
+.dzsp-head .t small{display:block;font-weight:600;font-size:.7rem;opacity:.9}
+.dzsp-x{background:rgba(255,255,255,.25);border:none;color:#fff;width:32px;height:32px;border-radius:50%;font-size:1rem;cursor:pointer}
+.dzsp-msgs{flex:1;overflow-y:auto;padding:14px 12px;background:#fdf1f5;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
+.dzsp-empty{margin:auto;text-align:center;color:#a8607b;font-size:.88rem;line-height:1.9;padding:10px}
+.dzsp-m{max-width:82%;padding:8px 12px;border-radius:16px;font-size:.92rem;line-height:1.6;word-break:break-word;white-space:pre-wrap}
+.dzsp-m small{display:block;font-size:.62rem;opacity:.65;margin-top:3px}
+.dzsp-m.me{align-self:flex-start;background:linear-gradient(135deg,#f08db0,#c45a7a);color:#fff;border-bottom-right-radius:4px}
+.dzsp-m.ad{align-self:flex-end;background:#fff;color:#4a2233;border:1px solid #f3c6d6;border-bottom-left-radius:4px}
+.dzsp-m.ad b{display:block;font-size:.68rem;color:#c45a7a;margin-bottom:2px}
+.dzsp-form{display:flex;gap:8px;padding:10px;border-top:1px solid #f3c6d6;background:#fff}
+.dzsp-form input,.dzsp-form textarea{flex:1;border:1.5px solid #f3c6d6;border-radius:18px;padding:9px 13px;font-family:'Cairo',sans-serif;font-size:.92rem;outline:none;color:#4a2233;resize:none;max-height:90px;direction:rtl}
+.dzsp-form input:focus,.dzsp-form textarea:focus{border-color:#c45a7a}
+.dzsp-send{background:#c45a7a;color:#fff;border:none;border-radius:50%;width:42px;height:42px;font-size:1.05rem;cursor:pointer;flex:none;align-self:flex-end}
+.dzsp-send:disabled{opacity:.5;cursor:default}
+.dzsp-name{padding:16px;background:#fdf1f5;border-top:1px solid #f3c6d6;display:none;flex-direction:column;gap:10px}
+.dzsp-name p{color:#7a3a55;font-size:.88rem;margin:0}
+.dzsp-name button{background:#c45a7a;color:#fff;border:none;border-radius:50px;padding:10px;font-family:'Cairo',sans-serif;font-weight:900;cursor:pointer}
+.dzsp-name input{border:1.5px solid #f3c6d6;border-radius:50px;padding:10px 14px;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none;direction:rtl}
+.dzsp-err{color:#c0392b;font-size:.75rem;text-align:center;padding:0 10px 6px;display:none;background:#fff}
+@media(max-width:700px){
+  #dzSupport{top:0;right:0;left:0;bottom:0;width:100%;height:100%;border-radius:0}
+}
+</style>
 </head>
 <body>
 
@@ -502,7 +544,13 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 </div>
 
 <header>
-  <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
+  <div class="header-start">
+    <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
+    <button type="button" class="support-btn" id="supportBtn" onclick="dzSupportToggle()" aria-label="الدعم">
+      💬 <span class="sp-txt">الدعم</span>
+      <span class="support-dot" id="supportDot"></span>
+    </button>
+  </div>
   <div class="header-title">
     <div class="en">DIRAZ PERFUME</div>
     <div class="ar">ديراز للعطور</div>
@@ -1346,6 +1394,134 @@ initSections();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('customerPopup').style.display==='flex') closeCustomerPopup(); });
 </script>
 
+
+<!-- ═══ الدعم: محادثة مباشرة مع الأدمن والمساعدين ═══ -->
+<div id="dzSupport" role="dialog" aria-label="الدعم">
+  <div class="dzsp-head">
+    <div class="t">💬 الدعم<small>نرد عليك بأقرب وقت</small></div>
+    <button type="button" class="dzsp-x" onclick="dzSupportClose()" aria-label="إغلاق">✕</button>
+  </div>
+  <div class="dzsp-msgs" id="dzspMsgs"></div>
+  <div class="dzsp-err" id="dzspErr"></div>
+  <div class="dzsp-name" id="dzspName">
+    <p>اكتب اسمك حتى نعرف شنو نناديك 🌸</p>
+    <input type="text" id="dzspNameIn" maxlength="40" placeholder="اسمك">
+    <button type="button" onclick="dzSupportSaveName()">ابدأ المحادثة</button>
+  </div>
+  <div class="dzsp-form" id="dzspForm">
+    <textarea id="dzspIn" rows="1" maxlength="1000" placeholder="اكتب رسالتك..."></textarea>
+    <button type="button" class="dzsp-send" id="dzspSend" onclick="dzSupportSend()" aria-label="إرسال">➤</button>
+  </div>
+</div>
+<script>
+(function(){
+  var U = window.DIRAZ_SUPABASE_URL || 'https://knqtuvcvqsupltbivkfb.supabase.co';
+  var K = window.DIRAZ_SUPABASE_KEY || 'sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
+  var CHAT_KEY='diraz_support_chat', NAME_KEY='diraz_support_name', SEEN_KEY='diraz_support_seen';
+  var $=function(id){return document.getElementById(id);};
+  var lastId=0, msgs=[], timer=null, sending=false, opened=false;
+
+  function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
+  function chatId(create){
+    var id=ls(CHAT_KEY);
+    if(!id && create){
+      try{ id=crypto.randomUUID(); }catch(e){ id=''; for(var i=0;i<32;i++) id+=Math.floor(Math.random()*16).toString(16); }
+      ls(CHAT_KEY,id);
+    }
+    return id;
+  }
+  function customer(){ try{ return JSON.parse(ls('diraz_customer')||'null')||{}; }catch(e){ return {}; } }
+  function myName(){ var c=customer(); return (c.name||ls(NAME_KEY)||'').trim(); }
+  function rpc(name,args){
+    return fetch(U+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json'},body:JSON.stringify(args||{})})
+      .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); });
+  }
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function hm(at){ try{ return new Date(at).toLocaleTimeString('ar-IQ',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ''; } }
+  function err(t){ var e=$('dzspErr'); if(!t){ e.style.display='none'; return; } e.textContent=t; e.style.display='block'; setTimeout(function(){ e.style.display='none'; },4000); }
+
+  function render(){
+    var box=$('dzspMsgs');
+    if(!msgs.length){
+      box.innerHTML='<div class="dzsp-empty">أهلاً بيك بديراز 🌸<br>اكتب سؤالك أو مشكلتك وفريق الدعم يرد عليك هنا.</div>';
+      return;
+    }
+    var nearBottom = box.scrollHeight-box.scrollTop-box.clientHeight < 80;
+    box.innerHTML=msgs.map(function(m){
+      return m.sender==='admin'
+        ? '<div class="dzsp-m ad"><b>فريق الدعم</b>'+esc(m.body)+'<small>'+hm(m.at)+'</small></div>'
+        : '<div class="dzsp-m me">'+esc(m.body)+'<small>'+hm(m.at)+'</small></div>';
+    }).join('');
+    if(nearBottom||opened) box.scrollTop=box.scrollHeight;
+  }
+  function showUi(){
+    var need = !myName();
+    $('dzspName').style.display = need ? 'flex' : 'none';
+    $('dzspForm').style.display = need ? 'none' : 'flex';
+  }
+  function setDot(n){
+    var d=$('supportDot'); if(!d) return;
+    if(n>0){ d.textContent = n>9?'9+':n; d.classList.add('on'); } else d.classList.remove('on');
+  }
+  function poll(mark){
+    var id=chatId(false); if(!id) return Promise.resolve();
+    return rpc('support_fetch',{p_chat:id,p_after:lastId,p_mark:!!mark}).then(function(rows){
+      if(!Array.isArray(rows)||!rows.length) return;
+      rows.forEach(function(m){ if(!msgs.some(function(x){return x.id===m.id;})) msgs.push(m); if(m.id>lastId) lastId=m.id; });
+      msgs.sort(function(a,b){return a.id-b.id;});
+      render();
+    }).catch(function(){});
+  }
+  function checkUnread(){
+    var id=chatId(false); if(!id||document.hidden) return;
+    rpc('support_unread',{p_chat:id}).then(function(n){ setDot(Number(n)||0); }).catch(function(){});
+  }
+  function loop(){
+    clearTimeout(timer);
+    var open=$('dzSupport').classList.contains('open');
+    if(!document.hidden){ if(open) poll(true); else checkUnread(); }
+    timer=setTimeout(loop, open?4000:25000);
+  }
+
+  window.dzSupportToggle=function(){ $('dzSupport').classList.contains('open') ? dzSupportClose() : dzSupportOpen(); };
+  window.dzSupportOpen=function(){
+    $('dzSupport').classList.add('open'); opened=true; setDot(0); showUi(); render();
+    var id=chatId(false);
+    (id ? poll(true) : Promise.resolve()).then(function(){ opened=false; });
+    setTimeout(function(){ try{ (myName()?$('dzspIn'):$('dzspNameIn')).focus(); }catch(e){} },120);
+    loop();
+  };
+  window.dzSupportClose=function(){ $('dzSupport').classList.remove('open'); loop(); };
+  window.dzSupportSaveName=function(){
+    var v=($('dzspNameIn').value||'').trim();
+    if(v.length<2){ err('اكتب اسمك (حرفين على الأقل)'); return; }
+    ls(NAME_KEY,v); showUi(); try{ $('dzspIn').focus(); }catch(e){}
+  };
+  window.dzSupportSend=function(){
+    if(sending) return;
+    var inp=$('dzspIn'), body=(inp.value||'').trim();
+    if(!body) return;
+    if(!myName()){ showUi(); return; }
+    var c=customer(), id=chatId(true);
+    sending=true; $('dzspSend').disabled=true;
+    rpc('support_send',{p_chat:id,p_name:myName(),p_phone:c.phone||'',p_body:body}).then(function(){
+      inp.value=''; inp.style.height='auto';
+      return poll(false);
+    }).catch(function(e){
+      err(/rate/i.test(String(e.message)) ? 'ارسلت رسائل كثيرة، انتظر شوية وجرّب' : 'ما انرسلت الرسالة، جرّب مرة ثانية');
+    }).then(function(){ sending=false; $('dzspSend').disabled=false; });
+  };
+  document.addEventListener('DOMContentLoaded',function(){
+    var inp=$('dzspIn');
+    inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); dzSupportSend(); } });
+    inp.addEventListener('input',function(){ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,90)+'px'; });
+    $('dzspNameIn').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); dzSupportSaveName(); } });
+    document.addEventListener('keydown',function(e){ if(e.key==='Escape') dzSupportClose(); });
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) loop(); });
+    if(chatId(false)) setTimeout(loop,1500);
+  });
+})();
+</script>
 
 <!-- ═══ Diraz AI — مساعد العطور (يظهر داخل القسم فقط) ═══ -->
 <script src="diraz-assistant.js?v=3"></script>
