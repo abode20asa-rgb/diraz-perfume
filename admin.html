@@ -251,7 +251,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="sp-wrap">
         <div class="sp-list" id="spList"><div class="no-items">...</div></div>
         <div class="sp-thread" id="spThread">
-          <div class="sp-th-head"><div id="spWho">اختر محادثة من القائمة</div><button type="button" class="sp-del" id="spDel" style="display:none" onclick="spDelete()">🗑️ حذف المحادثة</button></div>
+          <div class="sp-th-head"><div id="spWho">اختر محادثة من القائمة</div><button type="button" class="sp-del" id="spDel" style="display:none" onclick="spClose()">🔒 غلق التذكرة</button></div>
           <div class="sp-msgs" id="spMsgs"></div>
           <div class="sp-form"><textarea id="spIn" rows="1" maxlength="1000" placeholder="اكتب ردك هنا..." disabled></textarea><button type="button" class="btn-save" id="spSendBtn" onclick="spSend()" disabled>إرسال</button></div>
         </div>
@@ -1063,8 +1063,8 @@ async function spSend(){
   }catch(e){ showToast('❌ فشل إرسال الرد'); }
   finally{ b.disabled = false; }
 }
-async function spDelete(){
-  if(!spCur || !confirm('هل أنت متأكد تريد تحذف هذه المحادثة بالكامل؟\nما يمكن التراجع بعد الحذف.')) return;
+async function spClose(){ // غلق التذكرة: تنمسح كل رسائل هذا الشخص
+  if(!spCur) return;
   try{
     await DirazCloud.rpc('support_admin_delete', {p_chat: spCur});
     spCur = null;
@@ -1072,8 +1072,8 @@ async function spDelete(){
     document.getElementById('spWho').textContent = 'اختر محادثة من القائمة';
     document.getElementById('spDel').style.display = 'none';
     document.getElementById('spIn').disabled = true; document.getElementById('spSendBtn').disabled = true;
-    showToast('🗑️ انحذفت المحادثة'); spLoadChats();
-  }catch(e){ showToast('❌ فشل الحذف'); }
+    showToast('🔒 تم غلق التذكرة'); spLoadChats();
+  }catch(e){ showToast('❌ فشل غلق التذكرة'); }
 }
 function spStart(){
   spLoadChats();

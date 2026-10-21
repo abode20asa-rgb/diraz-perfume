@@ -1404,9 +1404,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   <div class="dzsp-msgs" id="dzspMsgs"></div>
   <div class="dzsp-err" id="dzspErr"></div>
   <div class="dzsp-name" id="dzspName">
-    <p>اكتب اسمك حتى نعرف شنو نناديك 🌸</p>
-    <input type="text" id="dzspNameIn" maxlength="40" placeholder="اسمك">
-    <button type="button" onclick="dzSupportSaveName()">ابدأ المحادثة</button>
+    <p>الدعم متاح للزبائن المسجّلين فقط 🌸<br>سجّل اسمك ورقم هاتفك مرة وحدة وبعدها تكدر تراسلنا.</p>
+    <button type="button" onclick="dzSupportRegister()">📝 تسجيل البيانات</button>
   </div>
   <div class="dzsp-form" id="dzspForm">
     <textarea id="dzspIn" rows="1" maxlength="1000" placeholder="اكتب رسالتك..."></textarea>
@@ -1417,9 +1416,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 (function(){
   var U = window.DIRAZ_SUPABASE_URL || 'https://knqtuvcvqsupltbivkfb.supabase.co';
   var K = window.DIRAZ_SUPABASE_KEY || 'sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
-  var CHAT_KEY='diraz_support_chat', NAME_KEY='diraz_support_name', SEEN_KEY='diraz_support_seen';
+  var CHAT_KEY='diraz_support_chat';
   var $=function(id){return document.getElementById(id);};
-  var lastId=0, msgs=[], timer=null, sending=false, opened=false;
+  var msgs=[], timer=null, sending=false, opened=false;
 
   function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
   function chatId(create){
@@ -1431,7 +1430,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     return id;
   }
   function customer(){ try{ return JSON.parse(ls('diraz_customer')||'null')||{}; }catch(e){ return {}; } }
-  function myName(){ var c=customer(); return (c.name||ls(NAME_KEY)||'').trim(); }
+  function myName(){ return String(customer().name||'').trim(); }
+  function myPhone(){ return String(customer().phone||'').replace(/\D/g,''); }
+  function registered(){ return !!(myName() && myPhone().length>=7); }
   function rpc(name,args){
     return fetch(U+'/rest/v1/rpc/'+name,{method:'POST',headers:{apikey:K,Authorization:'Bearer '+K,'Content-Type':'application/json'},body:JSON.stringify(args||{})})
       .then(function(r){ if(!r.ok) throw new Error('http '+r.status); return r.json(); });
@@ -1442,6 +1443,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 
   function render(){
     var box=$('dzspMsgs');
+    if(!registered()){ box.innerHTML='<div class="dzsp-m ad"><b>فريق الدعم</b>أهلاً بك 🌸 حتى تكدر تستخدم الدعم لازم تسجّل بياناتك أول.</div>'; return; }
     var nearBottom = box.scrollHeight-box.scrollTop-box.clientHeight < 80;
     var welcome='<div class="dzsp-m ad"><b>فريق الدعم</b>أهلاً بك 🌸 شلون نكدر نساعدك؟</div>';
     box.innerHTML=welcome+msgs.map(function(m){
@@ -1452,7 +1454,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     if(nearBottom||opened) box.scrollTop=box.scrollHeight;
   }
   function showUi(){
-    var need = !myName();
+    var need = !registered();
     $('dzspName').style.display = need ? 'flex' : 'none';
     $('dzspForm').style.display = need ? 'none' : 'flex';
   }
@@ -1462,11 +1464,12 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   }
   function poll(mark){
     var id=chatId(false); if(!id) return Promise.resolve();
-    return rpc('support_fetch',{p_chat:id,p_after:lastId,p_mark:!!mark}).then(function(rows){
-      if(!Array.isArray(rows)||!rows.length) return;
-      rows.forEach(function(m){ if(!msgs.some(function(x){return x.id===m.id;})) msgs.push(m); if(m.id>lastId) lastId=m.id; });
-      msgs.sort(function(a,b){return a.id-b.id;});
+    return rpc('support_fetch',{p_chat:id,p_after:0,p_mark:!!mark}).then(function(rows){
+      if(!Array.isArray(rows)) return;
+      var wasClosed = msgs.length>0 && rows.length===0; // الأدمن غلق التذكرة فانمسحت المحادثة
+      msgs = rows;
       render();
+      if(wasClosed) err('🔒 تم غلق التذكرة، تكدر تبدأ محادثة جديدة');
     }).catch(function(){});
   }
   function checkUnread(){
@@ -1485,34 +1488,32 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     $('dzSupport').classList.add('open'); opened=true; setDot(0); showUi(); render();
     var id=chatId(false);
     (id ? poll(true) : Promise.resolve()).then(function(){ opened=false; });
-    setTimeout(function(){ try{ (myName()?$('dzspIn'):$('dzspNameIn')).focus(); }catch(e){} },120);
+    setTimeout(function(){ try{ if(registered()) $('dzspIn').focus(); }catch(e){} },120);
     loop();
   };
   window.dzSupportClose=function(){ $('dzSupport').classList.remove('open'); loop(); };
-  window.dzSupportSaveName=function(){
-    var v=($('dzspNameIn').value||'').trim();
-    if(v.length<2){ err('اكتب اسمك (حرفين على الأقل)'); return; }
-    ls(NAME_KEY,v); showUi(); try{ $('dzspIn').focus(); }catch(e){}
+  window.dzSupportRegister=function(){
+    dzSupportClose();
+    try{ if(typeof editCustomer==='function') editCustomer(); }catch(e){}
   };
   window.dzSupportSend=function(){
     if(sending) return;
     var inp=$('dzspIn'), body=(inp.value||'').trim();
     if(!body) return;
-    if(!myName()){ showUi(); return; }
+    if(!registered()){ showUi(); render(); return; }
     var c=customer(), id=chatId(true);
     sending=true; $('dzspSend').disabled=true;
-    rpc('support_send',{p_chat:id,p_name:myName(),p_phone:c.phone||'',p_body:body}).then(function(){
+    rpc('support_send',{p_chat:id,p_name:myName(),p_phone:myPhone(),p_body:body}).then(function(){
       inp.value=''; inp.style.height='auto';
       return poll(false);
     }).catch(function(e){
-      err(/rate/i.test(String(e.message)) ? 'ارسلت رسائل كثيرة، انتظر شوية وجرّب' : 'ما انرسلت الرسالة، جرّب مرة ثانية');
+      err(/rate/i.test(String(e.message)) ? 'ارسلت رسائل كثيرة، انتظر شوية وجرّب' : /register/i.test(String(e.message)) ? 'سجّل بياناتك أول حتى تستخدم الدعم' : 'ما انرسلت الرسالة، جرّب مرة ثانية');
     }).then(function(){ sending=false; $('dzspSend').disabled=false; });
   };
   document.addEventListener('DOMContentLoaded',function(){
     var inp=$('dzspIn');
     inp.addEventListener('keydown',function(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); dzSupportSend(); } });
     inp.addEventListener('input',function(){ inp.style.height='auto'; inp.style.height=Math.min(inp.scrollHeight,90)+'px'; });
-    $('dzspNameIn').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); dzSupportSaveName(); } });
     document.addEventListener('keydown',function(e){ if(e.key==='Escape') dzSupportClose(); });
     document.addEventListener('visibilitychange',function(){ if(!document.hidden) loop(); });
     if(chatId(false)) setTimeout(loop,1500);
