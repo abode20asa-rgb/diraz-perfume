@@ -513,11 +513,6 @@ body.sec-men .support-btn{background:rgba(255,255,255,.14)}
       <span class="cart-total-amount" id="cartTotalAmt">0 دينار</span>
     </div>
     <div class="coupon-section" id="paySection" style="display:none;padding:0 0 12px;border-top:none">
-      <button class="coupon-toggle-btn" id="payToggleBtn" type="button" onclick="togglePayArea()">💳 نوع الدفع: <span id="payLabel">اختر نوع الدفع</span></button>
-      <div class="coupon-input-area" id="payArea">
-        <button type="button" class="pay-opt" id="payCash" onclick="choosePay('cash')"><span>💵 دفع نقدي</span><span class="pay-check">✓</span></button>
-        <button type="button" class="pay-opt" id="payOnline" onclick="choosePay('online')"><span>💳 دفع إلكتروني</span><span class="pay-soon">قريباً</span></button>
-      </div>
       <div class="pay-note" id="deliveryNote"></div>
     </div>
     <button class="btn-checkout" id="checkoutBtn" onclick="openDelivery()" disabled>
@@ -1086,37 +1081,10 @@ function updateDeliverySummary(){
   if(province) fee=province==='ميسان' ? (area==='district'?3000:2000) : 5000;
   document.getElementById('deliverySummary').textContent=fee ? `سعر التوصيل: ${fee.toLocaleString('en-US')} دينار` : 'اختر المحافظة والمنطقة لحساب التوصيل';
 }
-// ── نوع الدفع ──
-let payMethod=null;
-function togglePayArea(){ document.getElementById('payArea').classList.toggle('open'); }
-function choosePay(m){
-  if(m==='online'){                               // الدفع الإلكتروني "قريباً": ما ينختار بس نعلم الزبون
-    showToast('💳 الدفع الإلكتروني قريباً — حالياً متاح الدفع النقدي');
-    return;
-  }
-  payMethod='cash';
-  document.getElementById('payLabel').textContent='دفع نقدي';
-  document.getElementById('payCash').classList.add('selected');
-  document.getElementById('payCash').classList.remove('pay-error');
-  document.getElementById('payOnline').classList.remove('pay-error');
-  document.getElementById('payArea').classList.remove('open');
-}
-function resetPay(){
-  payMethod=null;
-  document.getElementById('payLabel').textContent='اختر نوع الدفع';
-  document.getElementById('payCash').classList.remove('selected');
-  document.getElementById('payArea').classList.remove('open');
-}
-// تنبيه: ما اختار نوع الدفع
-function requirePay(){
-  document.getElementById('payArea').classList.add('open');
-  ['payCash','payOnline'].forEach(function(id){
-    const b=document.getElementById(id); b.classList.remove('pay-error'); void b.offsetWidth; b.classList.add('pay-error');
-  });
-  const sec=document.getElementById('paySection'); if(sec) sec.scrollIntoView({behavior:'smooth',block:'center'});
-  showToast('⚠️ اختر نوع الدفع');
-}
-// يظهر "نوع الدفع" + سعر التوصيل فقط لمن مسجّل عنوانه
+// ── الدفع: نقدي دائماً (بدون اختيار) ──
+const payMethod='cash';
+function resetPay(){}
+// يظهر سعر التوصيل فقط لمن مسجّل عنوانه
 function refreshCheckoutUI(){
   const sec=document.getElementById('paySection'); if(!sec) return;
   const c=tryParse(CUSTOMER_KEY,{});
@@ -1145,7 +1113,6 @@ async function openDelivery(){
     return;
   }
   // مسجّل عنوانه من قبل: يكمل الطلب مباشرة (يغيّر العنوان من «بياناتي»)
-  if(!payMethod){ requirePay(); return; }
   sendOrder(calcFee(c),c);
 }
 function confirmDelivery(){
@@ -1171,7 +1138,6 @@ function confirmDelivery(){
 async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{})){
   if(!cart.length) return;
   if(!(await verifyCustomer())) return;
-  if(!payMethod){ requirePay(); return; }
   const cust=deliveryCustomer;
   const rawTotal=cart.reduce((s,i)=>s+i.price*i.qty,0);
   const subtotal=Math.max(rawTotal-discountAmount,0);
