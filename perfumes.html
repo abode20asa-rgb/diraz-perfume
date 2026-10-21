@@ -1417,6 +1417,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     <p>الدعم متاح للزبائن المسجّلين فقط 🌸<br>سجّل اسمك ورقم هاتفك مرة وحدة وبعدها تكدر تراسلنا.</p>
     <button type="button" onclick="dzSupportRegister()">📝 تسجيل البيانات</button>
   </div>
+  <div class="dzsp-name" id="dzspNotif">
+    <p id="dzspNotifTxt"></p>
+    <button type="button" id="dzspNotifBtn" onclick="dzSupportEnableNotif()">🔔 تفعيل</button>
+  </div>
   <div class="dzsp-form" id="dzspForm">
     <textarea id="dzspIn" rows="1" maxlength="1000" placeholder="اكتب رسالتك..."></textarea>
     <button type="button" class="dzsp-send" id="dzspSend" onclick="dzSupportSend()" aria-label="إرسال">➤</button>
@@ -1428,7 +1432,23 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   var K = window.DIRAZ_SUPABASE_KEY || 'sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
   var CHAT_KEY='diraz_support_chat';
   var $=function(id){return document.getElementById(id);};
-  var msgs=[], timer=null, sending=false, opened=false;
+  var msgs=[], timer=null, sending=false, opened=false, lastUnread=-1;
+
+  /* ── الإشعارات ── */
+  function notifSupported(){ return 'Notification' in window; }
+  function notifPerm(){ return notifSupported() ? Notification.permission : 'unsupported'; }
+  // المتصفحات التي لا تدعم الإشعارات أصلاً لا يمكن حجبها عن الدعم
+  function notifOk(){ return !notifSupported() || Notification.permission==='granted'; }
+  function pushLocal(title, body){
+    if(notifPerm()!=='granted') return;
+    var opts={ body:body, tag:'diraz-support', renotify:true, dir:'rtl', lang:'ar' };
+    function mk(){ try{ var n=new Notification(title,opts); n.onclick=function(){ try{window.focus();}catch(e){} dzSupportOpen(); n.close(); }; }catch(e){} }
+    try{
+      if(navigator.serviceWorker && navigator.serviceWorker.getRegistration){
+        navigator.serviceWorker.getRegistration().then(function(r){ if(r && r.showNotification) r.showNotification(title,opts); else mk(); }).catch(mk);
+      } else mk();
+    }catch(e){ mk(); }
+  }
 
   function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); localStorage.setItem(k,v); }catch(e){} return null; }
   function chatId(create){
@@ -1454,6 +1474,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   function render(){
     var box=$('dzspMsgs');
     if(!registered()){ box.innerHTML='<div class="dzsp-m ad"><b>فريق الدعم</b>أهلاً بك 🌸 حتى تكدر تستخدم الدعم لازم تسجّل بياناتك أول.</div>'; return; }
+    if(!notifOk() && !msgs.length){ box.innerHTML='<div class="dzsp-m ad"><b>فريق الدعم</b>أهلاً بك 🌸 لاستخدام الدعم يُرجى تفعيل الإشعارات أولاً، ليصلك تنبيه فور ردّ الفريق على رسالتك.</div>'; return; }
     var nearBottom = box.scrollHeight-box.scrollTop-box.clientHeight < 80;
     var welcome='<div class="dzsp-m ad"><b>فريق الدعم</b>أهلاً بك 🌸 شلون نكدر نساعدك؟</div>';
     box.innerHTML=welcome+msgs.map(function(m){
@@ -1464,9 +1485,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     if(nearBottom||opened) box.scrollTop=box.scrollHeight;
   }
   function showUi(){
-    var need = !registered();
-    $('dzspName').style.display = need ? 'flex' : 'none';
-    $('dzspForm').style.display = need ? 'none' : 'flex';
+    var reg = registered(), ok = notifOk();
+    $('dzspName').style.display  = !reg ? 'flex' : 'none';
+    $('dzspNotif').style.display = (reg && !ok) ? 'flex' : 'none';
+    $('dzspForm').style.display  = (reg && ok) ? 'flex' : 'none';
+    var denied = notifPerm()==='denied';
+    $('dzspNotifTxt').innerHTML = denied
+      ? 'الإشعارات محظورة لهذا الموقع في متصفحك.<br>يُرجى السماح بها من إعدادات الموقع (أيقونة القفل بجانب عنوان الصفحة)، ثم اضغط الزر أدناه لإعادة تحميل الصفحة.'
+      : 'لاستخدام الدعم يُرجى تفعيل الإشعارات أولاً، حتى يصلك تنبيه فور ردّ فريق الدعم على رسالتك. 🌸<br>اضغط «تفعيل» ثم اختر «سماح» في النافذة التي ستظهر.';
+    $('dzspNotifBtn').textContent = denied ? '🔄 إعادة تحميل الصفحة' : '🔔 تفعيل';
   }
   function setDot(n){
     var d=$('supportDot'); if(!d) return;
@@ -1483,19 +1510,24 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     }).catch(function(){});
   }
   function checkUnread(){
-    var id=chatId(false); if(!id||document.hidden) return;
-    rpc('support_unread',{p_chat:id}).then(function(n){ setDot(Number(n)||0); }).catch(function(){});
+    var id=chatId(false); if(!id) return;
+    if(document.hidden && notifPerm()!=='granted') return;
+    rpc('support_unread',{p_chat:id}).then(function(n){
+      n=Number(n)||0;
+      if(lastUnread>=0 && n>lastUnread) pushLocal('💬 فريق الدعم','وصلك ردّ جديد على رسالتك، اضغط لقراءته.');
+      lastUnread=n; setDot(n);
+    }).catch(function(){});
   }
   function loop(){
     clearTimeout(timer);
     var open=$('dzSupport').classList.contains('open');
-    if(!document.hidden){ if(open) poll(true); else checkUnread(); }
+    if(!document.hidden && open) poll(true); else checkUnread();
     timer=setTimeout(loop, open?4000:25000);
   }
 
   window.dzSupportToggle=function(){ $('dzSupport').classList.contains('open') ? dzSupportClose() : dzSupportOpen(); };
   window.dzSupportOpen=function(){
-    $('dzSupport').classList.add('open'); opened=true; setDot(0); showUi(); render();
+    $('dzSupport').classList.add('open'); opened=true; lastUnread=0; setDot(0); showUi(); render();
     var id=chatId(false);
     (id ? poll(true) : Promise.resolve()).then(function(){ opened=false; });
     setTimeout(function(){ try{ if(registered()) $('dzspIn').focus(); }catch(e){} },120);
@@ -1506,8 +1538,22 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     dzSupportClose();
     try{ if(typeof editCustomer==='function') editCustomer(); }catch(e){}
   };
+  function afterNotif(){
+    showUi(); render();
+    if(notifPerm()==='granted'){
+      try{ if(window.DirazPush && typeof DirazPush.subscribe==='function') DirazPush.subscribe(); }catch(e){}
+      setTimeout(function(){ try{ $('dzspIn').focus(); }catch(e){} },120);
+    }
+  }
+  window.dzSupportEnableNotif=function(){
+    if(notifPerm()==='denied'){ location.reload(); return; }
+    if(!notifSupported()){ afterNotif(); return; }
+    try{ Promise.resolve(Notification.requestPermission(afterNotif)).then(afterNotif); }
+    catch(e){ afterNotif(); }
+  };
   window.dzSupportSend=function(){
     if(sending) return;
+    if(registered() && !notifOk()){ showUi(); render(); return; }
     var inp=$('dzspIn'), body=(inp.value||'').trim();
     if(!body) return;
     if(!registered()){ showUi(); render(); return; }
