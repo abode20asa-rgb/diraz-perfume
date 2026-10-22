@@ -298,7 +298,9 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-actions">
         <button type="button" class="btn-save" onclick="rvAdd()">➕ إضافة رأي</button>
         <button type="button" class="btn-rvlist" id="rvToggle" onclick="rvToggleList()">📋 الآراء (0)</button>
+        <button type="button" class="btn-rvlist" id="rvLogToggle" onclick="rvLogToggle()">🕘 آخر الحركات</button>
       </div>
+      <div id="rvLogBox" style="display:none;margin-top:16px"></div>
       <div id="rvList" style="display:none;margin-top:16px"></div>
     </div>
 
@@ -1325,7 +1327,7 @@ async function toggleSection(){
 </script>
 <script>
 // ══ الآراء ══
-var rvAll=[], rvOpen=false, rvPrevPend=null;
+var rvAll=[], rvOpen=false, rvPrevPend=null, rvLogOpen=false, rvLogRows=[], rvLogLast=null;
 function rvTime(at){ try{ return new Date(at).toLocaleString('ar-IQ',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'numeric'}); }catch(e){ return ''; } }
 function rvFail(e){
   var st=document.getElementById('rvStatus'), m=String((e&&e.message)||e);
@@ -1347,6 +1349,7 @@ async function rvLoad(){
     rvCounts();
     if(rvOpen) rvRender();
   }catch(e){ rvFail(e); }
+  rvLogLoad();
 }
 function rvRow(r){
   var pend=r.status==='pending', rej=r.status==='rejected';
@@ -1421,6 +1424,46 @@ async function rvDelete(id){
   if(!confirm('حذف هذا الرأي نهائياً؟')) return;
   try{ await DirazCloud.rpc('admin_review_delete',{p_id:id}); showToast('🗑️ انحذف الرأي'); rvLoad(); }
   catch(e){ showToast('❌ فشل الحذف'); }
+}
+
+// ── آخر 5 حركات (تلقائية + من الأدمن) ──
+var RV_LOG_ICO={approved:'✅',rejected:'❌',deleted:'🗑️',added:'➕'};
+var RV_LOG_TXT={approved:'نُشر',rejected:'رُفض',deleted:'حُذف',added:'أُضيف ونُشر'};
+function rvLogRow(l){
+  var by=l.actor==='auto'?'🤖 تلقائي':'👤 الأدمن';
+  var body=String(l.body||''); if(body.length>90) body=body.slice(0,90)+'…';
+  return '<div class="rv-row"><div class="h"><span>'+(RV_LOG_ICO[l.action]||'•')+' '+(RV_LOG_TXT[l.action]||esc(l.action))+'</span>'+
+    '<span class="rv-tag'+(l.actor==='auto'?'':' ok')+'">'+by+'</span><span class="t">'+esc(rvTime(l.at))+'</span></div>'+
+    '<div class="b" style="margin-bottom:'+(l.reason?'6':'0')+'px"><b>'+esc(l.name||'')+':</b> '+esc(body)+'</div>'+
+    (l.reason?'<div class="rv-why">السبب: '+esc(l.reason)+'</div>':'')+'</div>';
+}
+function rvLogRender(){
+  var box=document.getElementById('rvLogBox');
+  box.innerHTML='<div class="rv-sep">🕘 آخر '+Math.max(rvLogRows.length,0)+' حركات</div>'+
+    (rvLogRows.length?rvLogRows.map(rvLogRow).join(''):'<div class="no-items">ما كو حركات بعد</div>');
+}
+async function rvLogLoad(){
+  try{
+    var rows=await DirazCloud.rpc('admin_review_log');
+    rvLogRows=Array.isArray(rows)?rows:[];
+    var top=rvLogRows[0];
+    if(top){
+      if(rvLogLast!==null && Number(top.id)>rvLogLast && top.actor==='auto')
+        showToast(top.action==='approved'?'🤖 رأي جديد نُشر تلقائياً':'🤖 رأي جديد رُفض تلقائياً — شوف آخر الحركات');
+      rvLogLast=Number(top.id);
+    }else if(rvLogLast===null){ rvLogLast=0; }
+    if(rvLogOpen) rvLogRender();
+  }catch(e){
+    if(rvLogOpen){
+      var m=String((e&&e.message)||e);
+      document.getElementById('rvLogBox').innerHTML='<div class="no-items">'+(/admin_review_log|PGRST202|404|Could not find/i.test(m)?'⚠️ شغّل supabase-reviews-v3.sql في Supabase':'⚠️ تعذّر تحميل الحركات')+'</div>';
+    }
+  }
+}
+function rvLogToggle(){
+  rvLogOpen=!rvLogOpen;
+  document.getElementById('rvLogBox').style.display=rvLogOpen?'block':'none';
+  if(rvLogOpen){ rvLogRender(); rvLogLoad(); }
 }
 </script>
 </body>

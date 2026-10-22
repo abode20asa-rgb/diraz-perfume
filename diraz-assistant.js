@@ -380,15 +380,6 @@
       '.dzA_reg button{border:none;cursor:pointer;background:#c45a7a;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.88rem;padding:11px;border-radius:50px}',
       '.dzA_reg button:disabled{opacity:.6;cursor:default}',
       '.dzA_reg .dzA_err{color:#d32f2f;font-size:.75rem;font-weight:700;display:none}',
-      '.dzA_paybox{display:flex;flex-direction:column;gap:8px;align-self:stretch}',
-      '.dzA_payopt{display:flex;align-items:center;justify-content:space-between;gap:8px;border:1.5px solid #e07898;background:#fff;color:#c45a7a;font-family:Cairo,sans-serif;font-weight:800;font-size:.85rem;padding:10px 16px;border-radius:50px;cursor:pointer;text-align:right}',
-      '.dzA_payopt:hover{background:#fce4ef}',
-      '.dzA_payopt[disabled]{cursor:default}',
-      '.dzA_payopt.done{border-color:#22a447;background:#eafaf0;color:#1b7a38}',
-      '.dzA_soon{background:#ffc107;color:#5b3b00;border-radius:50px;padding:2px 10px;font-size:.7rem;font-weight:900}',
-      '.dzA_ok{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#22a447;color:#fff;font-size:.8rem;font-weight:900;line-height:1;vertical-align:middle}',
-      '.dzA_payopt .dzA_ok{visibility:hidden}.dzA_payopt.done .dzA_ok{visibility:visible}',
-      'body.sec-men .dzA_payopt{border-color:#4a5bb0;color:#1a2456}body.sec-men .dzA_payopt:hover{background:#e3e7fa}body.sec-men .dzA_payopt.done{border-color:#22a447;background:#eafaf0;color:#1b7a38}',
       '.dzA_flash{animation:dzAflash 1.8s ease}',
       '@keyframes dzAflash{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}25%,70%{box-shadow:0 0 0 6px rgba(255,255,255,.95),0 0 30px 8px rgba(196,90,122,.7)}}',
       'body.sec-men #dzA_btn{background:#1a2456;box-shadow:0 8px 26px rgba(10,16,50,.55)}',
@@ -574,45 +565,14 @@
   /* ───────── زر «طلب» + سؤال كود الخصم ───────── */
   var orderCtx=null;
 
-  /* ───────── نوع الدفع داخل المحادثة ───────── */
-  function payChosen(){ try{ return (typeof payMethod!=='undefined') ? payMethod : null; }catch(e){ return null; } }
-  function payOkMsg(){ say('<span class="dzA_ok">✓</span> تم اختيار نوع الدفع: <b>دفع نقدي</b>'); }
+  /* ───────── فتح نافذة التوصيل (بدون اختيار نوع دفع) ───────── */
   function proceedDelivery(){
     say('تمام 🌸 هسه أفتحلك نافذة التوصيل، اختار المحافظة والمنطقة واكتب عنوانك وأكّد الطلب.');
     setTimeout(openDeliveryForm,500);
   }
-  function lastPayBox(){ var a=document.querySelectorAll('#dzA_msgs .dzA_paybox'); return a.length?a[a.length-1]:null; }
-  function askPay(){
-    if(payChosen()==='cash'){ flow=null; payOkMsg(); proceedDelivery(); return; }
-    flow={step:'pay'};
-    say('اختر نوع الدفع 💳');
-    var w=document.createElement('div'); w.className='dzA_paybox';
-    w.innerHTML='<button type="button" class="dzA_payopt" data-m="cash"><span>💵 دفع نقدي</span><span class="dzA_ok">✓</span></button>'+
-                '<button type="button" class="dzA_payopt" data-m="online"><span>💳 دفع إلكتروني</span><span class="dzA_soon">قريباً</span></button>';
-    w.querySelectorAll('.dzA_payopt').forEach(function(b){
-      b.onclick=function(){ if(!b.disabled) pickPay(b.getAttribute('data-m'),w); };
-    });
-    $('dzA_msgs').appendChild(w); scrollEnd();
-  }
-  function pickPay(m,w){
-    w=w||lastPayBox();
-    if(m==='online'){
-      say('الدفع الإلكتروني قريباً 🌸 حالياً المتاح الدفع النقدي، اختار «دفع نقدي» 👆');
-      return;
-    }
-    try{ if(typeof choosePay==='function') choosePay('cash'); }catch(e){}
-    if(w){
-      w.querySelectorAll('.dzA_payopt').forEach(function(b){ b.disabled=true; });
-      var c=w.querySelector('[data-m=cash]'); if(c) c.classList.add('done');
-    }
-    flow=null;
-    payOkMsg();
-    proceedDelivery();
-  }
 
   /* يفتح نافذة التوصيل الحقيقية (المحافظة/المنطقة/العنوان) ويخلي الزبون يعبّيها بنفسه */
   function openDeliveryForm(){
-    if(payChosen()!=='cash'){ askPay(); return; }   /* ما يسد المحادثة قبل ما يختار نوع الدفع */
     var box=$('dzA_box'); if(box) box.classList.remove('open');
     try{
       if(typeof openDelivery==='function') openDelivery();
@@ -953,12 +913,6 @@
 
     if(step==='couponWait'){ say('لحظة، أتحقق من الكود ⏳'); return; }
 
-    if(step==='pay'){
-      if(/(الكترون|فيزا|ماستر|بطاق|كارد|زين ?كاش|visa)/.test(t)){ pickPay('online'); return; }
-      if(/(نقد|كاش|cash)/.test(t)){ pickPay('cash'); return; }
-      say('اختر نوع الدفع 💳 اضغط على أحد الخيارين فوق 👆'); return;
-    }
-
     if(step==='confirm'){
       if(/(^| )(لا|كلا|الغي|لاحقا|بلاش)( |$)/.test(t) || /^مو هسه/.test(t) || /لا مو/.test(t)){
         flow=null;
@@ -968,7 +922,7 @@
       if(/(نعم|ايه|ايوه|ايوا|اكيد|كمل|اكمل|تاكيد|اطلب|موافق|يلا|تمام|yes)/.test(t) || /^اي( |$)/.test(t)){
         flow=null;
         if(!cartSummary()){ orderCtx=null; say('سلتك صارت فاضية 🌸 ضيف عطر وبعدها نكمل الطلب.'); chips(BASIC_CHIPS); return; }
-        askPay(); return;
+        proceedDelivery(); return;
       }
       say('تريد تكمّل الطلب؟ اختار نعم أو لا 🌸'); chips(['✅ نعم، كمّل الطلب','لا، مو هسه']); return;
     }

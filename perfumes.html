@@ -180,17 +180,7 @@ main{padding:50px 30px 30px;max-width:1200px;margin:0 auto}
 .order-note-field:focus{background:#fff;color:#111}
 .coupon-input-area{display:none;margin-top:10px}
 .coupon-input-area.open{display:block}
-/* نوع الدفع + حقول العنوان داخل بياناتي */
-.pay-opt{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;padding:11px 16px;border-radius:50px;border:1.5px solid rgba(255,255,255,.45);background:rgba(255,255,255,.15);color:#fff;font-family:'Cairo',sans-serif;font-size:.9rem;font-weight:800;cursor:pointer;text-align:right}
-.pay-opt.selected{background:rgba(255,255,255,.92);color:#c45a7a;border-color:#fff}
-.pay-opt:disabled{opacity:.6;cursor:not-allowed}
-.pay-opt .pay-check{visibility:hidden}.pay-opt.selected .pay-check{visibility:visible}
-#payOnline{opacity:.85}
-.pay-error{animation:sizeShake .4s}
-.pay-opt.pay-error{border-color:#ff4757;background:rgba(255,71,87,.25)}
-.pay-soon{background:#ffc107;color:#5b3b00;border-radius:50px;padding:2px 10px;font-size:.72rem;font-weight:900}
-.pay-note{margin-top:8px;font-size:.8rem;font-weight:700;color:rgba(255,255,255,.92);text-align:center;line-height:1.7}
-body.sec-men .pay-opt.selected{color:#1a2456}
+/* حقول العنوان داخل بياناتي */
 .popup-box{max-height:92vh;overflow-y:auto}
 .addr-block{margin-top:6px;padding-top:14px;border-top:1px dashed rgba(255,255,255,.45)}
 .addr-hint{color:#fff;font-weight:800;font-size:.86rem;margin-bottom:12px}
@@ -885,7 +875,7 @@ function saveCustomer(){
   const fromCart=pendingCartOpen;
   pendingCartOpen=false;
   refreshCheckoutUI();
-  if(fromCart) showToast('✅ تم حفظ عنوانك — اختر نوع الدفع ثم اضغط متابعة');
+  if(fromCart) showToast('✅ تم حفظ عنوانك — اضغط متابعة');
 }
 
 // ── Cart ──
@@ -1160,9 +1150,6 @@ function updateDeliverySummary(){
   if(province) fee=province==='ميسان' ? (area==='district'?3000:2000) : 5000;
   document.getElementById('deliverySummary').textContent=fee ? `سعر التوصيل: ${fee.toLocaleString('en-US')} دينار` : 'اختر المحافظة والمنطقة لحساب التوصيل';
 }
-// ── الدفع: نقدي دائماً (بدون اختيار) ──
-const payMethod='cash';
-function resetPay(){}
 // يظهر سعر التوصيل فقط لمن مسجّل عنوانه
 function refreshCheckoutUI(){
   const sec=document.getElementById('paySection'); if(!sec) return;
@@ -1235,7 +1222,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
       return;
     }
   }
-  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,payment:payMethod,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   { const nt=(document.getElementById('orderNotes')||{}).value; if(nt&&nt.trim()) order.notes=nt.trim().slice(0,200); }
   // بدون واتساب: الطلب لازم يوصل للسيرفر فعلاً قبل ما نأكد للزبون (محاولتين)
   let saved=false, saveErr=null;
@@ -1262,7 +1249,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   if(window.DirazPush) DirazPush.ordered();
 
   // الطلب انحفظ: نفرّغ السلة والكود حتى ما ينرسل نفس الطلب مرتين
-  cart=[]; saveCart(); resetPay();
+  cart=[]; saveCart();
   appliedCoupon=null; discountAmount=0;
   try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; var nf=document.getElementById('orderNotes'); nf.value=''; nf.style.height=''; }catch(e){}
   closeCart(); updateCartUI(); renderCards();
@@ -1514,7 +1501,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   <div class="rv-box" id="rvBox">
     <div id="rvForm">
       <h3>⭐ شاركنا رأيك</h3>
-      <div class="rv-sub">رأيك يهمنا. الآراء تُراجع من الإدارة قبل النشر، ولا يُنشر أي رأي فيه إساءة أو شتم أو كفر.</div>
+      <div class="rv-sub">رأيك يهمنا. ينشر رأيك مباشرة بعد فحصه تلقائياً، ولا يُنشر أي رأي فيه إساءة للدين أو شتم أو إساءة للموقع.</div>
       <label for="rvName">الاسم الأول *</label>
       <input type="text" id="rvName" maxlength="20" placeholder="مثال: سارة" autocomplete="off">
       <label for="rvBody">رأيك *</label>
@@ -1532,8 +1519,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
       </div>
     </div>
     <div class="rv-done" id="rvDone" style="display:none">
-      <div class="big">✅</div>
-      <p>تم استلام رأيك، شكراً لك 🌸<br>سوف ينشر رأيك بعد مراجعته من قبل الإدارة.</p>
+      <div class="big" id="rvDoneIco">✅</div>
+      <p id="rvDoneTxt">تم استلام رأيك، شكراً لك 🌸</p>
       <div class="rv-act"><button type="button" class="rv-send" onclick="dzReviewClose()">تم</button></div>
     </div>
   </div>
@@ -1618,6 +1605,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
         try{ var tl=JSON.parse(localStorage.getItem('diraz_rv_tokens')||'[]'); if(!Array.isArray(tl)) tl=[]; tl.push(tk); localStorage.setItem('diraz_rv_tokens',JSON.stringify(tl.slice(-10))); }catch(e){}
         $('rvBody').value=''; $('rvCnt').textContent='0';
         $('rvForm').style.display='none'; $('rvDone').style.display='block';
+        if(r.status==='approved'){ $('rvDoneIco').textContent='🎉'; $('rvDoneTxt').innerHTML='تم نشر رأيك، شكراً لك 🌸'; load(); }
+        else if(r.status==='rejected'){ $('rvDoneIco').textContent='❌'; $('rvDoneTxt').innerHTML='عذراً، ما تم نشر رأيك 🌸<br><b>السبب:</b> '+esc(r.reason||'لا يتوافق مع شروط النشر'); }
+        else{ $('rvDoneIco').textContent='✅'; $('rvDoneTxt').innerHTML='تم استلام رأيك، شكراً لك 🌸'; }
       }else{
         var e=r&&r.error;
         warn(e==='link'?'❌ ممنوع وضع روابط بالرأي': e==='busy'?'⏳ المحاولات كثيرة، جرّب بعد قليل': e==='gender'?'⚠️ حدد الجنس: بنت أو رجل':'❌ تأكد من الاسم والرأي');
