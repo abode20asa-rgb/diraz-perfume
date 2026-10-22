@@ -594,14 +594,6 @@ trackVisitor();
   var bodyFront = new THREE.Mesh(bodyGeo, pinkMat(THREE.FrontSide, 0.86));
   bodyBack.renderOrder = 1; bodyFront.renderOrder = 2;
 
-  // ===== الداخل: أنبوب السحب (يبين خفيف من خلال الزجاج المثلّج) =====
-  var curve = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0.10, 2.80, 0.00), new THREE.Vector3(0.07, 2.0, 0.05),
-    new THREE.Vector3(0.12, 1.0, 0.10),  new THREE.Vector3(0.24, 0.22, 0.12)
-  ]);
-  var tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 48, 0.017, 8, false),
-    new THREE.MeshBasicMaterial({ color:0xc0506f }));
-
   // ===== الغطاء: كرة وردية (بدون فتحة) =====
   var cap = new THREE.Mesh(new THREE.SphereGeometry(0.66, 64, 40), pinkMat(THREE.FrontSide, 1.0, 3.48));
   cap.position.y = 3.48;
@@ -646,7 +638,7 @@ trackVisitor();
 
   // ===== التجميع: yaw (دوران حول المحور العمودي) داخل tilt (إمالة لفوق وتحت) =====
   var bottle = new THREE.Group();
-  bottle.add(tube, cap, seam, bodyBack, bodyFront, label, label2);
+  bottle.add(cap, seam, bodyBack, bodyFront, label, label2);
   bottle.visible = false;                      // يظهر بعد تحميل لون الصورة
   bottle.position.y = -2.075;
   var yaw = new THREE.Group(); yaw.add(bottle);
