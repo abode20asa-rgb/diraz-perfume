@@ -173,11 +173,11 @@ main{padding:50px 30px 30px;max-width:1200px;margin:0 auto}
 .coupon-section{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.25)}
 .coupon-toggle-btn{width:100%;background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.45);border-radius:50px;color:white;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:700;padding:10px;cursor:pointer;transition:all .2s;text-align:center}
 .coupon-toggle-btn:hover{background:rgba(255,255,255,0.25)}
-.order-note-lbl{display:block;color:#fff;font-size:.88rem;font-weight:700;margin-bottom:8px;text-align:right}
+.order-note-lbl{display:block;color:#fff;font-size:.8rem;font-weight:700;margin-bottom:5px;text-align:right}
 .order-note-lbl small{font-weight:600;opacity:.85}
-.order-note-field{width:100%;box-sizing:border-box;background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.45);border-radius:16px;color:#fff;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:600;padding:10px 14px;resize:none;outline:none;line-height:1.7;direction:rtl}
-.order-note-field::placeholder{color:rgba(255,255,255,.75)}
-.order-note-field:focus{background:rgba(255,255,255,.25);border-style:solid}
+.order-note-field{display:block;width:100%;box-sizing:border-box;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.9);border-radius:8px;color:#111;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:600;padding:5px 10px;resize:none;outline:none;line-height:1.5;direction:rtl;min-height:32px;max-height:72px;overflow-y:auto}
+.order-note-field::placeholder{color:rgba(0,0,0,.45)}
+.order-note-field:focus{background:#fff;color:#111}
 .coupon-input-area{display:none;margin-top:10px}
 .coupon-input-area.open{display:block}
 /* نوع الدفع + حقول العنوان داخل بياناتي */
@@ -516,9 +516,9 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
       </div>
     </div>
   </div>
-  <div class="coupon-section">
+  <div class="coupon-section" style="padding:8px 16px">
     <label class="order-note-lbl" for="orderNotes">📝 ملاحظات إضافية <small>(اختياري)</small></label>
-    <textarea id="orderNotes" class="order-note-field" rows="2" maxlength="200" placeholder="اكتب ملاحظتك هنا إن أردت..."></textarea>
+    <textarea id="orderNotes" class="order-note-field" rows="1" maxlength="200" placeholder="اكتب ملاحظتك هنا إن أردت..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,72)+'px'"></textarea>
   </div>
   <div class="cart-foot">
     <div class="cart-total-row">
@@ -1199,7 +1199,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   // الطلب انحفظ: نفرّغ السلة والكود حتى ما ينرسل نفس الطلب مرتين
   cart=[]; saveCart(); resetPay();
   appliedCoupon=null; discountAmount=0;
-  try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; document.getElementById('orderNotes').value=''; }catch(e){}
+  try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; var nf=document.getElementById('orderNotes'); nf.value=''; nf.style.height=''; }catch(e){}
   closeCart(); updateCartUI(); renderCards();
 
   // شاشة النجاح (الصح الأخضر) بدون تحويل لأي صفحة
