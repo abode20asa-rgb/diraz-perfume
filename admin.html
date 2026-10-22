@@ -420,6 +420,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group" style="grid-column:1/-1"><label>اختر الكود *</label><select id="ext_code" onchange="extCalc();extRenderLog()"></select></div>
         <div class="form-group"><label>عدد عطور 50 مل</label><input type="number" id="ext_n50" min="0" value="0" oninput="extCalc()"></div>
         <div class="form-group"><label>عدد عطور 30 مل</label><input type="number" id="ext_n30" min="0" value="0" oninput="extCalc()"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>تاريخ الطلب (اتركه فاضي = اليوم)</label><input type="date" id="ext_date"></div>
         <div class="form-group" style="grid-column:1/-1"><label>ملاحظة (اختياري)</label><input type="text" id="ext_note" maxlength="60" placeholder="مثال: طلب أحمد من الانستا"></div>
       </div>
       <div id="ext_preview" style="margin:12px 0;color:white;font-weight:800"></div>
@@ -1345,8 +1346,11 @@ function extAdd(){
   if(n50<0||n30<0||(n50+n30)===0){ showToast('❌ اكتب عدد العطور'); return; }
   var amt=n50*k.c50+n30*k.c30;
   if(!Array.isArray(s.c.externalLog)) s.c.externalLog=[];
-  s.c.externalLog.unshift({id:Date.now(),date:new Date().toISOString(),kind:'external',n50:n50,n30:n30,amount:amt,note:document.getElementById('ext_note').value.trim()});
-  document.getElementById('ext_n50').value=0; document.getElementById('ext_n30').value=0; document.getElementById('ext_note').value='';
+  var dv=(document.getElementById('ext_date').value||'').trim();
+  var when=dv?new Date(dv+'T12:00:00'):new Date(); if(isNaN(when.getTime())) when=new Date();
+  s.c.externalLog.unshift({id:Date.now(),date:when.toISOString(),kind:'external',n50:n50,n30:n30,amount:amt,note:document.getElementById('ext_note').value.trim()});
+  s.c.externalLog.sort(function(x,y){ return new Date(y.date)-new Date(x.date); });
+  document.getElementById('ext_n50').value=0; document.getElementById('ext_n30').value=0; document.getElementById('ext_note').value=''; document.getElementById('ext_date').value='';
   extPersist(s.cs,s.c);
   showToast('✅ انضاف '+amt.toLocaleString('en-US')+' دينار لحساب '+(s.c.creatorName||s.c.code));
 }

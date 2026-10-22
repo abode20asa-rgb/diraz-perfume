@@ -80,19 +80,30 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
 
   function render(d){
     var disc = d.type==='percent' ? fmt(d.value)+'%' : fmt(d.value)+' دينار';
-    var rec = (d.recent||[]).map(function(o){
-      var dt = o.date ? new Date(o.date).toLocaleDateString('en-GB') : '';
-      var done = o.status==='delivered';
+    function items(o){
       var parts = [];
       if((o.n50||0)>0) parts.push('50 مل × '+o.n50);
       if((o.n30||0)>0) parts.push('30 مل × '+o.n30);
-      return '<div class="row"><div><div>'+esc(dt)+'</div><div class="sub">'+esc(parts.join(' • ')||'—')+'</div></div>'+
+      return parts.join(' • ');
+    }
+    // الإضافات الخارجية (طلبات انستغرام) تنعرض وتنحسب كطلبات؛ المبلغ المباشر (manual) يبقى بقسم الأموال
+    var extAll = d.externalRecent||[];
+    var extOrders = extAll.filter(function(e){ return e.kind!=='manual'; });
+    var extMoney  = extAll.filter(function(e){ return e.kind==='manual'; });
+    var list = (d.recent||[]).map(function(o){ return {date:o.date,txt:items(o),earn:o.earn,done:o.status==='delivered'}; })
+      .concat(extOrders.map(function(e){ return {date:e.date,txt:items(e)||'طلب خارجي',earn:e.amount,done:true}; }))
+      .sort(function(a,b){ return new Date(b.date||0)-new Date(a.date||0); })
+      .slice(0,3);
+    var rec = list.map(function(o){
+      var dt = o.date ? new Date(o.date).toLocaleDateString('en-GB') : '';
+      return '<div class="row"><div><div>'+esc(dt)+'</div><div class="sub">'+esc(o.txt||'—')+'</div></div>'+
         '<span class="amt">+'+fmt(o.earn)+' دينار</span>'+
-        '<span class="tag '+(done?'d':'')+'">'+(done?'تم التسليم':'قيد الانتظار')+'</span></div>';
+        '<span class="tag '+(o.done?'d':'')+'">'+(o.done?'تم التسليم':'قيد الانتظار')+'</span></div>';
     }).join('') || '<div class="msg" style="padding:14px">لا توجد طلبات بعد</div>';
-    var ext = (d.externalRecent||[]).map(function(e){
+    var ordersCount = (Number(d.orders)||0) + (d.externalCount!=null ? Number(d.externalCount)||0 : extOrders.length);
+    var ext = extMoney.map(function(e){
       var dt = e.date ? new Date(e.date).toLocaleDateString('en-GB') : '';
-      return '<div class="row"><div><div>🌐 إضافة أموال خارجية</div><div class="sub">'+esc(dt)+'</div></div><span class="amt">+'+fmt(e.amount)+' دينار</span></div>';
+      return '<div class="row"><div><div>💵 مكافأة</div><div class="sub">'+esc(dt)+'</div></div><span class="amt">+'+fmt(e.amount)+' دينار</span></div>';
     }).join('');
     app.innerHTML =
       '<div class="card">'+
@@ -102,10 +113,10 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
       '</div>'+
       '<div class="grid" style="margin-bottom:18px">'+
         '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>'+
-        '<div class="stat wide"><div class="n">'+fmt(d.orders)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
+        '<div class="stat wide"><div class="n">'+fmt(ordersCount)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
       '</div>'+
       '<div class="card"><h2>آخر 3 طلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>'+
-      (ext?'<div class="card"><h2>🌐 إضافات الأموال الخارجية (آخر 3)</h2>'+ext+'</div>':'');
+      (ext?'<div class="card"><h2>💵 مكافآت (آخر 3)</h2>'+ext+'</div>':'');
   }
 
   load(true);
