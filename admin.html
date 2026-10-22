@@ -725,6 +725,7 @@ function renderOrders(){
       '</div>' +
       '<div class="order-items-list">'+(items||'—')+'</div>' +
       couponLine(order) +
+      (order.notes?'<div style="margin:8px 0;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.28);font-size:.85rem;line-height:1.7">📝 <b>ملاحظات الزبون:</b> '+esc(order.notes)+'</div>':'') +
       '<div class="order-total-row"><span class="order-total-label">الإجمالي</span><span class="order-total-val">'+esc((order.total||0).toLocaleString('en-US'))+' '+esc(order.currency||'دينار')+'</span></div>' +
       '<div class="order-actions">' +
         '<button class="btn-deliver" onclick="toggleStatus('+idx+')">'+(ip?'✅ تحديد كمُسلَّم':'↩️ إرجاع لقيد الانتظار')+'</button>' +
@@ -741,6 +742,7 @@ function resendWA(i){
   var now   = new Date(order.date).toLocaleString('ar',{dateStyle:'long',timeStyle:'short'});
   var msg   = '🌸 *طلب — ديراز للعطور*\n━━━━━━━━━━━━━━━━━━━━\n👤 *الاسم:* '+(order.customer&&order.customer.name||'—')+'\n📱 *الهاتف:* '+(order.customer&&order.customer.phone||'—')+'\n━━━━━━━━━━━━━━━━━━━━\n🛒 *العطور:*\n';
   (order.items||[]).forEach(function(item,n){ msg+=(n+1)+'. '+item.name+' × '+item.qty+' ← '+(item.price*item.qty).toLocaleString('en-US')+' '+item.currency+'\n'; });
+  if(order.notes) msg+='📝 *ملاحظات:* '+order.notes+'\n';
   msg+='━━━━━━━━━━━━━━━━━━━━\n🏷️ *كود الخصم:* '+(order.coupon&&order.coupon.code?order.coupon.code:'بدون كود خصم')+'\n💰 *الإجمالي:* '+((order.total||0).toLocaleString('en-US'))+' '+(order.currency||'دينار')+'\n📅 '+now;
   window.open('https://wa.me/'+WA_NUM+'?text='+encodeURIComponent(msg),'_blank');
 }

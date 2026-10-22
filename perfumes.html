@@ -173,6 +173,11 @@ main{padding:50px 30px 30px;max-width:1200px;margin:0 auto}
 .coupon-section{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.25)}
 .coupon-toggle-btn{width:100%;background:rgba(255,255,255,0.15);border:1px dashed rgba(255,255,255,0.45);border-radius:50px;color:white;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:700;padding:10px;cursor:pointer;transition:all .2s;text-align:center}
 .coupon-toggle-btn:hover{background:rgba(255,255,255,0.25)}
+.order-note-lbl{display:block;color:#fff;font-size:.88rem;font-weight:700;margin-bottom:8px;text-align:right}
+.order-note-lbl small{font-weight:600;opacity:.85}
+.order-note-field{width:100%;box-sizing:border-box;background:rgba(255,255,255,.15);border:1px dashed rgba(255,255,255,.45);border-radius:16px;color:#fff;font-family:'Cairo',sans-serif;font-size:.88rem;font-weight:600;padding:10px 14px;resize:none;outline:none;line-height:1.7;direction:rtl}
+.order-note-field::placeholder{color:rgba(255,255,255,.75)}
+.order-note-field:focus{background:rgba(255,255,255,.25);border-style:solid}
 .coupon-input-area{display:none;margin-top:10px}
 .coupon-input-area.open{display:block}
 /* نوع الدفع + حقول العنوان داخل بياناتي */
@@ -510,6 +515,10 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
         <span class="amt" id="discountAmt">—</span>
       </div>
     </div>
+  </div>
+  <div class="coupon-section">
+    <label class="order-note-lbl" for="orderNotes">📝 ملاحظات إضافية <small>(اختياري)</small></label>
+    <textarea id="orderNotes" class="order-note-field" rows="2" maxlength="200" placeholder="اكتب ملاحظتك هنا إن أردت..."></textarea>
   </div>
   <div class="cart-foot">
     <div class="cart-total-row">
@@ -1162,6 +1171,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
     }
   }
   const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,payment:payMethod,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  { const nt=(document.getElementById('orderNotes')||{}).value; if(nt&&nt.trim()) order.notes=nt.trim().slice(0,200); }
   // بدون واتساب: الطلب لازم يوصل للسيرفر فعلاً قبل ما نأكد للزبون (محاولتين)
   let saved=false, saveErr=null;
   for(let a=0;a<2&&!saved;a++){
@@ -1189,7 +1199,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   // الطلب انحفظ: نفرّغ السلة والكود حتى ما ينرسل نفس الطلب مرتين
   cart=[]; saveCart(); resetPay();
   appliedCoupon=null; discountAmount=0;
-  try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; }catch(e){}
+  try{ document.getElementById('couponInput').value=''; document.getElementById('couponMsg').textContent=''; document.getElementById('orderNotes').value=''; }catch(e){}
   closeCart(); updateCartUI(); renderCards();
 
   // شاشة النجاح (الصح الأخضر) بدون تحويل لأي صفحة
