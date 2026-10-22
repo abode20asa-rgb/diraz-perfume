@@ -5,7 +5,7 @@
 (function(){
   var ov=document.createElement('div');
   ov.id='siteCheckOverlay';
-  ov.style.cssText='position:fixed;inset:0;background:#f4a7be;z-index:99999;display:flex;align-items:center;justify-content:center';
+  ov.style.cssText='position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background-color:#c27bb0;background-image:url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27120%27 height=%2760%27%3E%3Cpath d=%27M0 30 Q15 5 30 30 Q45 55 60 30 Q75 5 90 30 Q105 55 120 30%27 stroke=%27rgba(255,255,255,0.28)%27 stroke-width=%272.5%27 fill=%27none%27/%3E%3Cpath d=%27M0 55 Q15 30 30 55 Q45 80 60 55 Q75 30 90 55 Q105 80 120 55%27 stroke=%27rgba(255,255,255,0.14)%27 stroke-width=%271.5%27 fill=%27none%27/%3E%3C/svg%3E"),linear-gradient(160deg,#f4a7be 0%,#f4a7be 22%,#c27bb0 50%,#3a4a9e 78%,#3a4a9e 100%);background-repeat:repeat,no-repeat;background-size:120px 60px,100% 100%';
   ov.innerHTML='<div style="font-size:2.5rem;animation:spin 1.5s linear infinite">🌸</div><style>@keyframes spin{to{transform:rotate(360deg)}}</style>';
   document.documentElement.appendChild(ov);
   var U='https://knqtuvcvqsupltbivkfb.supabase.co',K='sb_publishable_z6JJkrQMzlmQV-iRwgCt1g__zvXXZk6';
@@ -238,7 +238,11 @@ body.sec-men select.popup-input option{background:#1a2456}
 .image-lightbox img{max-width:96vw;max-height:90vh;width:auto;height:auto;object-fit:contain;border-radius:14px;box-shadow:0 15px 50px rgba(0,0,0,.35);cursor:default}
 .image-lightbox-close{position:absolute;top:18px;right:18px;width:42px;height:42px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(255,255,255,.2);color:white;font-size:1.4rem;cursor:pointer}
 
-footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,255,255,0.65);font-size:.82rem}
+body{display:flex;flex-direction:column;min-height:100vh;min-height:100dvh}
+main{flex:1 0 auto;width:100%}
+header{flex:0 0 auto}
+footer{flex:0 0 auto;margin-top:auto;width:100%;background:rgba(0,0,0,0.1);padding:18px 14px calc(18px + env(safe-area-inset-bottom,0px));text-align:center;color:rgba(255,255,255,0.65);font-size:.82rem;line-height:1.8}
+@media(max-width:480px){footer{font-size:.72rem;padding:14px 10px calc(14px + env(safe-area-inset-bottom,0px))}}
 
 @media (max-width: 900px) {
   main { padding-inline: 18px; }
@@ -502,7 +506,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 }
 </style>
 </head>
-<body>
+<body class="sec-pick">
 
 <!-- نافذة بيانات الزبون -->
 <div class="popup-overlay" id="customerPopup">
