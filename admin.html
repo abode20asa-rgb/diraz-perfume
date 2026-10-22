@@ -156,6 +156,12 @@ textarea{resize:vertical;min-height:80px}
 .uses-fill{height:100%;background:white;border-radius:3px;transition:width .4s}
 /* No items */
 .no-items{text-align:center;color:rgba(255,255,255,0.65);padding:30px 0}
+.btn-trash{padding:9px 18px;border-radius:50px;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.22);color:#fff;font-family:'Cairo',sans-serif;font-size:.85rem;font-weight:800;cursor:pointer;transition:all .2s}
+.btn-trash:hover{background:rgba(255,255,255,.38)}
+.btn-restore{padding:8px 16px;border-radius:50px;border:1px solid rgba(37,211,102,.55);background:rgba(37,211,102,.22);color:#eafff3;font-family:'Cairo',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap}
+.btn-restore:hover{background:rgba(37,211,102,.4)}
+.trash-box{margin:0 0 16px;padding:14px;border-radius:16px;background:rgba(0,0,0,.12);border:1px dashed rgba(255,255,255,.45)}
+.trash-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
 /* Toast */
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(30,30,30,0.92);color:white;padding:12px 30px;border-radius:50px;font-size:.9rem;font-weight:700;z-index:9999;transition:transform .4s;pointer-events:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
@@ -335,6 +341,11 @@ textarea{resize:vertical;min-height:80px}
     <!-- الزبائن -->
     <div class="section-card">
       <h2>👥 قائمة الزبائن (<span id="custCount">0</span>)</h2>
+      <div style="margin-bottom:14px"><button type="button" class="btn-trash" onclick="toggleTrash()">🗑️ سلة المحذوفات (<span id="trashCount">0</span>)</button></div>
+      <div class="trash-box" id="custTrash" style="display:none">
+        <div style="color:#fff;font-weight:800;margin-bottom:10px">🗑️ الزبائن المحذوفين</div>
+        <div class="cust-grid" id="trashList"></div>
+      </div>
       <div class="cust-grid" id="custList"></div>
     </div>
 
@@ -548,7 +559,7 @@ function refreshFromCloud(){
   var panel = document.getElementById('adminPanel');
   if(!panel || panel.style.display === 'none') return;
   _refreshing = true;
-  pullFromCloud().then(function(){ renderStats(); renderOrders(); renderCustomers(); renderCoupons(); })
+  pullFromCloud().then(function(){ renderStats(); renderOrders(); renderCustomers(); renderCoupons(); var tp=document.getElementById('custTrash'); if(tp && tp.style.display!=='none') loadTrash(); })
     .catch(function(){}).then(function(){ _refreshing = false; });
 }
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
@@ -558,6 +569,7 @@ function initAll(){ try{ spStart(); }catch(e){} try{ rvLoad(); setInterval(rvLoa
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
+    loadTrash();
     initVisitors(); // ⭐ استدعاء الزوار
   }).catch(cloudFail);
   loadPerfumesFromSource().then(function(){ renderList(); updateStorageBar(); });
@@ -848,18 +860,30 @@ function renderCustomers(){
   if(!customers.length){ el.innerHTML='<div class="no-items">📭 لا يوجد زبائن بعد</div>'; return; }
   el.innerHTML = customers.map(function(c,i){ return '<div class="cust-item"><div class="cust-num">'+(i+1)+'</div><div class="cust-info"><div class="cust-name">👤 '+esc(c.name)+'</div><div class="cust-phone">📱 '+esc(c.phone)+'</div><div class="cust-phone">🎂 العمر: '+esc(c.age?c.age+' سنة':'—')+'</div><div class="cust-address">📍 '+esc([c.province,c.address].filter(function(x){return x&&x!=='—';}).join(' - '))+'</div></div><button class="btn-del-order" onclick="deleteCustomer('+i+')">🗑️</button></div>'; }).join('');
 }
-function deleteCustomer(i){
+async function deleteCustomer(i){
   var customers = tryParse(CUSTOMERS_KEY, []);
   if(!customers[i]) return;
-  if(!confirm('حذف الزبون '+customers[i].phone+'؟')) return;
+  if(!confirm('حذف الزبون '+customers[i].phone+'؟\nيروح لسلة المحذوفات وتكدر ترجّعه منها.')) return;
   var deletedPhone = customers[i].phone;
+  var allOrders = tryParse(ORDERS_KEY, []);
+  var mine = allOrders.filter(function(o){ return o.customer && o.customer.phone === deletedPhone; });
+
+  // أول شي: انسخه لسلة المحذوفات. إذا فشل النسخ ما ينحذف شي
+  try{
+    await DirazCloud.upsert(TRASH_TABLE, [{ phone:deletedPhone, data:customers[i], orders:mine, deleted_at:new Date().toISOString() }]);
+  }catch(e){
+    if(e && e.message === 'SESSION_EXPIRED'){ cloudFail(e); return; }
+    showToast('⚠️ ما انحذف شي — شغّل supabase-trash.sql في Supabase أولاً');
+    return;
+  }
+
   customers.splice(i, 1);
   localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
 
   // حذف الطلبات المتعلقة بهذا الزبون
-  var orders = tryParse(ORDERS_KEY, []);
+  var orders = allOrders;
   var before = orders.length;
-  var removedIds = orders.filter(function(o){ return o.customer && o.customer.phone === deletedPhone; }).map(function(o){ return String(o.id); });
+  var removedIds = mine.map(function(o){ return String(o.id); });
   orders = orders.filter(function(o){ return !(o.customer && o.customer.phone === deletedPhone); });
   localStorage.setItem(ORDERS_KEY, JSON.stringify(orders));
 
@@ -867,7 +891,61 @@ function deleteCustomer(i){
   if(removedIds.length) DirazCloud.remove('orders','id=in.('+removedIds.map(encodeURIComponent).join(',')+')').catch(cloudFail);
 
   renderStats(); renderOrders(); renderCustomers();
-  showToast('🗑️ تم حذف الزبون و'+(before-orders.length)+' طلب');
+  loadTrash();
+  showToast('🗑️ انحذف الزبون و'+(before-orders.length)+' طلب (موجود بسلة المحذوفات)');
+}
+
+// ══ سلة محذوفات الزبائن ══
+var TRASH_TABLE = 'customers_trash';
+var _trash = [];
+async function loadTrash(){
+  try{
+    var rows = await DirazCloud.list(TRASH_TABLE);
+    _trash = (rows||[]).sort(function(a,b){ return new Date(b.deleted_at||0) - new Date(a.deleted_at||0); });
+  }catch(e){ _trash = []; }
+  var n = document.getElementById('trashCount'); if(n) n.textContent = _trash.length;
+  renderTrash();
+}
+function toggleTrash(){
+  var p = document.getElementById('custTrash');
+  var open = p.style.display === 'none';
+  p.style.display = open ? 'block' : 'none';
+  if(open) loadTrash();
+}
+function renderTrash(){
+  var el = document.getElementById('trashList'); if(!el) return;
+  if(!_trash.length){ el.innerHTML = '<div class="no-items" style="padding:14px 0">السلة فاضية</div>'; return; }
+  el.innerHTML = _trash.map(function(t,i){
+    var c = t.data || {};
+    var n = (t.orders||[]).length;
+    var d = t.deleted_at ? new Date(t.deleted_at).toLocaleString('ar-IQ') : '';
+    return '<div class="cust-item" style="flex-wrap:wrap"><div class="cust-info" style="min-width:160px">'+
+      '<div class="cust-name">👤 '+esc(c.name||'—')+'</div>'+
+      '<div class="cust-phone">📱 '+esc(t.phone)+'</div>'+
+      '<div class="cust-phone">📦 '+n+' طلب • 🕒 '+esc(d)+'</div></div>'+
+      '<div class="trash-actions"><button type="button" class="btn-restore" onclick="restoreCustomer('+i+')">♻️ استرجاع</button>'+
+      '<button type="button" class="btn-del-order" onclick="purgeCustomer('+i+')">❌ حذف نهائي</button></div></div>';
+  }).join('');
+}
+async function restoreCustomer(i){
+  var t = _trash[i]; if(!t) return;
+  var os = (t.orders||[]).filter(function(o){ return o && o.id; });
+  try{
+    await DirazCloud.upsert('customers', [{ phone:t.phone, data:t.data }]);
+    if(os.length) await DirazCloud.upsert('orders', os.map(function(o){ return { id:String(o.id), data:o }; }));
+    await DirazCloud.remove(TRASH_TABLE, 'phone=eq.'+encodeURIComponent(t.phone));
+  }catch(e){ cloudFail(e); return; }
+  try{ await pullFromCloud(); }catch(e){}
+  renderStats(); renderOrders(); renderCustomers(); loadTrash();
+  showToast('♻️ رجع الزبون ورجع '+os.length+' طلب');
+}
+async function purgeCustomer(i){
+  var t = _trash[i]; if(!t) return;
+  if(!confirm('حذف نهائي للزبون '+t.phone+' وطلباته؟\nما تكدر ترجّعه بعدها.')) return;
+  try{ await DirazCloud.remove(TRASH_TABLE, 'phone=eq.'+encodeURIComponent(t.phone)); }
+  catch(e){ cloudFail(e); return; }
+  loadTrash();
+  showToast('🗑️ انحذف نهائياً');
 }
 
 // ══ Coupons ══
