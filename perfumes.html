@@ -385,6 +385,22 @@ footer{background:rgba(0,0,0,0.1);padding:18px;text-align:center;color:rgba(255,
 .sec-tabs #tabWomen{background:#e07898}
 .sec-tabs button.active{opacity:1;box-shadow:0 4px 12px rgba(0,0,0,.25)}
 .sec-tabs .sec-back{background:rgba(255,255,255,.3);opacity:1}
+.perfume-search{position:relative;display:flex;align-items:center;gap:10px;width:min(100%,680px);box-sizing:border-box;margin:0 auto 22px;background:rgba(255,255,255,.92);border-radius:14px;padding:0 16px;height:50px;box-shadow:0 4px 16px rgba(0,0,0,.12);transition:box-shadow .2s}
+.perfume-search:focus-within{box-shadow:0 6px 22px rgba(0,0,0,.2)}
+.perfume-search svg{width:22px;height:22px;flex:none;color:#8a8a95}
+.perfume-search input{flex:1;min-width:0;border:0;outline:0;background:transparent;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:600;color:#222;direction:rtl;text-align:right}
+.perfume-search input::placeholder{color:#8a8a95;font-weight:600}
+.perfume-search input[type=search]{-webkit-appearance:none;appearance:none}
+.perfume-search input[type=search]::-webkit-search-cancel-button,.perfume-search input[type=search]::-webkit-search-decoration{-webkit-appearance:none;display:none}
+.perfume-search .ps-clear{display:none;border:0;background:#e3e5e8;color:#555;width:24px;height:24px;border-radius:50%;font-size:.75rem;line-height:1;cursor:pointer;flex:none}
+.perfume-search.has-text .ps-clear{display:block}
+.ps-suggest{position:absolute;top:calc(100% + 6px);right:0;left:0;background:#fff;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.22);overflow:hidden;z-index:40;text-align:right}
+.ps-item{display:flex;align-items:baseline;justify-content:space-between;gap:10px;width:100%;box-sizing:border-box;border:0;border-bottom:1px solid #eef0f2;background:#fff;padding:11px 16px;font-family:'Cairo',sans-serif;font-size:.92rem;font-weight:700;color:#222;cursor:pointer;text-align:right}
+.ps-item:last-child{border-bottom:0}
+.ps-item:hover,.ps-item:active{background:#f4f5f7}
+.ps-item small{font-weight:600;color:#8a8a95;font-size:.75rem;direction:ltr}
+.ps-empty{padding:12px 16px;color:#8a8a95;font-weight:700;font-size:.85rem}
+@media(max-width:480px){.perfume-search{height:46px;border-radius:12px}.perfume-search input{font-size:.88rem}}
 .soon-box{max-width:380px;margin:30px auto;text-align:center;background:rgba(255,255,255,.25);border:1.5px solid rgba(255,255,255,.6);border-radius:14px;padding:36px 20px;color:#fff;font-weight:800;font-size:1.2rem;line-height:1.9}
 .soon-box small{display:block;font-size:.85rem;font-weight:600;opacity:.85}
 /* ── صفحة اختيار القسم: خلفية مزيج وردي + نيلي ── */
@@ -592,6 +608,12 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
       <button type="button" id="tabMen" onclick="openSection('men')">رجالي</button>
       <button type="button" id="tabWomen" onclick="openSection('women')">نسائي</button>
       <button type="button" class="sec-back" onclick="backToSections()">الأقسام</button>
+    </div>
+    <div class="perfume-search" id="perfumeSearch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20.5 20.5 16 16"/></svg>
+      <input type="search" id="perfumeSearchInput" placeholder="اضغط للبحث عن عطرك المفضل" autocomplete="off" enterkeyhint="search" aria-label="بحث عن عطر" oninput="onPerfumeSearch(this.value)" onfocus="buildSuggest()" onblur="setTimeout(hideSuggest,180)" onkeydown="if(event.key==='Escape'||event.key==='Enter'){hideSuggest();}">
+      <button type="button" class="ps-clear" onclick="clearPerfumeSearch()" aria-label="مسح">✕</button>
+      <div class="ps-suggest" id="psSuggest" style="display:none"></div>
     </div>
     <div class="soon-box" id="soonBox" style="display:none">هذا القسم قريباً<small>نجهّز لكم أجمل العطور، ترقّبونا</small></div>
     <div class="perfumes-grid" id="perfumesGrid"></div>
@@ -1269,12 +1291,69 @@ document.addEventListener('keydown',event=>{
 });
 
 // ── Render Cards ──
+let searchQ='';
+function normAr(t){ return String(t||'').toLowerCase().replace(/[\u064B-\u065F\u0670\u0640]/g,'').replace(/[أإآٱ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه').replace(/ؤ/g,'و').replace(/ئ/g,'ي').replace(/\s+/g,' ').trim(); }
+// كلمات النص (مع نسخة بدون «ال» حتى «ورد» تلقى «الورد»)
+function wordsOf(t){
+  const out=[];
+  normAr(t).split(/[^a-z0-9\u0621-\u064A]+/).filter(Boolean).forEach(w=>{ out.push(w); if(w.length>3&&w.startsWith('ال')) out.push(w.slice(2)); });
+  return out;
+}
+// البحث القصير (حرف أو حرفين) على الاسم فقط، حتى ما تطلع نتائج غريبة من الوصف
+function perfumeText(p,deep){ return deep ? [p.name,p.nameEn,p.type,p.description,p.notes].join(' ') : [p.name,p.nameEn].join(' '); }
+function matchSearch(p){
+  if(!searchQ) return true;
+  const qs=searchQ.split(' '), deep=qs.every(q=>q.length>=3);
+  const ws=wordsOf(perfumeText(p,deep));
+  return qs.every(q=>ws.some(w=>w.startsWith(q)));
+}
+// ── اقتراحات تظهر أثناء الكتابة ──
+let _psList=[];
+function buildSuggest(){
+  const box=document.getElementById('psSuggest'); if(!box) return;
+  if(!searchQ||!curSection){ box.style.display='none'; _psList=[]; return; }
+  const qs=searchQ.split(' '), found=[];
+  loadPerfumes().forEach(p=>{
+    if(!perfumeSections(p).includes(curSection)) return;
+    const allWs=wordsOf(perfumeText(p,qs.every(q=>q.length>=3)));
+    if(!qs.every(q=>allWs.some(w=>w.startsWith(q)))) return;
+    const nameWs=wordsOf([p.name,p.nameEn].join(' '));
+    found.push({p:p,score:qs.every(q=>nameWs.some(w=>w.startsWith(q)))?0:1});
+  });
+  found.sort((x,y)=>x.score-y.score);
+  _psList=found.slice(0,6).map(x=>x.p);
+  const esc=t=>String(t==null?'':t).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  box.innerHTML=_psList.length
+    ? _psList.map((p,i)=>`<button type="button" class="ps-item" onmousedown="event.preventDefault()" onclick="pickSuggest(${i})"><span>${esc(p.name||p.nameEn)}</span>${p.name&&p.nameEn?`<small>${esc(p.nameEn)}</small>`:''}</button>`).join('')
+    : '<div class="ps-empty">لا توجد نتائج مطابقة 🌸</div>';
+  box.style.display='block';
+}
+function hideSuggest(){ const b=document.getElementById('psSuggest'); if(b) b.style.display='none'; }
+function pickSuggest(i){
+  const p=_psList[i]; if(!p) return;
+  const inp=document.getElementById('perfumeSearchInput'), box=document.getElementById('perfumeSearch');
+  const name=p.name||p.nameEn;
+  if(inp) inp.value=name;
+  if(box) box.classList.add('has-text');
+  searchQ=normAr(name); hideSuggest(); renderCards();
+  const g=document.getElementById('perfumesGrid'); if(g) g.scrollIntoView({behavior:'smooth',block:'start'});
+}
+let _psT=null;
+function onPerfumeSearch(v){
+  const box=document.getElementById('perfumeSearch'); if(box) box.classList.toggle('has-text',!!String(v).trim());
+  searchQ=normAr(v); buildSuggest();
+  clearTimeout(_psT); _psT=setTimeout(renderCards,150);
+}
+function clearPerfumeSearch(){
+  const i=document.getElementById('perfumeSearchInput'); if(i){ i.value=''; i.focus(); }
+  onPerfumeSearch(''); hideSuggest();
+}
 function renderCards(){
   const grid=document.getElementById('perfumesGrid'); if(!grid) return;
   if(!curSection || sections[curSection]===false){ grid.innerHTML=''; return; }
   const perfumes=loadPerfumes();
   if(!perfumes.length){ grid.innerHTML='<p style="text-align:center;color:rgba(255,255,255,0.8);padding:40px;grid-column:1/-1">لا توجد عطور حتى الآن 🌸</p>'; return; }
-  grid.innerHTML=perfumes.map((p,idx)=>{ if(!perfumeSections(p).includes(curSection)) return '';
+  grid.innerHTML=perfumes.map((p,idx)=>{ if(!perfumeSections(p).includes(curSection)||!matchSearch(p)) return '';
     const curSize=selectedSizes[idx]||cart.find(i=>i.idx===idx)?.size||'';
     const item=curSize?findItem(idx,curSize):null;
     const inCart=Boolean(item);
@@ -1302,7 +1381,7 @@ function renderCards(){
         ${isSoldOut?'🚫 غير متوفر':inCart?'🗑️ إزالة من السلة':'🛍️ أضف إلى السلة'}
       </button>
     </div>`;
-  }).join('') || '<p style="text-align:center;color:rgba(255,255,255,0.9);padding:40px;grid-column:1/-1;font-weight:700">لا توجد عطور بهذا القسم حالياً 🌸</p>';
+  }).join('') || `<p style="text-align:center;color:rgba(255,255,255,0.9);padding:40px;grid-column:1/-1;font-weight:700">${searchQ?'لا توجد نتائج مطابقة لبحثك 🌸':'لا توجد عطور بهذا القسم حالياً 🌸'}</p>`;
   grid.querySelectorAll('.zoomable-perfume-image').forEach(image=>{
     image.addEventListener('click',()=>openImageLightbox(image.src));
   });
@@ -1352,6 +1431,7 @@ function showSection(sec){
 }
 function showPicker(){
   curSection=null;
+  searchQ=''; (function(){ var i=document.getElementById('perfumeSearchInput'); if(i) i.value=''; var b=document.getElementById('perfumeSearch'); if(b) b.classList.remove('has-text'); })();
   applySectionTheme(null);
   document.getElementById('sectionPicker').style.display='flex';
   document.getElementById('sectionView').style.display='none';
