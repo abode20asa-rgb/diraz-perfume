@@ -1436,7 +1436,7 @@ function rvLogRow(l){
   var body=String(l.body||''); if(body.length>90) body=body.slice(0,90)+'…';
   return '<div class="rv-row"><div class="h"><span>'+(RV_LOG_ICO[l.action]||'•')+' '+(RV_LOG_TXT[l.action]||esc(l.action))+'</span>'+
     '<span class="rv-tag'+(l.actor==='auto'?'':' ok')+'">'+by+'</span><span class="t">'+esc(rvTime(l.at))+'</span>'+
-    '<button type="button" class="rv-x" title="حذف هذه الحركة" onclick="rvLogDel('+Number(l.id)+')">✕</button></div>'+
+    '<button type="button" class="rv-x" title="حذف الحركة والرأي" onclick="rvLogDel('+Number(l.id)+')">✕</button></div>'+
     '<div class="b" style="margin-bottom:'+(l.reason?'6':'0')+'px"><b>'+esc(l.name||'')+':</b> '+esc(body)+'</div>'+
     (l.reason?'<div class="rv-why">السبب: '+esc(l.reason)+'</div>':'')+'</div>';
 }
@@ -1465,12 +1465,13 @@ async function rvLogLoad(){
   }
 }
 async function rvLogClear(){
-  if(!confirm('مسح كل سجل الحركات؟ (ما يأثر على الآراء نفسها)')) return;
-  try{ await DirazCloud.rpc('admin_review_log_clear'); showToast('🧹 انمسح السجل'); rvLogLoad(); }
+  if(!confirm('مسح كل السجل؟\nراح تنحذف الآراء المرفوضة والمعلّقة المرتبطة به نهائياً.\nالآراء المنشورة ما تنحذف (بس حركتها تنشال).')) return;
+  try{ await DirazCloud.rpc('admin_review_log_clear'); showToast('🧹 انمسح السجل والآراء المرتبطة'); rvLoad(); }
   catch(e){ showToast(/admin_review_log_clear|PGRST202|404|Could not find/i.test(String((e&&e.message)||e))?'⚠️ شغّل supabase-reviews-v4.sql أولاً':'❌ فشل المسح'); }
 }
 async function rvLogDel(id){
-  try{ await DirazCloud.rpc('admin_review_log_delete',{p_id:id}); rvLogLoad(); }
+  if(!confirm('حذف هذه الحركة راح يحذف الرأي نفسه أيضاً. متأكد؟')) return;
+  try{ await DirazCloud.rpc('admin_review_log_delete',{p_id:id}); showToast('🗑️ انحذف الرأي والحركة'); rvLoad(); }
   catch(e){ showToast(/admin_review_log_delete|PGRST202|404|Could not find/i.test(String((e&&e.message)||e))?'⚠️ شغّل supabase-reviews-v4.sql أولاً':'❌ فشل الحذف'); }
 }
 function rvLogToggle(){
