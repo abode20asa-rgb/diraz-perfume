@@ -668,6 +668,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 
 <script src="perfumes-data.js"></script>
 <script src="supabase-config.js"></script>
+<script src="diraz-review-notice.js"></script>
 <script src="diraz-push.js"></script>
 <script>
 /* ---------- تتبع الزوار ---------- */
@@ -1604,9 +1605,11 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     if(!window.DirazCloud){ showToast('⚠️ تعذّر الاتصال، حاول لاحقاً'); return; }
     sending=true; $('rvSend').disabled=true;
     try{
-      var r=await DirazCloud.rpc('submit_review',{p_name:name,p_body:body,p_gender:gender});
+      var tk=''; try{ var ab=new Uint8Array(16); crypto.getRandomValues(ab); tk=Array.prototype.map.call(ab,function(x){return ('0'+x.toString(16)).slice(-2);}).join(''); }catch(e){ tk=String(Date.now())+Math.random().toString(16).slice(2,12); }
+      var r=await DirazCloud.rpc('submit_review',{p_name:name,p_body:body,p_gender:gender,p_token:tk});
       if(r && r.ok===true){
         try{ localStorage.setItem('diraz_rv_last',String(Date.now())); }catch(e){}
+        try{ var tl=JSON.parse(localStorage.getItem('diraz_rv_tokens')||'[]'); if(!Array.isArray(tl)) tl=[]; tl.push(tk); localStorage.setItem('diraz_rv_tokens',JSON.stringify(tl.slice(-10))); }catch(e){}
         $('rvBody').value=''; $('rvCnt').textContent='0';
         $('rvForm').style.display='none'; $('rvDone').style.display='block';
       }else{

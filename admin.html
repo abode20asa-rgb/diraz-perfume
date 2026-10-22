@@ -172,6 +172,20 @@ textarea{resize:vertical;min-height:80px}
 .rv-tag{font-size:.7rem;padding:2px 10px;border-radius:50px;background:rgba(255,193,7,.55);color:#fff}
 .rv-tag.ok{background:rgba(37,211,102,.6)}
 .rv-sep{color:#fff;font-weight:900;font-size:.85rem;margin:14px 0 8px}
+.rv-tag.no{background:rgba(229,57,53,.65)}
+.rv-why{background:rgba(229,57,53,.22);border:1px solid rgba(255,140,140,.5);border-radius:10px;padding:6px 10px;margin-bottom:10px;color:#fff;font-size:.82rem;font-weight:700;word-break:break-word}
+#rvRejModal{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55);direction:rtl}
+#rvRejModal.on{display:flex}
+#rvRejModal .bx{background:#fff;color:#333;width:min(420px,100%);border-radius:20px;padding:20px;font-family:'Cairo',sans-serif}
+#rvRejModal h3{margin:0 0 6px;color:#d32f2f;font-size:1.05rem;font-weight:900}
+#rvRejModal .q{background:#f6f0f2;border-radius:10px;padding:8px 12px;font-size:.82rem;color:#666;margin-bottom:10px;word-break:break-word}
+#rvRejModal textarea{width:100%;min-height:80px;border:1.5px solid #e2cfd6;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:.92rem;resize:none;outline:none;color:#222}
+#rvRejModal .chips{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+#rvRejModal .chips button{border:1px solid #e2cfd6;background:#faf3f6;border-radius:50px;padding:4px 12px;font-family:inherit;font-size:.78rem;font-weight:700;cursor:pointer;color:#555}
+#rvRejModal .act{display:flex;gap:10px;margin-top:10px}
+#rvRejModal .act button{flex:1;padding:10px;border:0;border-radius:50px;font-family:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
+#rvRejModal .go{background:#d32f2f;color:#fff}
+#rvRejModal .cx{background:#eee;color:#666}
 </style>
 <style id="spAdminCss">
 /* ══ الدعم ══ */
@@ -286,6 +300,21 @@ textarea{resize:vertical;min-height:80px}
         <button type="button" class="btn-rvlist" id="rvToggle" onclick="rvToggleList()">📋 الآراء (0)</button>
       </div>
       <div id="rvList" style="display:none;margin-top:16px"></div>
+    </div>
+
+    <div id="rvRejModal" role="dialog" aria-label="سبب حذف الرأي">
+      <div class="bx">
+        <h3>🗑️ حذف الرأي وإبلاغ الزبون</h3>
+        <div class="q" id="rvRejQuote"></div>
+        <label style="font-weight:800;font-size:.85rem;color:#444">سبب الحذف (يظهر للزبون) *</label>
+        <textarea id="rvRejReason" maxlength="200" placeholder="اكتب السبب هنا..."></textarea>
+        <div class="chips">
+          <button type="button" onclick="rvReasonFill(this)">فيه إساءة أو ألفاظ غير لائقة</button>
+          <button type="button" onclick="rvReasonFill(this)">الرأي غير واضح</button>
+          <button type="button" onclick="rvReasonFill(this)">لا يخص الموقع أو العطور</button>
+        </div>
+        <div class="act"><button type="button" class="go" onclick="rvRejectConfirm()">🗑️ حذف</button><button type="button" class="cx" onclick="rvRejectClose()">إلغاء</button></div>
+      </div>
     </div>
 
     <!-- الطلبات -->
@@ -1320,20 +1349,26 @@ async function rvLoad(){
   }catch(e){ rvFail(e); }
 }
 function rvRow(r){
-  var pend=r.status==='pending';
-  return '<div class="rv-row"><div class="h"><span>'+(r.gender==='man'?'👨':'👧')+' '+esc(r.name)+'</span>'+
-    '<span class="rv-tag'+(pend?'':' ok')+'">'+(pend?'بانتظار الموافقة':'منشور')+'</span>'+
+  var pend=r.status==='pending', rej=r.status==='rejected';
+  var tag=rej?'<span class="rv-tag no">مرفوض</span>':'<span class="rv-tag'+(pend?'':' ok')+'">'+(pend?'بانتظار الموافقة':'منشور')+'</span>';
+  var id=Number(r.id);
+  return '<div class="rv-row"><div class="h"><span>'+(r.gender==='man'?'👨':'👧')+' '+esc(r.name)+'</span>'+tag+
     '<span class="t">'+esc(rvTime(r.created_at))+(r.source==='admin'?' • من الإدارة':'')+'</span></div>'+
-    '<div class="b">'+esc(r.body)+'</div><div class="a">'+
-    (pend?'<button type="button" class="btn-deliver" onclick="rvApprove('+Number(r.id)+')">✅ موافقة ونشر</button>':'')+
-    '<button type="button" class="btn-del-order" onclick="rvDelete('+Number(r.id)+')">🗑️ حذف</button></div></div>';
+    '<div class="b">'+esc(r.body)+'</div>'+
+    (rej?'<div class="rv-why">السبب: '+esc(r.reject_reason||'')+(r.notified?' • الزبون شاف الإشعار':' • بانتظار دخول الزبون')+'</div>':'')+
+    '<div class="a">'+
+    ((pend||rej)?'<button type="button" class="btn-deliver" onclick="rvApprove('+id+')">✅ '+(rej?'نشر الرأي':'موافقة ونشر')+'</button>':'')+
+    (rej?'<button type="button" class="btn-del-order" onclick="rvDelete('+id+')">🗑️ حذف نهائي</button>'
+        :'<button type="button" class="btn-del-order" onclick="rvAskDelete('+id+')">🗑️ حذف</button>')+
+    '</div></div>';
 }
 function rvRender(){
   var box=document.getElementById('rvList');
   if(!rvAll.length){ box.innerHTML='<div class="no-items">ما كو آراء بعد</div>'; return; }
-  var pend=rvAll.filter(function(r){return r.status==='pending';}), ok=rvAll.filter(function(r){return r.status!=='pending';});
+  var pend=rvAll.filter(function(r){return r.status==='pending';}), ok=rvAll.filter(function(r){return r.status==='approved';}), no=rvAll.filter(function(r){return r.status==='rejected';});
   box.innerHTML=(pend.length?'<div class="rv-sep">⏳ بانتظار الموافقة ('+pend.length+')</div>'+pend.map(rvRow).join(''):'')+
-    (ok.length?'<div class="rv-sep">✅ المنشورة ('+ok.length+')</div>'+ok.map(rvRow).join(''):'');
+    (ok.length?'<div class="rv-sep">✅ المنشورة ('+ok.length+')</div>'+ok.map(rvRow).join(''):'')+
+    (no.length?'<div class="rv-sep">❌ المرفوضة ('+no.length+')</div>'+no.map(rvRow).join(''):'');
 }
 function rvToggleList(){
   rvOpen=!rvOpen;
@@ -1357,6 +1392,30 @@ async function rvAdd(){
 async function rvApprove(id){
   try{ await DirazCloud.rpc('admin_review_approve',{p_id:id}); showToast('✅ تم نشر الرأي'); rvLoad(); }
   catch(e){ showToast('❌ فشلت الموافقة'); }
+}
+var rvRejId=null;
+function rvAskDelete(id){
+  var r=rvAll.filter(function(x){return Number(x.id)===id;})[0]; if(!r) return;
+  if(r.source==='admin' || !r.token){ rvDelete(id); return; } // رأي من الإدارة أو قديم: ما إله زبون يتبلّغ
+  rvRejId=id;
+  document.getElementById('rvRejQuote').textContent='«'+r.name+': '+r.body+'»';
+  document.getElementById('rvRejReason').value='';
+  document.getElementById('rvRejModal').classList.add('on');
+  setTimeout(function(){ document.getElementById('rvRejReason').focus(); },50);
+}
+function rvReasonFill(btn){ document.getElementById('rvRejReason').value=btn.textContent; }
+function rvRejectClose(){ rvRejId=null; document.getElementById('rvRejModal').classList.remove('on'); }
+async function rvRejectConfirm(){
+  var reason=document.getElementById('rvRejReason').value.trim();
+  if(reason.length<2){ showToast('✏️ اكتب سبب الحذف'); return; }
+  try{
+    var r=await DirazCloud.rpc('admin_review_reject',{p_id:rvRejId,p_reason:reason});
+    if(!r||r.ok!==true) throw new Error('fail');
+    rvRejectClose(); showToast('🗑️ انحذف الرأي وراح يوصل الزبون السبب'); rvLoad();
+  }catch(e){
+    var m=String((e&&e.message)||e);
+    showToast(/PGRST202|admin_review_reject|Could not find/i.test(m)?'⚠️ شغّل supabase-reviews-v2.sql أولاً':'❌ فشل الحذف');
+  }
 }
 async function rvDelete(id){
   if(!confirm('حذف هذا الرأي نهائياً؟')) return;
