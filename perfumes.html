@@ -478,6 +478,8 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 .rv-send{background:var(--pink-deep);color:#fff}
 .rv-send:disabled{opacity:.6;cursor:wait}
 .rv-cancel{background:#f1eaee;color:#777}
+.rv-msg{display:none;margin-top:12px;padding:9px 12px;border-radius:12px;background:#fdecec;border:1.5px solid #f5c2c2;color:#b71c1c;font-weight:800;font-size:.85rem;text-align:center;line-height:1.6}
+.rv-msg.on{display:block}
 .rv-done{text-align:center;padding:10px 4px}
 .rv-done .big{font-size:2.4rem}
 .rv-done p{font-weight:700;line-height:1.9;margin:8px 0 14px;color:#444}
@@ -1523,6 +1525,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
         <button type="button" data-g="girl" onclick="dzRvGender('girl')">👧 بنت</button>
         <button type="button" data-g="man" onclick="dzRvGender('man')">👨 رجل</button>
       </div>
+      <div class="rv-msg" id="rvMsg" role="alert"></div>
       <div class="rv-act">
         <button type="button" class="rv-send" id="rvSend" onclick="dzRvSend()">نشر الرأي</button>
         <button type="button" class="rv-cancel" onclick="dzReviewClose()">إلغاء</button>
@@ -1582,7 +1585,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     DirazCloud.rpc('approved_reviews').then(function(r){ if(Array.isArray(r)&&r.length) render(r); }).catch(function(){});
   }
 
+  function warn(m){ var el=$('rvMsg'); if(!el) return; el.textContent=m||''; el.classList.toggle('on',!!m); }
   window.dzReviewOpen=function(){
+    warn('');
     var c={}; try{ c=JSON.parse(localStorage.getItem('diraz_customer')||'{}')||{}; }catch(e){}
     if(!$('rvName').value) $('rvName').value=String(c.name||'').trim().split(/\s+/)[0]||'';
     $('rvForm').style.display='block'; $('rvDone').style.display='none';
@@ -1595,14 +1600,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   };
   window.dzRvSend=async function(){
     if(sending) return;
+    warn('');
     var name=$('rvName').value.trim().split(/\s+/)[0]||'', body=$('rvBody').value.trim();
-    if(!name){ showToast('✏️ اكتب اسمك الأول'); return; }
-    if(body.length<3){ showToast('✏️ اكتب رأيك'); return; }
-    if(!gender){ $('rvGen').classList.add('err'); showToast('⚠️ حدد الجنس: بنت أو رجل'); return; }
-    if(/https?:\/\/|www\./i.test(body)){ showToast('❌ ممنوع وضع روابط بالرأي'); return; }
+    if(!name){ warn('✏️ اكتب اسمك الأول'); return; }
+    if(body.length<3){ warn('✏️ اكتب رأيك'); return; }
+    if(!gender){ $('rvGen').classList.add('err'); warn('⚠️ حدد الجنس: بنت أو رجل'); return; }
+    if(/https?:\/\/|www\./i.test(body)){ warn('❌ ممنوع وضع روابط بالرأي'); return; }
     var last=0; try{ last=Number(localStorage.getItem('diraz_rv_last')||0); }catch(e){}
-    if(Date.now()-last<60000){ showToast('⏳ انتظر دقيقة قبل إرسال رأي ثاني'); return; }
-    if(!window.DirazCloud){ showToast('⚠️ تعذّر الاتصال، حاول لاحقاً'); return; }
+    if(Date.now()-last<60000){ warn('⏳ انتظر '+Math.ceil((60000-(Date.now()-last))/1000)+' ثانية قبل إرسال رأي ثاني'); return; }
+    if(!window.DirazCloud){ warn('⚠️ تعذّر الاتصال، حاول لاحقاً'); return; }
     sending=true; $('rvSend').disabled=true;
     try{
       var tk=''; try{ var ab=new Uint8Array(16); crypto.getRandomValues(ab); tk=Array.prototype.map.call(ab,function(x){return ('0'+x.toString(16)).slice(-2);}).join(''); }catch(e){ tk=String(Date.now())+Math.random().toString(16).slice(2,12); }
@@ -1614,15 +1620,15 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
         $('rvForm').style.display='none'; $('rvDone').style.display='block';
       }else{
         var e=r&&r.error;
-        showToast(e==='link'?'❌ ممنوع وضع روابط بالرأي': e==='busy'?'⏳ المحاولات كثيرة، جرّب بعد قليل': e==='gender'?'⚠️ حدد الجنس: بنت أو رجل':'❌ تأكد من الاسم والرأي');
+        warn(e==='link'?'❌ ممنوع وضع روابط بالرأي': e==='busy'?'⏳ المحاولات كثيرة، جرّب بعد قليل': e==='gender'?'⚠️ حدد الجنس: بنت أو رجل':'❌ تأكد من الاسم والرأي');
       }
     }catch(err){
       var m=String((err&&err.message)||err);
-      showToast(/PGRST202|submit_review|Could not find/i.test(m)?'⚠️ الخدمة غير جاهزة بعد':'⚠️ تعذّر الإرسال، حاول لاحقاً');
+      warn(/PGRST202|submit_review|Could not find/i.test(m)?'⚠️ الخدمة غير جاهزة بعد':'⚠️ تعذّر الإرسال، حاول لاحقاً');
     }
     sending=false; $('rvSend').disabled=false;
   };
-  $('rvBody').addEventListener('input',function(){ $('rvCnt').textContent=this.value.length; });
+  $('rvBody').addEventListener('input',function(){ $('rvCnt').textContent=this.value.length; warn(''); });
   $('rvModal').addEventListener('click',function(e){ if(e.target===this) dzReviewClose(); });
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load); else load();
 })();
