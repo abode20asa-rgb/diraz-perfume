@@ -417,7 +417,7 @@ textarea{resize:vertical;min-height:80px}
       <h2>🌐 الخصم الخارجي (طلبات الانستغرام)</h2>
       <p style="color:rgba(255,255,255,.8);font-size:.83rem;margin-bottom:14px;line-height:1.7">لما زبون يطلب من الانستغرام باسم منشئ، اختر كوده وحدد عدد العطور، والعمولة تنحسب وتنضاف لحسابه تلقائياً.</p>
       <div class="coupon-form-grid">
-        <div class="form-group" style="grid-column:1/-1"><label>اختر الكود *</label><select id="ext_code" onchange="extCalc();extRenderLog()"></select></div>
+        <div class="form-group" style="grid-column:1/-1"><label>اختر الكود *</label><select id="ext_code" onchange="extCalc();extRenderLog();soCalc()"></select></div>
         <div class="form-group"><label>عدد عطور 50 مل</label><input type="number" id="ext_n50" min="0" value="0" oninput="extCalc()"></div>
         <div class="form-group"><label>عدد عطور 30 مل</label><input type="number" id="ext_n30" min="0" value="0" oninput="extCalc()"></div>
         <div class="form-group" style="grid-column:1/-1"><label>تاريخ الطلب (اتركه فاضي = اليوم)</label><input type="date" id="ext_date"></div>
@@ -425,6 +425,18 @@ textarea{resize:vertical;min-height:80px}
       </div>
       <div id="ext_preview" style="margin:12px 0;color:white;font-weight:800"></div>
       <div class="form-actions"><button class="btn-save" onclick="extAdd()">➕ إضافة العمولة للمنشئ</button></div>
+
+      <div style="height:1px;background:rgba(255,255,255,.3);margin:22px 0"></div>
+      <h3 style="color:white;font-size:1rem;margin-bottom:6px">🛒 إضافة طلب للمنشئ (يظهر كطلب عادي من الموقع)</h3>
+      <p style="color:rgba(255,255,255,.8);font-size:.8rem;margin-bottom:12px;line-height:1.7">يُسجَّل طلب مُسلَّم على الكود المحدد فوق، بالتاريخ والوقت اللي تختاره. يطلع بقائمة الطلبات وبصفحة المنشئ.</p>
+      <div class="coupon-form-grid">
+        <div class="form-group"><label>عدد عطور 50 مل</label><input type="number" id="so_n50" min="0" value="0" oninput="soCalc()"></div>
+        <div class="form-group"><label>عدد عطور 30 مل</label><input type="number" id="so_n30" min="0" value="0" oninput="soCalc()"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>التاريخ والوقت *</label><input type="datetime-local" id="so_dt"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>مبلغ الطلب (اختياري — يدخل بالمبيعات)</label><input type="number" id="so_total" min="0" placeholder="مثال: 45000"></div>
+      </div>
+      <div id="so_preview" style="margin:12px 0;color:white;font-weight:800"></div>
+      <div class="form-actions"><button class="btn-save" onclick="siteOrderAdd()">🛒 إضافة الطلب للمنشئ</button></div>
 
       <div style="height:1px;background:rgba(255,255,255,.3);margin:22px 0"></div>
       <h3 style="color:white;font-size:1rem;margin-bottom:10px">💵 إضافة مبلغ مباشر لصاحب الكود المحدد</h3>
@@ -795,7 +807,7 @@ function renderOrders(){
     var items = (order.items||[]).map(function(i,n){ return '<div class="order-item-row">'+(n+1)+'. '+esc(i.name)+' × '+esc(i.qty)+' — '+esc((i.price*i.qty).toLocaleString('en-US'))+' '+esc(i.currency)+'</div>'; }).join('');
     return '<div class="order-card">' +
       '<div class="order-top">' +
-        '<div><div class="order-id"># '+esc(order.id||idx+1)+'</div><div class="order-cust">👤 '+esc(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+esc(order.customer&&order.customer.phone||'—')+'</div></div>' +
+        '<div><div class="order-id"># '+esc(order.id||idx+1)+(order.manual?' <small style="opacity:.8;font-weight:700">📝 مضاف يدوياً</small>':'')+'</div><div class="order-cust">👤 '+esc(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+esc(order.customer&&order.customer.phone||'—')+'</div></div>' +
         '<div style="text-align:left"><div class="order-date">🕐 '+d+'</div>' +
         '<button class="status-badge '+(ip?'status-pending':'status-delivered')+'" onclick="toggleStatus('+idx+')">'+(ip?'🟡 قيد الانتظار':'🟢 تم التسليم')+'</button></div>' +
       '</div>' +
@@ -1327,7 +1339,7 @@ function extFill(){
   var cur=sel.value, cs=tryParse(COUPONS_KEY,[]);
   sel.innerHTML=cs.map(function(c){ return '<option value="'+esc(c.code)+'">'+esc(c.code)+(c.creatorName?' — '+esc(c.creatorName):'')+'</option>'; }).join('') || '<option value="">لا توجد أكواد</option>';
   if(cur) sel.value=cur;
-  extCalc(); extRenderLog();
+  extCalc(); extRenderLog(); soCalc();
 }
 function extCalc(){
   var box=document.getElementById('ext_preview'); if(!box) return;
@@ -1337,6 +1349,39 @@ function extCalc(){
   var n50=parseInt(document.getElementById('ext_n50').value)||0, n30=parseInt(document.getElementById('ext_n30').value)||0;
   var amt=n50*k.c50+n30*k.c30;
   box.innerHTML='العمولة: '+n50+' × '+k.c50.toLocaleString('en-US')+' + '+n30+' × '+k.c30.toLocaleString('en-US')+' = <span style="font-size:1.15rem">'+amt.toLocaleString('en-US')+' دينار</span>';
+}
+function soCalc(){
+  var box=document.getElementById('so_preview'); if(!box) return;
+  var s=extSel(); if(!s){ box.textContent=''; return; }
+  var k=comInfo(s.c);
+  if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة حسب الحجم. اضغط 💰 عنده وحدد العمولة أولاً.'; return; }
+  var n50=parseInt(document.getElementById('so_n50').value)||0, n30=parseInt(document.getElementById('so_n30').value)||0;
+  box.innerHTML='عمولة المنشئ: <span style="font-size:1.15rem">'+(n50*k.c50+n30*k.c30).toLocaleString('en-US')+' دينار</span>';
+}
+async function siteOrderAdd(){
+  var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
+  var k=comInfo(s.c);
+  if(k.legacy){ showToast('⚠️ حدد عمولة 50/35 للكود أولاً (زر 💰)'); return; }
+  var n50=parseInt(document.getElementById('so_n50').value)||0, n30=parseInt(document.getElementById('so_n30').value)||0;
+  if(n50<0||n30<0||(n50+n30)===0){ showToast('❌ اكتب عدد العطور'); return; }
+  var dv=(document.getElementById('so_dt').value||'').trim();
+  var when=dv?new Date(dv):null;
+  if(!when||isNaN(when.getTime())){ showToast('❌ حدد التاريخ والوقت'); return; }
+  var total=parseInt(document.getElementById('so_total').value)||0;
+  var unit=total?Math.round(total/(n50+n30)):0;
+  var items=[];
+  if(n50) items.push({name:'عطر 50 مل',price:unit,currency:'دينار',qty:n50,size:'50ml'});
+  if(n30) items.push({name:'عطر 30 مل',price:unit,currency:'دينار',qty:n30,size:'30ml'});
+  var order={id:Date.now(),customer:{name:'',phone:'',address:'',province:'',area:'',age:''},items:items,subtotal:total,deliveryFee:0,total:total,currency:'دينار',date:when.toISOString(),status:'delivered',coupon:{code:s.c.code,discount:0},manual:true};
+  try{ await DirazCloud.upsert('orders',[{id:String(order.id),data:order}]); }
+  catch(e){ cloudFail(e); return; }
+  var os=tryParse(ORDERS_KEY,[]); os.push(order);
+  os.sort(function(x,y){ return new Date(y.date)-new Date(x.date); });
+  localStorage.setItem(ORDERS_KEY,JSON.stringify(os));
+  ['so_n50','so_n30'].forEach(function(id){ document.getElementById(id).value=0; });
+  document.getElementById('so_dt').value=''; document.getElementById('so_total').value='';
+  soCalc(); renderStats(); renderOrders(); renderCoupons();
+  showToast('✅ انضاف طلب لحساب '+(s.c.creatorName||s.c.code));
 }
 function extAdd(){
   var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
