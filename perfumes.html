@@ -1501,7 +1501,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   <div class="rv-box" id="rvBox">
     <div id="rvForm">
       <h3>⭐ شاركنا رأيك</h3>
-      <div class="rv-sub">رأيك يهمنا. ينشر رأيك مباشرة بعد فحصه تلقائياً، ولا يُنشر أي رأي فيه إساءة للدين أو شتم أو إساءة للموقع.</div>
+      <div class="rv-sub">رأيك يهمنا. ينشر رأيك مباشرة بعد فحصه تلقائياً (وبعض الآراء تراجعها الإدارة)، ولا يُنشر أي رأي فيه إساءة للدين أو شتم أو إساءة للموقع.</div>
       <label for="rvName">الاسم الأول *</label>
       <input type="text" id="rvName" maxlength="20" placeholder="مثال: سارة" autocomplete="off">
       <label for="rvBody">رأيك *</label>
@@ -1607,7 +1607,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
         $('rvForm').style.display='none'; $('rvDone').style.display='block';
         if(r.status==='approved'){ $('rvDoneIco').textContent='🎉'; $('rvDoneTxt').innerHTML='تم نشر رأيك، شكراً لك 🌸'; load(); }
         else if(r.status==='rejected'){ $('rvDoneIco').textContent='❌'; $('rvDoneTxt').innerHTML='عذراً، ما تم نشر رأيك 🌸<br><b>السبب:</b> '+esc(r.reason||'لا يتوافق مع شروط النشر'); }
-        else{ $('rvDoneIco').textContent='✅'; $('rvDoneTxt').innerHTML='تم استلام رأيك، شكراً لك 🌸'; }
+        else{ $('rvDoneIco').textContent='⏳'; $('rvDoneTxt').innerHTML='تم استلام رأيك، شكراً لك 🌸<br>راح تراجعه الإدارة وينشر بعد الموافقة، وإذا دخلت الموقع مرة ثانية نخبرك بالنتيجة.'; }
       }else{
         var e=r&&r.error;
         warn(e==='link'?'❌ ممنوع وضع روابط بالرأي': e==='busy'?'⏳ المحاولات كثيرة، جرّب بعد قليل': e==='gender'?'⚠️ حدد الجنس: بنت أو رجل':'❌ تأكد من الاسم والرأي');

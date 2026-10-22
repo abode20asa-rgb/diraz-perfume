@@ -173,6 +173,8 @@ textarea{resize:vertical;min-height:80px}
 .rv-tag.ok{background:rgba(37,211,102,.6)}
 .rv-sep{color:#fff;font-weight:900;font-size:.85rem;margin:14px 0 8px}
 .rv-tag.no{background:rgba(229,57,53,.65)}
+.rv-x{border:0;background:rgba(255,255,255,.35);color:#c62828;width:24px;height:24px;border-radius:50%;font-size:.8rem;font-weight:900;cursor:pointer;line-height:1;flex:none}
+.rv-x:hover{background:rgba(255,255,255,.7)}
 .rv-why{background:rgba(229,57,53,.22);border:1px solid rgba(255,140,140,.5);border-radius:10px;padding:6px 10px;margin-bottom:10px;color:#fff;font-size:.82rem;font-weight:700;word-break:break-word}
 #rvRejModal{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.55);direction:rtl}
 #rvRejModal.on{display:flex}
@@ -1427,19 +1429,21 @@ async function rvDelete(id){
 }
 
 // ── آخر 5 حركات (تلقائية + من الأدمن) ──
-var RV_LOG_ICO={approved:'✅',rejected:'❌',deleted:'🗑️',added:'➕'};
-var RV_LOG_TXT={approved:'نُشر',rejected:'رُفض',deleted:'حُذف',added:'أُضيف ونُشر'};
+var RV_LOG_ICO={approved:'✅',rejected:'❌',deleted:'🗑️',added:'➕',pending:'⏳'};
+var RV_LOG_TXT={approved:'نُشر',rejected:'رُفض',deleted:'حُذف',added:'أُضيف ونُشر',pending:'يحتاج مراجعتك'};
 function rvLogRow(l){
   var by=l.actor==='auto'?'🤖 تلقائي':'👤 الأدمن';
   var body=String(l.body||''); if(body.length>90) body=body.slice(0,90)+'…';
   return '<div class="rv-row"><div class="h"><span>'+(RV_LOG_ICO[l.action]||'•')+' '+(RV_LOG_TXT[l.action]||esc(l.action))+'</span>'+
-    '<span class="rv-tag'+(l.actor==='auto'?'':' ok')+'">'+by+'</span><span class="t">'+esc(rvTime(l.at))+'</span></div>'+
+    '<span class="rv-tag'+(l.actor==='auto'?'':' ok')+'">'+by+'</span><span class="t">'+esc(rvTime(l.at))+'</span>'+
+    '<button type="button" class="rv-x" title="حذف هذه الحركة" onclick="rvLogDel('+Number(l.id)+')">✕</button></div>'+
     '<div class="b" style="margin-bottom:'+(l.reason?'6':'0')+'px"><b>'+esc(l.name||'')+':</b> '+esc(body)+'</div>'+
     (l.reason?'<div class="rv-why">السبب: '+esc(l.reason)+'</div>':'')+'</div>';
 }
 function rvLogRender(){
   var box=document.getElementById('rvLogBox');
-  box.innerHTML='<div class="rv-sep">🕘 آخر '+Math.max(rvLogRows.length,0)+' حركات</div>'+
+  box.innerHTML='<div class="rv-sep" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>🕘 آخر '+Math.max(rvLogRows.length,0)+' حركات</span>'+
+    (rvLogRows.length?'<button type="button" class="btn-del-order" onclick="rvLogClear()">🧹 مسح السجل</button>':'')+'</div>'+
     (rvLogRows.length?rvLogRows.map(rvLogRow).join(''):'<div class="no-items">ما كو حركات بعد</div>');
 }
 async function rvLogLoad(){
@@ -1449,7 +1453,7 @@ async function rvLogLoad(){
     var top=rvLogRows[0];
     if(top){
       if(rvLogLast!==null && Number(top.id)>rvLogLast && top.actor==='auto')
-        showToast(top.action==='approved'?'🤖 رأي جديد نُشر تلقائياً':'🤖 رأي جديد رُفض تلقائياً — شوف آخر الحركات');
+        showToast(top.action==='approved'?'🤖 رأي جديد نُشر تلقائياً':top.action==='pending'?'⏳ رأي جديد يحتاج قرارك':'🤖 رأي جديد رُفض تلقائياً — شوف آخر الحركات');
       rvLogLast=Number(top.id);
     }else if(rvLogLast===null){ rvLogLast=0; }
     if(rvLogOpen) rvLogRender();
@@ -1459,6 +1463,15 @@ async function rvLogLoad(){
       document.getElementById('rvLogBox').innerHTML='<div class="no-items">'+(/admin_review_log|PGRST202|404|Could not find/i.test(m)?'⚠️ شغّل supabase-reviews-v3.sql في Supabase':'⚠️ تعذّر تحميل الحركات')+'</div>';
     }
   }
+}
+async function rvLogClear(){
+  if(!confirm('مسح كل سجل الحركات؟ (ما يأثر على الآراء نفسها)')) return;
+  try{ await DirazCloud.rpc('admin_review_log_clear'); showToast('🧹 انمسح السجل'); rvLogLoad(); }
+  catch(e){ showToast(/admin_review_log_clear|PGRST202|404|Could not find/i.test(String((e&&e.message)||e))?'⚠️ شغّل supabase-reviews-v4.sql أولاً':'❌ فشل المسح'); }
+}
+async function rvLogDel(id){
+  try{ await DirazCloud.rpc('admin_review_log_delete',{p_id:id}); rvLogLoad(); }
+  catch(e){ showToast(/admin_review_log_delete|PGRST202|404|Could not find/i.test(String((e&&e.message)||e))?'⚠️ شغّل supabase-reviews-v4.sql أولاً':'❌ فشل الحذف'); }
 }
 function rvLogToggle(){
   rvLogOpen=!rvLogOpen;
