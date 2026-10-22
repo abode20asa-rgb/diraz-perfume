@@ -443,6 +443,47 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   .support-btn{padding:7px 9px;font-size:.65rem;gap:4px}
   .support-btn svg{width:14px;height:14px}
 }
+/* ══ الآراء ══ */
+.review-btn{background:#fff;color:var(--pink-deep)}
+.review-btn:hover{background:#fff4f8}
+.review-btn .rv-ico{font-size:.95rem;line-height:1}
+@media(max-width:480px){ .review-btn .rv-txt{display:none} .review-btn{padding:7px 10px} }
+.rv-strip{direction:ltr;overflow:hidden;margin:0 0 34px;padding:4px 0;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.rv-track{display:flex;gap:14px;width:max-content;animation:rvMove var(--rv-dur,40s) linear infinite}
+.rv-strip:hover .rv-track,.rv-strip:active .rv-track{animation-play-state:paused}
+@keyframes rvMove{to{transform:translateX(-50%)}}
+.rv-card{direction:rtl;display:flex;align-items:center;gap:10px;flex:none;width:270px;padding:10px 14px;border-radius:16px;color:#000;box-shadow:0 4px 14px rgba(120,30,70,.14)}
+.rv-card.girl{background:#fbc9d9;border:1.5px solid rgba(255,255,255,.75)}
+.rv-card.man{background:#b3c0f4;border:1.5px solid #1a2456}
+.rv-av{width:40px;height:40px;border-radius:50%;flex:none;overflow:hidden;background:rgba(255,255,255,.55)}
+.rv-av svg{width:100%;height:100%;display:block}
+.rv-tx{display:flex;flex-direction:column;min-width:0;text-align:right}
+.rv-nm{font-weight:900;font-size:.85rem;line-height:1.25;color:#000}
+.rv-bd{font-weight:600;font-size:.8rem;line-height:1.4;color:#000;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;word-break:break-word}
+@media(prefers-reduced-motion:reduce){ .rv-track{animation:none} .rv-strip{overflow-x:auto} }
+#rvModal{position:fixed;inset:0;z-index:10100;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(60,15,40,.55);direction:rtl;font-family:'Cairo',sans-serif}
+#rvModal.on{display:flex}
+.rv-box{background:#fff;color:#333;width:min(420px,100%);max-height:calc(100vh - 32px);overflow:auto;border-radius:22px;padding:22px 20px;box-shadow:0 18px 60px rgba(120,30,70,.4)}
+.rv-box h3{color:var(--pink-deep);font-size:1.15rem;font-weight:900;margin-bottom:4px;text-align:center}
+.rv-box .rv-sub{font-size:.78rem;color:#888;text-align:center;margin-bottom:14px;line-height:1.6}
+.rv-box label{display:block;font-size:.8rem;font-weight:800;color:var(--pink-deep);margin:10px 0 5px}
+.rv-box input,.rv-box textarea{width:100%;padding:10px 14px;border-radius:12px;border:1.5px solid #e6d3db;font-family:inherit;font-size:.92rem;outline:none;background:#fff;color:#222}
+.rv-box input:focus,.rv-box textarea:focus{border-color:var(--pink-deep)}
+.rv-box textarea{resize:none;min-height:92px}
+.rv-cnt{font-size:.7rem;color:#aaa;text-align:left;margin-top:3px}
+.rv-gen{display:flex;gap:10px}
+.rv-gen button{flex:1;padding:10px;border-radius:14px;border:2px solid #e6d3db;background:#fff;font-family:inherit;font-weight:800;font-size:.9rem;cursor:pointer;color:#555;transition:all .15s}
+.rv-gen button.sel{border-color:var(--pink-deep);background:var(--pink-light);color:var(--pink-deep)}
+.rv-gen.err button{border-color:#e53935}
+.rv-rules{font-size:.72rem;color:#999;margin-top:12px;line-height:1.7;text-align:center}
+.rv-act{display:flex;gap:10px;margin-top:14px}
+.rv-act button{flex:1;padding:11px;border-radius:50px;border:0;font-family:inherit;font-weight:800;font-size:.92rem;cursor:pointer}
+.rv-send{background:var(--pink-deep);color:#fff}
+.rv-send:disabled{opacity:.6;cursor:wait}
+.rv-cancel{background:#f1eaee;color:#777}
+.rv-done{text-align:center;padding:10px 4px}
+.rv-done .big{font-size:2.4rem}
+.rv-done p{font-weight:700;line-height:1.9;margin:8px 0 14px;color:#444}
 #dzSupport{position:fixed;z-index:10050;top:84px;right:18px;width:min(380px,calc(100vw - 24px));height:min(540px,calc(100vh - 110px));display:none;flex-direction:column;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 18px 60px rgba(120,30,70,.38);direction:rtl;font-family:'Cairo',sans-serif}
 #dzSupport.open{display:flex;animation:dzSpIn .22s ease-out}
 @keyframes dzSpIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:none}}
@@ -575,6 +616,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
       <span class="sp-txt">الدعم</span>
       <span class="support-dot" id="supportDot"></span>
     </button>
+    <button type="button" class="support-btn review-btn" id="reviewBtn" onclick="dzReviewOpen()" aria-label="إضافة رأي"><span class="rv-ico">⭐</span><span class="rv-txt">إضافة رأي</span></button>
   </div>
   <div class="header-title">
     <div class="en">DIRAZ PERFUME</div>
@@ -591,6 +633,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 </header>
 
 <main>
+  <div class="rv-strip" id="rvStrip" style="display:none" aria-label="آراء الزبائن"><div class="rv-track" id="rvTrack"></div></div>
   <div class="page-title">
     <h1>🌺 عطورنا</h1>
     <p>اكتشف مجموعتنا المميزة من العطور الفاخرة</p>
@@ -1465,6 +1508,108 @@ initSections();
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElementById('customerPopup').style.display==='flex') closeCustomerPopup(); });
 </script>
 
+
+<!-- ═══ الآراء ═══ -->
+<div id="rvModal" role="dialog" aria-label="إضافة رأي">
+  <div class="rv-box" id="rvBox">
+    <div id="rvForm">
+      <h3>⭐ شاركنا رأيك</h3>
+      <div class="rv-sub">رأيك يهمنا. الآراء تُراجع من الإدارة قبل النشر، ولا يُنشر أي رأي فيه إساءة أو شتم أو كفر.</div>
+      <label for="rvName">الاسم الأول *</label>
+      <input type="text" id="rvName" maxlength="20" placeholder="مثال: سارة" autocomplete="off">
+      <label for="rvBody">رأيك *</label>
+      <textarea id="rvBody" maxlength="300" placeholder="اكتب رأيك بالموقع أو العطور..."></textarea>
+      <div class="rv-cnt"><span id="rvCnt">0</span>/300</div>
+      <label>الجنس *</label>
+      <div class="rv-gen" id="rvGen">
+        <button type="button" data-g="girl" onclick="dzRvGender('girl')">👧 بنت</button>
+        <button type="button" data-g="man" onclick="dzRvGender('man')">👨 رجل</button>
+      </div>
+      <div class="rv-act">
+        <button type="button" class="rv-send" id="rvSend" onclick="dzRvSend()">نشر الرأي</button>
+        <button type="button" class="rv-cancel" onclick="dzReviewClose()">إلغاء</button>
+      </div>
+    </div>
+    <div class="rv-done" id="rvDone" style="display:none">
+      <div class="big">✅</div>
+      <p>تم استلام رأيك، شكراً لك 🌸<br>سوف ينشر رأيك بعد مراجعته من قبل الإدارة.</p>
+      <div class="rv-act"><button type="button" class="rv-send" onclick="dzReviewClose()">تم</button></div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  var gender='', sending=false;
+  var AV={
+    girl:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M10 21c0-8 4.5-13 10-13s10 5 10 13v15H10z" fill="#5a2a3d"/><path d="M5 40c0-8 6-11 15-11s15 3 15 11z" fill="#c45a7a"/><ellipse cx="20" cy="19.5" rx="6.2" ry="7" fill="#f6cdb5"/><path d="M13.5 17.5c1-5 5-7.5 6.5-7.5s5.5 2.500 6.500 7.500c-3-1.500-9-1.500-13 0z" fill="#5a2a3d"/></svg>',
+    man:'<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M4 40c0-8 6-11 16-11s16 3 16 11z" fill="#1a2456"/><path d="M16 29l4 6 4-6z" fill="#fff"/><rect x="17.500" y="24" width="5" height="6" fill="#e8bd9f"/><ellipse cx="20" cy="17.500" rx="6.300" ry="7.300" fill="#f0c8aa"/><path d="M13.500 16c0-5.500 3-8.500 6.500-8.500s6.500 3 6.500 8.500c-1.500-2.500-3.500-3.500-6.500-3.500s-5 1-6.500 3.500z" fill="#2b2b33"/></svg>'
+  };
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function $(id){ return document.getElementById(id); }
+
+  function cardHtml(r){
+    var g = r.gender==='man' ? 'man' : 'girl';
+    return '<div class="rv-card '+g+'" title="'+esc(r.body)+'"><div class="rv-av">'+AV[g]+'</div>'+
+      '<div class="rv-tx"><div class="rv-nm">'+esc(r.name)+'</div><div class="rv-bd">'+esc(r.body)+'</div></div></div>';
+  }
+  function render(list){
+    var strip=$('rvStrip'), track=$('rvTrack');
+    var items=list.map(cardHtml), w=284;
+    var k=Math.max(1,Math.ceil((window.innerWidth*1.3)/(items.length*w)));
+    var half='';
+    for(var i=0;i<k;i++) half+=items.join('');
+    track.innerHTML=half+half;
+    track.style.setProperty('--rv-dur', Math.max(20,Math.round(items.length*k*w/45))+'s');
+    strip.style.display='block';
+  }
+  function load(){
+    if(!window.DirazCloud) return;
+    DirazCloud.rpc('approved_reviews').then(function(r){ if(Array.isArray(r)&&r.length) render(r); }).catch(function(){});
+  }
+
+  window.dzReviewOpen=function(){
+    var c={}; try{ c=JSON.parse(localStorage.getItem('diraz_customer')||'{}')||{}; }catch(e){}
+    if(!$('rvName').value) $('rvName').value=String(c.name||'').trim().split(/\s+/)[0]||'';
+    $('rvForm').style.display='block'; $('rvDone').style.display='none';
+    $('rvModal').classList.add('on');
+  };
+  window.dzReviewClose=function(){ $('rvModal').classList.remove('on'); };
+  window.dzRvGender=function(g){
+    gender=g; $('rvGen').classList.remove('err');
+    Array.prototype.forEach.call($('rvGen').children,function(b){ b.classList.toggle('sel', b.getAttribute('data-g')===g); });
+  };
+  window.dzRvSend=async function(){
+    if(sending) return;
+    var name=$('rvName').value.trim().split(/\s+/)[0]||'', body=$('rvBody').value.trim();
+    if(!name){ showToast('✏️ اكتب اسمك الأول'); return; }
+    if(body.length<3){ showToast('✏️ اكتب رأيك'); return; }
+    if(!gender){ $('rvGen').classList.add('err'); showToast('⚠️ حدد الجنس: بنت أو رجل'); return; }
+    if(/https?:\/\/|www\./i.test(body)){ showToast('❌ ممنوع وضع روابط بالرأي'); return; }
+    var last=0; try{ last=Number(localStorage.getItem('diraz_rv_last')||0); }catch(e){}
+    if(Date.now()-last<60000){ showToast('⏳ انتظر دقيقة قبل إرسال رأي ثاني'); return; }
+    if(!window.DirazCloud){ showToast('⚠️ تعذّر الاتصال، حاول لاحقاً'); return; }
+    sending=true; $('rvSend').disabled=true;
+    try{
+      var r=await DirazCloud.rpc('submit_review',{p_name:name,p_body:body,p_gender:gender});
+      if(r && r.ok===true){
+        try{ localStorage.setItem('diraz_rv_last',String(Date.now())); }catch(e){}
+        $('rvBody').value=''; $('rvCnt').textContent='0';
+        $('rvForm').style.display='none'; $('rvDone').style.display='block';
+      }else{
+        var e=r&&r.error;
+        showToast(e==='link'?'❌ ممنوع وضع روابط بالرأي': e==='busy'?'⏳ المحاولات كثيرة، جرّب بعد قليل': e==='gender'?'⚠️ حدد الجنس: بنت أو رجل':'❌ تأكد من الاسم والرأي');
+      }
+    }catch(err){
+      var m=String((err&&err.message)||err);
+      showToast(/PGRST202|submit_review|Could not find/i.test(m)?'⚠️ الخدمة غير جاهزة بعد':'⚠️ تعذّر الإرسال، حاول لاحقاً');
+    }
+    sending=false; $('rvSend').disabled=false;
+  };
+  $('rvBody').addEventListener('input',function(){ $('rvCnt').textContent=this.value.length; });
+  $('rvModal').addEventListener('click',function(e){ if(e.target===this) dzReviewClose(); });
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',load); else load();
+})();
+</script>
 
 <!-- ═══ الدعم: محادثة مباشرة مع الأدمن والمساعدين ═══ -->
 <div id="dzSupport" role="dialog" aria-label="الدعم">

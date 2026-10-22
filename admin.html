@@ -160,6 +160,16 @@ textarea{resize:vertical;min-height:80px}
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(100px);background:rgba(30,30,30,0.92);color:white;padding:12px 30px;border-radius:50px;font-size:.9rem;font-weight:700;z-index:9999;transition:transform .4s;pointer-events:none}
 #toast.show{transform:translateX(-50%) translateY(0)}
 @media(max-width:600px){.form-grid,.coupon-form-grid{grid-template-columns:1fr}.perfume-item{flex-direction:column;align-items:flex-start}}
+
+/* ══ الآراء ══ */
+.rv-row{background:rgba(255,255,255,.2);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+.rv-row .h{display:flex;align-items:center;gap:8px;font-weight:800;color:#fff;margin-bottom:4px}
+.rv-row .t{font-size:.72rem;opacity:.75;font-weight:600;margin-inline-start:auto}
+.rv-row .b{color:#fff;font-size:.9rem;line-height:1.7;word-break:break-word;margin-bottom:10px}
+.rv-row .a{display:flex;gap:8px;flex-wrap:wrap}
+.rv-tag{font-size:.7rem;padding:2px 10px;border-radius:50px;background:rgba(255,193,7,.55);color:#fff}
+.rv-tag.ok{background:rgba(37,211,102,.6)}
+.rv-sep{color:#fff;font-weight:900;font-size:.85rem;margin:14px 0 8px}
 </style>
 <style id="spAdminCss">
 /* ══ الدعم ══ */
@@ -256,6 +266,24 @@ textarea{resize:vertical;min-height:80px}
           <div class="sp-form"><textarea id="spIn" rows="1" maxlength="1000" placeholder="اكتب ردك هنا..." disabled></textarea><button type="button" class="btn-save" id="spSendBtn" onclick="spSend()" disabled>إرسال</button></div>
         </div>
       </div>
+    </div>
+
+    <!-- الآراء -->
+    <div class="section-card" id="reviewsCard">
+      <h2>⭐ الآراء <span class="sp-un" id="rvPendBadge" style="display:none;vertical-align:middle">0</span></h2>
+      <div id="rvStatus" class="no-items" style="padding:0 0 10px;display:none"></div>
+      <div class="form-grid">
+        <div class="form-group"><label>الاسم الأول *</label><input type="text" id="rv_name" maxlength="20" placeholder="سارة"></div>
+        <div class="form-group"><label>الجنس *</label>
+          <select id="rv_gender"><option value="">— اختر —</option><option value="girl">👧 بنت</option><option value="man">👨 رجل</option></select>
+        </div>
+        <div class="form-group full"><label>الرأي *</label><textarea id="rv_body" rows="3" maxlength="300" placeholder="اكتب الرأي هنا..."></textarea></div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-save" onclick="rvAdd()">➕ إضافة رأي</button>
+        <button type="button" class="btn-cancel" id="rvToggle" onclick="rvToggleList()">📋 الآراء (0)</button>
+      </div>
+      <div id="rvList" style="display:none;margin-top:16px"></div>
     </div>
 
     <!-- الطلبات -->
@@ -491,7 +519,7 @@ function refreshFromCloud(){
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
 window.addEventListener('focus', refreshFromCloud);
 setInterval(refreshFromCloud, 30000);
-function initAll(){ try{ spStart(); }catch(e){} try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
+function initAll(){ try{ spStart(); }catch(e){} try{ rvLoad(); setInterval(rvLoad,30000); }catch(e){} try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
@@ -1262,6 +1290,76 @@ async function toggleSection(){
     showToast('❌ فشل التحديث');
     alert('سبب الفشل:\n' + String((e && e.message) || e).slice(0, 300));
   }
+}
+</script>
+<script>
+// ══ الآراء ══
+var rvAll=[], rvOpen=false, rvPrevPend=null;
+function rvTime(at){ try{ return new Date(at).toLocaleString('ar-IQ',{hour:'2-digit',minute:'2-digit',day:'numeric',month:'numeric'}); }catch(e){ return ''; } }
+function rvFail(e){
+  var st=document.getElementById('rvStatus'), m=String((e&&e.message)||e);
+  st.style.display='block';
+  st.textContent=/admin_review|PGRST202|404|Could not find/i.test(m)?'⚠️ شغّل supabase-reviews.sql في Supabase حتى تشتغل الآراء':'⚠️ تعذّر تحميل الآراء';
+}
+function rvCounts(){
+  var pend=rvAll.filter(function(r){return r.status==='pending';}).length;
+  var b=document.getElementById('rvPendBadge'); b.textContent=pend; b.style.display=pend?'inline-block':'none';
+  document.getElementById('rvToggle').textContent='📋 الآراء ('+rvAll.length+')'+(pend?' • '+pend+' بانتظار':'');
+  if(rvPrevPend!==null && pend>rvPrevPend) showToast('⭐ رأي جديد بانتظار الموافقة');
+  rvPrevPend=pend;
+}
+async function rvLoad(){
+  try{
+    var rows=await DirazCloud.rpc('admin_reviews');
+    rvAll=Array.isArray(rows)?rows:[];
+    document.getElementById('rvStatus').style.display='none';
+    rvCounts();
+    if(rvOpen) rvRender();
+  }catch(e){ rvFail(e); }
+}
+function rvRow(r){
+  var pend=r.status==='pending';
+  return '<div class="rv-row"><div class="h"><span>'+(r.gender==='man'?'👨':'👧')+' '+esc(r.name)+'</span>'+
+    '<span class="rv-tag'+(pend?'':' ok')+'">'+(pend?'بانتظار الموافقة':'منشور')+'</span>'+
+    '<span class="t">'+esc(rvTime(r.created_at))+(r.source==='admin'?' • من الإدارة':'')+'</span></div>'+
+    '<div class="b">'+esc(r.body)+'</div><div class="a">'+
+    (pend?'<button type="button" class="btn-deliver" onclick="rvApprove('+Number(r.id)+')">✅ موافقة ونشر</button>':'')+
+    '<button type="button" class="btn-del-order" onclick="rvDelete('+Number(r.id)+')">🗑️ حذف</button></div></div>';
+}
+function rvRender(){
+  var box=document.getElementById('rvList');
+  if(!rvAll.length){ box.innerHTML='<div class="no-items">ما كو آراء بعد</div>'; return; }
+  var pend=rvAll.filter(function(r){return r.status==='pending';}), ok=rvAll.filter(function(r){return r.status!=='pending';});
+  box.innerHTML=(pend.length?'<div class="rv-sep">⏳ بانتظار الموافقة ('+pend.length+')</div>'+pend.map(rvRow).join(''):'')+
+    (ok.length?'<div class="rv-sep">✅ المنشورة ('+ok.length+')</div>'+ok.map(rvRow).join(''):'');
+}
+function rvToggleList(){
+  rvOpen=!rvOpen;
+  document.getElementById('rvList').style.display=rvOpen?'block':'none';
+  if(rvOpen){ rvRender(); rvLoad(); }
+}
+async function rvAdd(){
+  var n=document.getElementById('rv_name').value.trim().split(/\s+/)[0]||'';
+  var b=document.getElementById('rv_body').value.trim();
+  var g=document.getElementById('rv_gender').value;
+  if(!n||!b){ showToast('✏️ اكتب الاسم والرأي'); return; }
+  if(!g){ showToast('⚠️ حدد الجنس: بنت أو رجل'); return; }
+  try{
+    var r=await DirazCloud.rpc('admin_review_add',{p_name:n,p_body:b,p_gender:g});
+    if(!r||r.ok!==true) throw new Error('fail');
+    document.getElementById('rv_name').value=''; document.getElementById('rv_body').value=''; document.getElementById('rv_gender').value='';
+    showToast('✅ انضاف الرأي ونُشر');
+    rvLoad();
+  }catch(e){ rvFail(e); showToast('❌ فشلت الإضافة'); }
+}
+async function rvApprove(id){
+  try{ await DirazCloud.rpc('admin_review_approve',{p_id:id}); showToast('✅ تم نشر الرأي'); rvLoad(); }
+  catch(e){ showToast('❌ فشلت الموافقة'); }
+}
+async function rvDelete(id){
+  if(!confirm('حذف هذا الرأي نهائياً؟')) return;
+  try{ await DirazCloud.rpc('admin_review_delete',{p_id:id}); showToast('🗑️ انحذف الرأي'); rvLoad(); }
+  catch(e){ showToast('❌ فشل الحذف'); }
 }
 </script>
 </body>
