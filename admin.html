@@ -405,8 +405,9 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>القيمة *</label><input type="number" id="cp_value" placeholder="20"></div>
         <div class="form-group"><label>حد الاستخدام / شخص</label><input type="number" id="cp_maxUses" value="1" min="1"></div>
         <div class="form-group"><label>اسم منشئ المحتوى (اختياري)</label><input type="text" id="cp_creator" placeholder="مثال: سارة"></div>
-        <div class="form-group"><label>عمولة المنشئ على كل عطر 50 مل (دينار)</label><input type="number" id="cp_commission50" value="1000" min="0"></div>
-        <div class="form-group"><label>عمولة المنشئ على كل عطر 30 مل (دينار)</label><input type="number" id="cp_commission30" value="500" min="0"></div>
+        <div class="form-group" style="grid-column:1/-1"><label>العمولة</label><select id="cp_mode" onchange="cpModeChange()"><option value="with">مع عمولة (المنشئ يشوف أرباحه وطلباته)</option><option value="without">بدون عمولة (المنشئ يشوف الطلبات فقط)</option></select></div>
+        <div class="form-group" id="cp_com50_wrap"><label>عمولة المنشئ على كل عطر 50 مل (دينار)</label><input type="number" id="cp_commission50" value="1000" min="0"></div>
+        <div class="form-group" id="cp_com30_wrap"><label>عمولة المنشئ على كل عطر 30 مل (دينار)</label><input type="number" id="cp_commission30" value="500" min="0"></div>
       </div>
       <div class="form-actions" style="margin-top:14px"><button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button></div>
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
@@ -962,6 +963,10 @@ async function purgeCustomer(i){
 }
 
 // ══ Coupons ══
+function cpModeChange(){
+  var w=document.getElementById('cp_mode').value==='without';
+  ['cp_com50_wrap','cp_com30_wrap'].forEach(function(id){ document.getElementById(id).style.display=w?'none':''; });
+}
 function addCoupon(){
   var code    = (document.getElementById('cp_code').value||'').toUpperCase().replace(/[^\p{L}\p{N} ]/gu,'').replace(/\s+/g,' ').trim();
   var type    = document.getElementById('cp_type').value;
@@ -972,8 +977,9 @@ function addCoupon(){
   var coupons = tryParse(COUPONS_KEY,[]);
   if(coupons.find(function(c){ return c.code===code; })){ showToast('❗ الكود موجود مسبقاً'); return; }
   var creatorName = (document.getElementById('cp_creator').value||'').trim();
-  var commission50 = parseInt(document.getElementById('cp_commission50').value||'0')||0;
-  var commission30 = parseInt(document.getElementById('cp_commission30').value||'0')||0;
+  var withoutCom = document.getElementById('cp_mode').value==='without';
+  var commission50 = withoutCom ? 0 : (parseInt(document.getElementById('cp_commission50').value||'0')||0);
+  var commission30 = withoutCom ? 0 : (parseInt(document.getElementById('cp_commission30').value||'0')||0);
   coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission50:commission50,commission30:commission30,creatorToken:genToken()});
   localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));
   DirazCloud.upsert('coupons',[{code:code,data:coupons[0],total_uses:0}]).catch(cloudFail);
@@ -984,6 +990,7 @@ function addCoupon(){
   document.getElementById('cp_creator').value = '';
   document.getElementById('cp_commission50').value = '1000';
   document.getElementById('cp_commission30').value = '500';
+  document.getElementById('cp_mode').value = 'with'; cpModeChange();
   showToast('✅ تم إنشاء كود: '+code+' — اضغط 🔗 لنسخ رابط المنشئ');
 }
 function genToken(){ var a=new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
@@ -1037,7 +1044,8 @@ function renderCoupons(){
     var extra = extTotal(c); earned += extra;
     var ki = comInfo(c);
     var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('50مل: '+ki.c50.toLocaleString('en-US')+' • 30مل: '+ki.c30.toLocaleString('en-US')+' لكل عطر');
-    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+' • مستحقات المنشئ '+earned.toLocaleString('en-US')+(extra?' (منها خارجي '+extra.toLocaleString('en-US')+')':'')+' ('+comTxt+')';
+    var noCom = !ki.legacy && ki.c50===0 && ki.c30===0; if(noCom) comTxt = 'بدون عمولة';
+    var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+(noCom?'':' • مستحقات المنشئ '+earned.toLocaleString('en-US')+(extra?' (منها خارجي '+extra.toLocaleString('en-US')+')':''))+' ('+comTxt+')';
     return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
       '<div class="coupon-code-big">'+esc(c.code)+'</div>' +
       '<div class="coupon-meta"><strong>خصم '+esc(v)+'</strong><br>حد '+esc(c.maxUses)+' / شخص • استُخدم '+esc(c.totalUses)+' مرة'+creatorLine+'<div class="uses-bar"><div class="uses-fill" style="width:'+pct+'%"></div></div></div>' +

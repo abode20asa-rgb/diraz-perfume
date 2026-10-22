@@ -80,6 +80,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
 
   function render(d){
     var disc = d.type==='percent' ? fmt(d.value)+'%' : fmt(d.value)+' دينار';
+    var noCom = !d.legacy && !Number(d.commission50) && !Number(d.commission30);
     function items(o){
       var parts = [];
       if((o.n50||0)>0) parts.push('50 مل × '+o.n50);
@@ -97,11 +98,11 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
     var rec = list.map(function(o){
       var dt = o.date ? new Date(o.date).toLocaleDateString('en-GB') : '';
       return '<div class="row"><div><div>'+esc(dt)+'</div><div class="sub">'+esc(o.txt||'—')+'</div></div>'+
-        '<span class="amt">+'+fmt(o.earn)+' دينار</span>'+
+        (noCom?'':'<span class="amt">+'+fmt(o.earn)+' دينار</span>')+
         '<span class="tag '+(o.done?'d':'')+'">'+(o.done?'تم التسليم':'قيد الانتظار')+'</span></div>';
     }).join('') || '<div class="msg" style="padding:14px">لا توجد طلبات بعد</div>';
     var ordersCount = (Number(d.orders)||0) + (d.externalCount!=null ? Number(d.externalCount)||0 : extOrders.length);
-    var ext = extMoney.map(function(e){
+    var ext = noCom ? '' : extMoney.map(function(e){
       var dt = e.date ? new Date(e.date).toLocaleDateString('en-GB') : '';
       return '<div class="row"><div><div>💵 مكافأة</div><div class="sub">'+esc(dt)+'</div></div><span class="amt">+'+fmt(e.amount)+' دينار</span></div>';
     }).join('');
@@ -112,7 +113,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
         '<div class="meta"><span class="pill">خصم '+esc(disc)+'</span><span class="pill '+(d.active?'on':'off')+'">'+(d.active?'🟢 فعال':'🔴 متوقف')+'</span></div>'+
       '</div>'+
       '<div class="grid" style="margin-bottom:18px">'+
-        '<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>'+
+        (noCom?'':'<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>')+
         '<div class="stat wide"><div class="n">'+fmt(ordersCount)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
       '</div>'+
       '<div class="card"><h2>آخر 3 طلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>'+
