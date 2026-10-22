@@ -162,6 +162,8 @@ textarea{resize:vertical;min-height:80px}
 @media(max-width:600px){.form-grid,.coupon-form-grid{grid-template-columns:1fr}.perfume-item{flex-direction:column;align-items:flex-start}}
 
 /* ══ الآراء ══ */
+.btn-rvlist{padding:13px 28px;border-radius:50px;border:2px solid rgba(255,255,255,.7);background:rgba(255,255,255,.18);color:#fff;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:800;cursor:pointer;transition:all .2s}
+.btn-rvlist:hover{background:rgba(255,255,255,.3)}
 .rv-row{background:rgba(255,255,255,.2);border-radius:14px;padding:12px 14px;margin-bottom:10px}
 .rv-row .h{display:flex;align-items:center;gap:8px;font-weight:800;color:#fff;margin-bottom:4px}
 .rv-row .t{font-size:.72rem;opacity:.75;font-weight:600;margin-inline-start:auto}
@@ -281,7 +283,7 @@ textarea{resize:vertical;min-height:80px}
       </div>
       <div class="form-actions">
         <button type="button" class="btn-save" onclick="rvAdd()">➕ إضافة رأي</button>
-        <button type="button" class="btn-cancel" id="rvToggle" onclick="rvToggleList()">📋 الآراء (0)</button>
+        <button type="button" class="btn-rvlist" id="rvToggle" onclick="rvToggleList()">📋 الآراء (0)</button>
       </div>
       <div id="rvList" style="display:none;margin-top:16px"></div>
     </div>
