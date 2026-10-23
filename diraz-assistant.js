@@ -733,11 +733,10 @@
   function aiCatalog(){
     var out=[], len=0;
     getPerfumes().slice(0,60).forEach(function(p){
-      if(p.badge==='soldout') return;
       var info=charLine(p);
       if(!info){ info=String(p.description||'').replace(/[\u200B-\u200F]/g,'').replace(/\s+/g,' ').trim(); }
       info=info.slice(0,90);
-      var line='- '+(p.name||'')+(p.nameEn?' ('+p.nameEn+')':'')+' | '+(p.type||'')+' | '+fmt(priceOf(p,'50ml'))+' دينار (50مل)'+(info?' | '+info:'');
+      var line='- '+(p.name||'')+(p.nameEn?' ('+p.nameEn+')':'')+' | '+(p.type||'')+' | '+fmt(priceOf(p,'50ml'))+' دينار (50مل)'+(info?' | '+info:'')+(p.badge==='soldout'?' | نافذ حالياً':'');
       if(len+line.length<5500){ out.push(line); len+=line.length; }
     });
     return out.join('\n');
@@ -751,6 +750,48 @@
       .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok||!j.text) throw new Error(j.error||('HTTP '+r.status)); return String(j.text); }); })
       .then(function(x){ clearTimeout(to); return x; },function(e){ clearTimeout(to); throw e; });
   }
+
+  /* ───────── كشف العطور المذكورة بالنص (اسم كامل أو كلمة مميزة تخص عطر واحد) ───────── */
+  var GENERIC=N(['عطر','عطور','perfume','perfumes','parfum','pour','homme','femme','eau','toilette','intense','for','men','women','man','woman','spray','نسائي','رجالي','للجنسين','اصدار','نسخه','عنبر','عود','مسك','ورد','سويت','كلاسيك']);
+  function mentionIdx(text,perfumes){
+    var t=' '+text+' ', wset={}, tokMap={}, score={};
+    text.split(' ').filter(Boolean).forEach(function(w){ forms(w).forEach(function(f){ wset[f]=1; }); });
+    perfumes.forEach(function(p,idx){
+      var seen={};
+      [p.name,p.nameEn].forEach(function(nm){
+        var n=norm(nm);
+        if(n.length>=4 && t.indexOf(' '+n+' ')>-1) score[idx]=(score[idx]||0)+10;
+        n.split(' ').forEach(function(tk){
+          if(tk.length>=4 && GENERIC.indexOf(tk)<0 && !seen[tk]){ seen[tk]=1; (tokMap[tk]=tokMap[tk]||[]).push(idx); }
+        });
+      });
+    });
+    Object.keys(tokMap).forEach(function(tk){
+      if(tokMap[tk].length===1 && wset[tk]){ var i=tokMap[tk][0]; score[i]=(score[i]||0)+3; }
+    });
+    return Object.keys(score).map(Number).filter(function(i){ return score[i]>=3; }).sort(function(a,b){ return score[b]-score[a]; });
+  }
+  /* بطاقة عطر: متوفر/نافذ + مواصفات + زر المعاينة (يودّي للعطر بالصفحة) + السلة */
+  function perfumeCard(idx,p){
+    var soldout=p.badge==='soldout';
+    var desc=String(p.description||'').replace(/[\u200B-\u200F]/g,'').split(/\n+/).map(function(x){ return x.trim().slice(0,160); }).filter(Boolean).slice(0,6).map(esc).join('<br>');
+    var c=document.createElement('div'); c.className='dzA_card';
+    c.innerHTML='<h4>'+esc(p.name||'')+'</h4>'+(p.nameEn?'<div class="en">'+esc(p.nameEn)+'</div>':'')+
+      '<div class="tags">'+(soldout?'❌ نافذ حالياً':'✅ متوفر عندنا')+(p.type?' • '+esc(p.type):'')+'</div>'+
+      (desc?'<div class="why">'+desc+'</div>':'')+
+      '<div class="pr">💰 50 مل: '+fmt(priceOf(p,'50ml'))+' • 30 مل: '+fmt(priceOf(p,'30ml'))+' '+esc(p.currency||'دينار')+'</div>'+
+      '<div class="dzA_acts"><button class="dzA_act main" type="button" data-a="view">👁️ معاينة العطر</button>'+(soldout?'':sizeCtl(idx,'50ml')+sizeCtl(idx,'30ml'))+'</div>';
+    c.querySelector('[data-a=view]').onclick=function(){ goTo(idx); };
+    wireSizes(c);
+    $('dzA_msgs').appendChild(c); scrollEnd();
+  }
+  /* بعد جواب الذكاء: نعرض بطاقات العطور اللي ذكرها الزبون أو الذكاء (حد أقصى 3) */
+  function showMentionCards(raw,txt){
+    var perfumes=getPerfumes(), out=[];
+    mentionIdx(norm(raw),perfumes).concat(mentionIdx(norm(txt),perfumes)).forEach(function(i){ if(out.indexOf(i)<0) out.push(i); });
+    out.slice(0,3).forEach(function(i){ if(perfumes[i]) perfumeCard(i,perfumes[i]); });
+  }
+
   /* plain(): الرد الاحتياطي إذا الذكاء مطفي أو فشل — after(): شنو يظهر بعد الجواب.
      الذكاء يبين للزبون مثل أي رد عادي من المساعد (بدون اسم، بدون صورة، بدون عدّاد) */
   function aiFallback(raw,plain,after){
@@ -764,6 +805,7 @@
       d.style.whiteSpace='pre-wrap';
       d.innerHTML=esc(txt).replace(/\n/g,'<br>');
       scrollEnd();
+      try{ showMentionCards(raw,txt); }catch(e){}
       if(after) after();
     },function(){
       try{ d.remove(); }catch(e){}
@@ -867,8 +909,14 @@
     }
 
     /* سؤال عن عطر معيّن */
-    var named=findByName(raw,perfumes);
-    if(named>-1){ showNamed(named,perfumes[named],raw); return; }
+    var hits=mentionIdx(t,perfumes);
+    if(!hits.length){ var nb=findByName(raw,perfumes); if(nb>-1) hits=[nb]; }
+    if(hits.length){
+      var h0=hits[0];
+      /* الذكاء يجاوب (متوفر عندنا + وصف) ثم تطلع بطاقة بالمواصفات وزر المعاينة؛ إذا الذكاء مطفي أو فشل: بطاقة التفاصيل العادية */
+      aiFallback(raw,function(){ showNamed(h0,perfumes[h0],raw); },null);
+      return;
+    }
 
     /* ── الراوتر: إذا السؤال مو عن العطور، الذكاء الاصطناعي يجاوب (بدون سؤال القسم أو العمر) ── */
     var pm=parseMessage(raw);
@@ -1350,7 +1398,7 @@
   };
 
   /* للاختبار */
-  window.DirazAssistant={_ai:function(){return AI;},_listKnows:function(q){ var t=norm(q); return listKnows(t,parseMessage(q),getPerfumes()); },_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
+  window.DirazAssistant={_mention:function(q){ return mentionIdx(norm(q),getPerfumes()); },_ai:function(){return AI;},_listKnows:function(q){ var t=norm(q); return listKnows(t,parseMessage(q),getPerfumes()); },_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
 
   function init(){
     if(document.getElementById('dzA_btn')) return;
