@@ -505,6 +505,46 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   #dzSupport{top:0;right:0;left:0;bottom:0;width:100%;height:100%;border-radius:0}
 }
 </style>
+<style id="dzHdrFix">
+/* ══ الهيدر: قائمة الثلاث خطوط + ترتيب الموبايل ══ */
+.header-start{position:relative}
+.menu-btn{position:relative;width:42px;height:42px;flex:none;padding:0;border:1.5px solid rgba(255,255,255,.7);background:rgba(255,255,255,.25);border-radius:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:background .2s,transform .2s}
+.menu-btn:hover{background:rgba(255,255,255,.4)}
+.menu-btn:active{transform:scale(.94)}
+.menu-lines{display:flex;flex-direction:column;gap:4px;width:20px}
+.menu-lines i{display:block;height:2.5px;border-radius:2px;background:#fff;transition:transform .25s,opacity .2s}
+.menu-btn.open .menu-lines i:nth-child(1){transform:translateY(6.5px) rotate(45deg)}
+.menu-btn.open .menu-lines i:nth-child(2){opacity:0}
+.menu-btn.open .menu-lines i:nth-child(3){transform:translateY(-6.5px) rotate(-45deg)}
+.hdr-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:210px;background:#fff;border-radius:18px;padding:8px;box-shadow:0 14px 40px rgba(120,30,70,.3);display:none;flex-direction:column;gap:4px;z-index:10060;direction:rtl}
+.hdr-menu.open{display:flex;animation:dzSpIn .18s ease-out}
+.hdr-menu button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:transparent;padding:11px 12px;border-radius:12px;font-family:'Cairo',sans-serif;font-size:.95rem;font-weight:800;color:var(--pink-deep);cursor:pointer;text-align:right}
+.hdr-menu button:hover{background:var(--pink-light)}
+.hdr-menu .mi-ico{font-size:1.2rem;line-height:1;flex:none}
+.hdr-menu .mi-txt{flex:1;line-height:1.3}
+.hdr-menu small{display:block;font-size:.68rem;font-weight:600;opacity:.65}
+.hdr-menu .mi-dot{position:static;flex:none}
+.customer-btn{gap:5px}
+@media(max-width:700px){
+  header{padding:8px 10px;gap:6px;flex-wrap:nowrap}
+  header .header-start{gap:8px;flex:none}
+  header .logo{width:38px;height:38px}
+  header .menu-btn{width:38px;height:38px;border-radius:12px}
+  header .header-title{flex:1 1 auto;min-width:0;padding:0 2px;line-height:1.3}
+  header .header-title .en{font-size:.62rem;letter-spacing:1.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  header .header-title .ar{font-size:.74rem;font-weight:800;white-space:nowrap}
+  header .header-actions{flex:none;gap:5px}
+  header .customer-btn,header .cart-icon-btn,header .back-btn{width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;gap:0;font-size:1rem;line-height:1}
+  header .hb-txt{display:none}
+}
+@media(max-width:360px){
+  header{padding:8px 8px;gap:4px}
+  header .header-start{gap:6px}
+  header .header-title .en{font-size:.56rem;letter-spacing:.6px}
+  header .header-title .ar{font-size:.68rem}
+  header .customer-btn,header .cart-icon-btn,header .back-btn{width:34px;height:34px}
+}
+</style>
 </head>
 <body class="sec-pick">
 
@@ -603,25 +643,33 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 
 <header>
   <div class="header-start">
-    <img src="images/logo.jpg" alt="Diraz Logo" class="logo">
-    <button type="button" class="support-btn" id="supportBtn" onclick="dzSupportToggle()" aria-label="الدعم">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 14v-2a8 8 0 0 1 16 0v2"/><rect x="2.5" y="13" width="4" height="6" rx="1.5" fill="currentColor"/><rect x="17.5" y="13" width="4" height="6" rx="1.5" fill="currentColor"/><path d="M19.5 19c0 1.7-1.5 3-4 3h-2"/></svg>
-      <span class="sp-txt">الدعم</span>
+    <button type="button" class="menu-btn" id="menuBtn" aria-label="القائمة" aria-haspopup="true" aria-expanded="false" aria-controls="hdrMenu" onclick="dzMenuToggle(event)">
+      <span class="menu-lines" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="support-dot" id="supportDot"></span>
     </button>
-    <button type="button" class="support-btn review-btn" id="reviewBtn" onclick="dzReviewOpen()" aria-label="إضافة رأي"><span class="rv-ico">⭐</span><span class="rv-txt">إضافة رأي</span></button>
+    <div class="hdr-menu" id="hdrMenu" role="menu">
+      <button type="button" role="menuitem" onclick="dzMenuGo('support')">
+        <span class="mi-ico">💬</span>
+        <span class="mi-txt">الدعم</span>
+        <span class="support-dot mi-dot" id="supportDot2"></span>
+      </button>
+      <button type="button" role="menuitem" onclick="dzMenuGo('review')">
+        <span class="mi-ico">⭐</span>
+        <span class="mi-txt">الآراء<small>شاركنا رأيك</small></span>
+      </button>
+    </div>
+    <img src="images/logo.jpg" alt="شعار ديراز للعطور" class="logo">
   </div>
   <div class="header-title">
     <div class="en">DIRAZ PERFUME</div>
     <div class="ar">ديراز للعطور</div>
   </div>
   <div class="header-actions">
-    <button class="customer-btn" onclick="editCustomer()">👤 بياناتي</button>
-    <button class="cart-icon-btn" onclick="openCart()">
-      🛒 السلة
+    <button class="customer-btn" onclick="editCustomer()" aria-label="بياناتي">👤 <span class="hb-txt">بياناتي</span></button>
+    <button class="cart-icon-btn" onclick="openCart()" aria-label="السلة">🛒<span class="hb-txt">السلة</span>
       <span class="cart-badge" id="cartBadge">0</span>
     </button>
-    <a href="index.html" class="back-btn">&#8594; رجوع</a>
+    <a href="index.html" class="back-btn" aria-label="رجوع">&#8594;<span class="hb-txt">رجوع</span></a>
   </div>
 </header>
 
@@ -1719,8 +1767,10 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     $('dzspNotifBtn').textContent = denied ? '🔄 إعادة تحميل الصفحة' : '🔔 تفعيل';
   }
   function setDot(n){
-    var d=$('supportDot'); if(!d) return;
-    if(n>0){ d.textContent = n>9?'9+':n; d.classList.add('on'); } else d.classList.remove('on');
+    ['supportDot','supportDot2'].forEach(function(id){
+      var d=$(id); if(!d) return;
+      if(n>0){ d.textContent = n>9?'9+':n; d.classList.add('on'); } else d.classList.remove('on');
+    });
   }
   function poll(mark){
     var id=chatId(false); if(!id) return Promise.resolve();
@@ -1803,5 +1853,21 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 
 <!-- ═══ Diraz AI — مساعد العطور (يظهر داخل القسم فقط) ═══ -->
 <script src="diraz-assistant.js?v=3"></script>
+<script>
+(function(){
+  var btn=document.getElementById('menuBtn'), menu=document.getElementById('hdrMenu');
+  if(!btn||!menu) return;
+  function closeMenu(){ menu.classList.remove('open'); btn.classList.remove('open'); btn.setAttribute('aria-expanded','false'); }
+  function openMenu(){ menu.classList.add('open'); btn.classList.add('open'); btn.setAttribute('aria-expanded','true'); }
+  window.dzMenuToggle=function(e){ if(e) e.stopPropagation(); menu.classList.contains('open') ? closeMenu() : openMenu(); };
+  window.dzMenuGo=function(what){
+    closeMenu();
+    if(what==='support' && window.dzSupportOpen) window.dzSupportOpen();
+    else if(what==='review' && window.dzReviewOpen) window.dzReviewOpen();
+  };
+  document.addEventListener('click',function(e){ if(!menu.contains(e.target) && !btn.contains(e.target)) closeMenu(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeMenu(); });
+})();
+</script>
 </body>
 </html>
