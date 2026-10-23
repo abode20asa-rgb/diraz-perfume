@@ -63,7 +63,7 @@
   var NEG = N(['مو','مب','مش','ما','بدون','لا','ماحب','مااحب','مابي','ماريد','اكره']);
   var STOP = N(['اريد','ابي','ابغي','احب','احبه','عطر','عطور','شي','شيء','عندكم','عندك','يعني','هل','ايش','شنو','شلون','كيف','لو','سمحت','بس','كلش','مره','جدا','حلوه','ممكن','تنصحني','انصحني','رشح','رشحلي','اقترح','اقترحلي','نسائي','رجالي','يعجبني','يناسب','يناسبني','وياي','عليه','لي','لك','من','في','على','مع','الي','هذا','هذي','هاي','اني','انا','انت','ممكن','اطلب','ابغى','فيه','فيها','بها','ذات','تحت','حدود','اقل','لحد','فوق','يكون','تكون','دينار','سعر','بسعر','اخر','وين','اي','ايش','وياها','لزوجتي','لزوجي','لامي','لاختي','هديه','هدايا']);
   var MORE = /(غيرهم|غيرها|غيره|ثانيه|ثاني|المزيد|كمل|بعد|زيد|اخرين|اخري)/;
-  var GREET = /^(هلا|هلو|مرحبا|مرحبتين|اهلا|اهلين|السلام|سلام|صباح|مساء|هاي|hi|hello|يا هلا|حياك|حياكم|حياج|يسعد (صباحك|صباحكم|مساك|مساكم)|نهارك|تحياتي|الو( |$))/;
+  var GREET = /^(هلا|هلو|مرحبا|مرحبتين|اهلا|اهلين|السلام|سلام|صباح|مساء|هاي|hi|hello|يا هلا|حياك|حياكم|حياج|يسعد (صباحك|صباحكم|مساك|مساكم)|نهارك|تحياتي|الو)(?= |$)/;
   var THANKS = /(شكرا|مشكور|يعطيك|تسلم|ممنون|عاشت|thanks)/;
 
   /* ───────── بيانات العطور ───────── */
@@ -120,6 +120,11 @@
     return parseInt(String(p.price||'0').replace(/[^0-9]/g,''))||0;
   }
   function fmt(n){ return (Number(n)||0).toLocaleString('en-US'); }
+  /* الكلمة تبدأ بها كلمة بالنص (مع أو بدون ال/و/ب/ل) */
+  function inText(full,x){
+    if(!x || x.length<3 || !/^[a-z0-9\u0621-\u064A]+$/.test(x)) return false;
+    return new RegExp('(^| )(وال|بال|لل|ال|و|ب|ل)?'+x).test(full);
+  }
   function profile(p){
     var cl=norm(charLine(p));
     var full=norm([p.name,p.nameEn,p.description].join(' '));
@@ -231,15 +236,16 @@
     var out={w:{}, free:[], gender:null, budget:null, used:{}, any:false};
     /* ميزانية */
     var m=t.match(/(\d+(?:\s?\d{3})*)\s*(الف|الاف|k)?/);
-    if(m){
+    var priceCtx = !!m && !!(m[2] || toks.length===1 || /(دينار|ميزانيه|ميزانيتي|سعر|بسعر|لحد|تحت|حدود|اقل من|الف|الاف)/.test(t));
+    if(m && priceCtx){
       var n=parseInt(m[1].replace(/\s/g,''),10);
       if(m[2]) n=n*1000;
       if(n>=1000 && n<=1000000){ out.budget=n; out.any=true; }
       else if(n>=5 && n<1000 && /(الف)/.test(t)){ out.budget=n*1000; out.any=true; }
     }
     /* جنس */
-    if(/(نسائي|نسائيه|حريمي|بنات|بنت|زوجتي|اختي|امي|حبيبتي|خطيبتي|مرتي|لمرتي)/.test(t)) { out.gender='نسائي'; out.any=true; }
-    if(/(رجالي|رجاليه|رجال|ولد|زوجي|اخوي|ابوي|شباب|خطيبي)/.test(t)){ out.gender='رجالي'; out.any=true; }
+    if(/(^| )(و|ل|ب|ال)?(نسائي|نسائيه|حريمي|بنات|بنت|زوجتي|اختي|امي|حبيبتي|خطيبتي|مرتي)( |$)/.test(t)) { out.gender='نسائي'; out.any=true; }
+    if(/(^| )(و|ل|ب|ال)?(رجالي|رجاليه|رجال|ولد|زوجي|اخوي|ابوي|شباب|خطيبي)( |$)/.test(t)){ out.gender='رجالي'; out.any=true; }
     if(/(للجنسين|يونيسكس|unisex)/.test(t)){ out.gender='للجنسين'; out.any=true; }
     /* قواعد الصفات مع النفي */
     var i,j;
@@ -312,7 +318,7 @@
       });
       var freeHits=[];
       state.free.forEach(function(f){
-        var hit=forms(f).filter(function(x){ return x.length>=3 && (' '+pr.full+' ').indexOf(x)>-1; })[0];
+        var hit=forms(f).filter(function(x){ return inText(pr.full,x); })[0];
         if(hit){ s+=1.4; freeHits.push(f); }
       });
       if(p.badge==='bestseller') s+=0.25;
@@ -761,6 +767,34 @@
     });
   }
 
+  /* ───────── الراوتر: القائمة تجاوب فقط إذا السؤال فعلاً عن العطور ───────── */
+  var RX_PERF_WORD=/(^| )(عطر|عطور|ريحه|رايحه|روائح|رائحه|بارفان|برفان|perfume|ثبات|فواح|نوتات|نوته|ارشح|رشح|رشحلي|ترشيح|انصحني|تنصحني)( |$)/;
+  var RX_MORE_B=/(^| )(غيرهم|غيرها|غيره|ثانيه|ثاني|المزيد|كمل|بعد|زيد|اخرين|اخري)( |$)/;
+  var RX_RESET_B=/(^| )(من جديد|ابدا|بلش|امسح|غير الطلب)( |$)/;
+  var RX_LISTALL_B=/(شنو عندكم|شكو عندكم|كل العطور|المتوفر|الاصناف)/;
+  function listKnows(t,pm,perfumes){
+    var tk=t.split(' ').filter(Boolean).length;
+    /* أوامر قصيرة تخص المحادثة الجارية */
+    if(tk<=5 && ((RX_MORE_B.test(t) && state.lastIdx.length) || RX_RESET_B.test(t) || RX_LISTALL_B.test(t))) return true;
+    var hasTrait=Object.keys(pm.w).length>0;
+    var freeHit=pm.free.some(function(f){
+      return perfumes.some(function(p){ var full=profile(p).full; return forms(f).some(function(x){ return inText(full,x); }); });
+    });
+    var strong=hasTrait||!!pm.budget||!!pm.gender||freeHit;
+    if(!strong) return false;
+    /* إشارة وحدة ضعيفة (مثل «شغل» أو «حر») داخل سؤال طويل ما يخص العطور → للذكاء */
+    return RX_PERF_WORD.test(t) || RX_REC.test(t) || tk<=9 || state.lastIdx.length>0;
+  }
+  /* الرد الاحتياطي إذا الذكاء مطفي أو فشل: أكثر العطور طلباً */
+  function showPopular(perfumes,msg){
+    var sw=state.w, sf=state.free; state.w={}; state.free=[];
+    var res=recommend(perfumes); state.w=sw; state.free=sf;
+    if(!res.list.length){ say('ما لقيت عطر متوفر هسه 🌸'); return; }
+    say(msg||'سؤالك مو من اختصاصي بالضبط 🌸 بس هذي أكثر العطور اللي تنطلب عندنا:');
+    state.pending=res.list.slice(3);
+    showCards(res.list.slice(0,3),perfumes,true);
+  }
+
   function handle(text){
     say(esc(text),'me');
     var t=norm(text), perfumes=getPerfumes();
@@ -795,7 +829,8 @@
     }
 
     /* سؤال عن سلة الزبون */
-    if(/(سله|السله|سلة|السلة|شنو بسله|شو بسله|بسله|بسلة|مشترياتي|طلباتي|شكد بسله|المجموع)/.test(t)){
+    var shortMsg=t.split(' ').filter(Boolean).length<=7;
+    if(shortMsg && /(^| )(سله|السله|بسله|مشترياتي|طلباتي|المجموع)( |$)/.test(t)){
       var cs=cartSummary();
       if(!cs){ say('سلة المشتريات فاضية حالياً 🛒 إذا تحب أرشحلك شي، احچيلي شنو تحب.'); chips(BASIC_CHIPS); return; }
       say('سلة المشتريات عندك ('+cs.count+' منتج):<br>'+cs.lines.join('<br>')+'<br><br>💰 المجموع: '+fmt(cs.total)+' دينار');
@@ -804,7 +839,7 @@
     }
 
     /* ── طلب إكمال الطلب (زر «طلب» أو كلام) ── */
-    if(/(^طلب$|اتمام الطلب|اكمل الطلب|كمل الطلب|تاكيد الطلب|كملت|خلصت|ابي اطلب|اريد اطلب|اطلبهم|اطلبهن|اطلب|خلص|كملي|سوي الطلب|ارسل الطلب|اطلب الحين|ابي اطلبهم|ابي اطلبهن)/.test(t)){
+    if(/^طلب$/.test(t) || (shortMsg && /(^| )(اتمام الطلب|اكمل الطلب|كمل الطلب|تاكيد الطلب|كملت|خلصت|ابي اطلب|اريد اطلب|اطلبهم|اطلبهن|اطلب|خلص|كملي|سوي الطلب|ارسل الطلب|اطلب الحين|ابي اطلبهم|ابي اطلبهن)( |$)/.test(t))){
       startOrder();
       return;
     }
@@ -831,10 +866,19 @@
     var named=findByName(raw,perfumes);
     if(named>-1){ showNamed(named,perfumes[named],raw); return; }
 
+    /* ── الراوتر: إذا السؤال مو عن العطور، الذكاء الاصطناعي يجاوب (بدون سؤال القسم أو العمر) ── */
+    var pm=parseMessage(raw);
+    if(!listKnows(t,pm,perfumes)){
+      aiFallback(raw,function(){
+        /* الذكاء مطفي أو فشل: نعرض العطور */
+        if(!audience){ pendingRaw=raw; askSection(); return; }
+        showPopular(perfumes);
+      },function(){ chips(BASIC_CHIPS); });
+      return;
+    }
+
     /* ما نعرف القسم بعد: نسأل أول حتى نجاوبه صح */
     if(!audience){ pendingRaw=raw; askSection(); return; }
-
-    var pm=parseMessage(raw);
 
     /* كلمة واحدة تشبه كود خصم خارج مسار الطلب: ما ننفذ شي، نوجّهه للطلب */
     if(t.split(' ').length===1 && !pm.any && extractCode(raw)){
@@ -1302,7 +1346,7 @@
   };
 
   /* للاختبار */
-  window.DirazAssistant={_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
+  window.DirazAssistant={_ai:function(){return AI;},_listKnows:function(q){ var t=norm(q); return listKnows(t,parseMessage(q),getPerfumes()); },_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
 
   function init(){
     if(document.getElementById('dzA_btn')) return;
