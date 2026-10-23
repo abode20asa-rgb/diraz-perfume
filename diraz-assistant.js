@@ -733,8 +733,12 @@
   function aiCatalog(){
     var out=[], len=0;
     getPerfumes().slice(0,60).forEach(function(p){
-      var line='- '+(p.name||'')+' | '+(p.type||'')+' | '+fmt(priceOf(p,'50ml'))+' دينار (50مل)'+(charLine(p)?' | '+charLine(p):'');
-      if(len+line.length<3500){ out.push(line); len+=line.length; }
+      if(p.badge==='soldout') return;
+      var info=charLine(p);
+      if(!info){ info=String(p.description||'').replace(/[\u200B-\u200F]/g,'').replace(/\s+/g,' ').trim(); }
+      info=info.slice(0,90);
+      var line='- '+(p.name||'')+(p.nameEn?' ('+p.nameEn+')':'')+' | '+(p.type||'')+' | '+fmt(priceOf(p,'50ml'))+' دينار (50مل)'+(info?' | '+info:'');
+      if(len+line.length<5500){ out.push(line); len+=line.length; }
     });
     return out.join('\n');
   }
