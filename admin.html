@@ -557,16 +557,12 @@ textarea{resize:vertical;min-height:80px}
 <div id="aiModal" role="dialog" aria-label="الذكاء الاصطناعي" onclick="if(event.target===this)aiClose()">
   <div class="ai-box">
     <div class="ai-top"><h2>🤖 الذكاء الاصطناعي</h2><button type="button" class="ai-x" onclick="aiClose()" aria-label="إغلاق">✕</button></div>
-    <div class="ai-note">مساعد ديراز يشتغل <b>هجين</b>: أول شي يجاوب من القائمة مباشرة، وإذا ما لكى جواب يجاوب الذكاء الاصطناعي بعد عدّ 1 2 3 حتى الزبون يعرف إنه الذكاء الي رد.</div>
+    <div class="ai-note">مساعد ديراز يشتغل <b>هجين</b>: أول شي يجاوب من القائمة، وإذا ما لكى جواب يجاوب الذكاء الاصطناعي <b>كرد عادي بدون ما يبين اسمه أو شعاره للزبون</b>.</div>
     <div id="aiStatus" class="ai-note" style="display:none"></div>
     <div class="ai-sw"><span>تشغيل الذكاء الاصطناعي بالمساعد</span><label class="switch"><input type="checkbox" id="ai_enabled"><span class="slider-sw"></span></label></div>
     <label style="display:block;margin-bottom:8px">اختر الذكاء</label>
     <div class="ai-provs" id="aiProvs"></div>
     <div class="form-grid">
-      <div class="form-group"><label>الاسم الي يبين للزبون</label><input type="text" id="ai_name" maxlength="30" placeholder="مثال: ChatGPT"></div>
-      <div class="form-group"><label>صورة الذكاء</label>
-        <div class="ai-logo-row"><img id="ai_logoPrev" alt=""><button type="button" class="ai-mini" onclick="document.getElementById('ai_logoFile').click()">📷 رفع صورة</button><button type="button" class="ai-mini" onclick="aiLogoDefault()">↺ الافتراضية</button><input type="file" id="ai_logoFile" accept="image/*" style="display:none" onchange="aiLogoPick(this)"></div>
-      </div>
       <div class="form-group full"><label>رابط API (الرابط الي يرد منه الذكاء)</label><input type="url" id="ai_url" class="ltr" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off"></div>
       <div class="form-group"><label>الموديل</label><input type="text" id="ai_model" class="ltr" placeholder="gpt-4o-mini" autocomplete="off"></div>
       <div class="form-group"><label>نوع الواجهة</label><select id="ai_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option></select></div>
@@ -1703,7 +1699,7 @@ var AI_STAR='<path d="M48 18 C50 36 60 46 78 48 C60 50 50 60 48 78 C46 60 36 50 
 var AI_PROVS={
   chatgpt:{label:'ChatGPT',name:'ChatGPT',url:'https://api.openai.com/v1/chat/completions',model:'gpt-4o-mini',format:'openai',logo:aiLogoSvg('#19c37d','#0e8f5e','<g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"><circle cx="48" cy="48" r="9"/><ellipse cx="48" cy="30" rx="9" ry="14"/><ellipse cx="48" cy="66" rx="9" ry="14"/><ellipse cx="30" cy="48" rx="14" ry="9"/><ellipse cx="66" cy="48" rx="14" ry="9"/></g>')},
   claude:{label:'Claude',name:'Claude',url:'https://api.anthropic.com/v1/messages',model:'claude-haiku-5-5',format:'anthropic',logo:aiLogoSvg('#e8906e','#c4623f','<g stroke="#fff" stroke-width="7" stroke-linecap="round"><path d="M48 20V76M20 48H76M28 28L68 68M68 28L28 68"/></g>')},
-  gemini:{label:'Gemini',name:'Gemini',url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model:'gemini-2.0-flash',format:'openai',logo:aiLogoSvg('#4b8bf5','#9b6bf0',AI_STAR)},
+  gemini:{label:'Gemini',name:'Gemini',url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model:'gemini-2.5-flash',format:'openai',logo:aiLogoSvg('#4b8bf5','#9b6bf0',AI_STAR)},
   deepseek:{label:'DeepSeek',name:'DeepSeek',url:'https://api.deepseek.com/chat/completions',model:'deepseek-chat',format:'openai',logo:aiLogoSvg('#5b78ff','#3a4fd6','<path d="M24 56c8-22 36-30 50-14-14-2-22 4-26 12 6 6 16 6 22 0-4 16-20 24-34 18-6-3-10-8-12-16z" fill="#fff"/><circle cx="62" cy="44" r="3.5" fill="#3a4fd6"/>')},
   groq:{label:'Groq',name:'Groq',url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.3-70b-versatile',format:'openai',logo:aiLogoSvg('#ff7a52','#e0431f','<text x="48" y="64" text-anchor="middle" font-family="Arial,sans-serif" font-size="46" font-weight="800" fill="#fff">G</text>')},
   custom:{label:'مخصص',name:'الذكاء الاصطناعي',url:'',model:'',format:'openai',logo:aiLogoSvg('#8a93a0','#5d6673','<g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"><circle cx="48" cy="48" r="12"/><path d="M48 20v10M48 66v10M20 48h10M66 48h10M28 28l7 7M61 61l7 7M68 28l-7 7M35 61l-7 7"/></g>')}
@@ -1719,10 +1715,10 @@ function aiRenderProvs(){
 }
 function aiPickProv(k){
   var p=AI_PROVS[k]; aiCur.provider=k; aiCur.logo=p.logo;
-  aiEl('ai_name').value=p.name; aiEl('ai_url').value=p.url; aiEl('ai_model').value=p.model; aiEl('ai_format').value=p.format;
-  aiEl('ai_logoPrev').src=p.logo; aiRenderProvs();
+  aiEl('ai_url').value=p.url; aiEl('ai_model').value=p.model; aiEl('ai_format').value=p.format;
+  aiRenderProvs();
 }
-function aiLogoDefault(){ var p=AI_PROVS[aiCur.provider]||AI_PROVS.custom; aiCur.logo=p.logo; aiEl('ai_logoPrev').src=p.logo; }
+function aiLogoDefault(){}
 function aiLogoPick(inp){
   var f=inp.files&&inp.files[0]; if(!f) return;
   var rd=new FileReader();
@@ -1747,8 +1743,8 @@ async function aiOpen(){
   catch(e){ var m=String((e&&e.message)||e); aiStatus(/ai_config|PGRST|404|relation/i.test(m)?'⚠️ شغّل supabase-ai.sql في Supabase أولاً حتى تنحفظ الإعدادات':'⚠️ تعذّر تحميل الإعدادات'); }
   if(!cfg){ aiPickProv(aiCur.provider||'chatgpt'); aiEl('ai_enabled').checked=false; aiEl('ai_proxy').value=''; aiEl('ai_prompt').value=''; aiEl('ai_key').value=''; aiEl('ai_keyHint').textContent=''; aiCur.hasKey=false; return; }
   aiCur.provider=AI_PROVS[cfg.provider]?cfg.provider:'custom'; aiCur.logo=cfg.logo||(AI_PROVS[aiCur.provider]||AI_PROVS.custom).logo; aiCur.hasKey=!!cfg.key;
-  aiEl('ai_enabled').checked=!!cfg.enabled; aiEl('ai_name').value=cfg.name||''; aiEl('ai_url').value=cfg.url||''; aiEl('ai_model').value=cfg.model||''; aiEl('ai_format').value=cfg.format||'openai';
-  aiEl('ai_proxy').value=cfg.proxy||''; aiEl('ai_prompt').value=cfg.prompt||''; aiEl('ai_key').value=''; aiEl('ai_logoPrev').src=aiCur.logo;
+  aiEl('ai_enabled').checked=!!cfg.enabled; aiEl('ai_url').value=cfg.url||''; aiEl('ai_model').value=cfg.model||''; aiEl('ai_format').value=cfg.format||'openai';
+  aiEl('ai_proxy').value=cfg.proxy||''; aiEl('ai_prompt').value=cfg.prompt||''; aiEl('ai_key').value='';
   aiEl('ai_keyHint').textContent=aiCur.hasKey?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
   aiRenderProvs();
 }
@@ -1763,8 +1759,7 @@ async function aiSave(){
   var old=null;
   try{ var rows=await DirazCloud.list('ai_config','&id=eq.1'); old=rows&&rows[0]&&rows[0].data; }catch(e){}
   var cfg={
-    enabled:aiEl('ai_enabled').checked, provider:aiCur.provider, name:aiEl('ai_name').value.trim()||'الذكاء الاصطناعي',
-    logo:aiCur.logo||'', url:url, model:aiEl('ai_model').value.trim(), format:aiEl('ai_format').value,
+    enabled:aiEl('ai_enabled').checked, provider:aiCur.provider, name:'', logo:'', url:url, model:aiEl('ai_model').value.trim(), format:aiEl('ai_format').value,
     proxy:proxy.replace(/\/+$/,''), prompt:aiEl('ai_prompt').value.trim(), key:key||(old&&old.key)||''
   };
   try{
