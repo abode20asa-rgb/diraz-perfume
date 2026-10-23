@@ -565,7 +565,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="form-grid">
       <div class="form-group full"><label>رابط API (الرابط الي يرد منه الذكاء)</label><input type="url" id="ai_url" class="ltr" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off"></div>
       <div class="form-group"><label>الموديل</label><input type="text" id="ai_model" class="ltr" placeholder="gpt-4o-mini" autocomplete="off"></div>
-      <div class="form-group"><label>نوع الواجهة</label><select id="ai_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option></select></div>
+      <div class="form-group"><label>نوع الواجهة</label><select id="ai_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option><option value="custom">واجهتي الخاصة (API سويته أنا)</option></select></div>
       <div class="form-group full"><label>مفتاح API</label><input type="password" id="ai_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><small id="ai_keyHint" style="opacity:.8"></small></div>
       <div class="form-group full"><label>رابط الوسيط (Cloudflare Worker) — يحفظ المفتاح بعيد عن الزبائن</label><input type="url" id="ai_proxy" class="ltr" placeholder="https://diraz-ai.xxxx.workers.dev" autocomplete="off"></div>
       <div class="form-group full"><label>تعليمات إضافية للذكاء (اختياري)</label><textarea id="ai_prompt" maxlength="1500" placeholder="مثال: لا تذكر خصومات. التوصيل لكل العراق خلال يومين."></textarea></div>
@@ -1754,7 +1754,7 @@ async function aiSave(){
   if(aiEl('ai_enabled').checked){
     if(!/^https:\/\//i.test(url)){ showToast('❌ اكتب رابط API يبدأ بـ https://'); return; }
     if(!/^https:\/\//i.test(proxy)){ showToast('❌ اكتب رابط الوسيط (Worker) يبدأ بـ https://'); return; }
-    if(!key && !aiCur.hasKey){ showToast('❌ الصق مفتاح API'); return; }
+    if(!key && !aiCur.hasKey && aiEl('ai_format').value!=='custom'){ showToast('❌ الصق مفتاح API'); return; }
   }
   var old=null;
   try{ var rows=await DirazCloud.list('ai_config','&id=eq.1'); old=rows&&rows[0]&&rows[0].data; }catch(e){}
