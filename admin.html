@@ -194,6 +194,41 @@ textarea{resize:vertical;min-height:80px}
 #rvRejModal .act button{flex:1;padding:10px;border:0;border-radius:50px;font-family:inherit;font-weight:800;font-size:.9rem;cursor:pointer}
 #rvRejModal .go{background:#d32f2f;color:#fff}
 #rvRejModal .cx{background:#eee;color:#666}
+
+/* ══ قائمة النقاط الثلاث + الذكاء الاصطناعي ══ */
+.hd-end{display:flex;align-items:center;gap:10px}
+.dots-wrap{position:relative}
+.dots-btn{width:42px;height:42px;border:1.5px solid rgba(255,255,255,.7);background:rgba(255,255,255,.25);border-radius:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:0;transition:background .2s,transform .2s}
+.dots-btn:hover{background:rgba(255,255,255,.4)}
+.dots-btn:active{transform:scale(.94)}
+.dots-btn i{display:block;width:5px;height:5px;border-radius:50%;background:#fff}
+.dots-menu{position:absolute;top:calc(100% + 10px);left:0;min-width:220px;background:#fff;border-radius:18px;padding:8px;box-shadow:0 14px 40px rgba(120,30,70,.3);display:none;flex-direction:column;gap:4px;z-index:300}
+.dots-menu.open{display:flex}
+.pill-item{display:inline-flex;align-items:center;justify-content:center;gap:6px;width:100%;background:#e8ecee;color:#111;border:0;padding:8px 14px;border-radius:50px;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:transform .2s,background .2s}
+.pill-item:hover{background:#dde2e5;transform:translateY(-2px)}
+.pill-item svg{width:16px;height:16px;flex:none;display:block}
+#aiModal{position:fixed;inset:0;z-index:2000;display:none;align-items:flex-start;justify-content:center;background:rgba(40,10,25,.55);backdrop-filter:blur(4px);overflow-y:auto;padding:24px 12px}
+#aiModal.open{display:flex}
+.ai-box{width:min(720px,100%);background:linear-gradient(160deg,#e98fb0,#c45a7a);border:1.5px solid rgba(255,255,255,.55);border-radius:24px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.35);color:#fff}
+.ai-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:16px}
+.ai-top h2{margin:0;padding:0;border:0;font-size:1.3rem;color:#fff;font-weight:900}
+.ai-x{background:rgba(255,255,255,.25);border:0;color:#fff;width:36px;height:36px;border-radius:50%;font-size:1rem;cursor:pointer}
+.ai-note{font-size:.8rem;line-height:1.7;background:rgba(255,255,255,.18);border-radius:14px;padding:10px 14px;margin-bottom:14px}
+.ai-sw{display:flex;align-items:center;justify-content:space-between;gap:12px;background:rgba(255,255,255,.18);border-radius:14px;padding:10px 14px;margin-bottom:14px;font-weight:800}
+.ai-provs{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px;margin-bottom:16px}
+.ai-prov{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 6px;border-radius:16px;border:2px solid rgba(255,255,255,.35);background:rgba(255,255,255,.14);color:#fff;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:800;cursor:pointer;transition:all .2s}
+.ai-prov:hover{background:rgba(255,255,255,.26)}
+.ai-prov.sel{background:#fff;color:#c45a7a;border-color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.2)}
+.ai-prov img{width:40px;height:40px;border-radius:50%;object-fit:cover;background:#fff}
+.ai-logo-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.ai-logo-row img{width:56px;height:56px;border-radius:50%;object-fit:cover;background:#fff;border:2px solid rgba(255,255,255,.8)}
+.ai-mini{padding:8px 16px;border-radius:50px;border:1.5px solid rgba(255,255,255,.7);background:rgba(255,255,255,.18);color:#fff;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:800;cursor:pointer}
+.ai-mini:hover{background:rgba(255,255,255,.3)}
+#aiModal input[type=url],#aiModal input[type=password]{padding:11px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);color:#fff;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none}
+#aiModal input[type=url]:focus,#aiModal input[type=password]:focus{border-color:rgba(255,255,255,.85);background:rgba(255,255,255,.28)}
+#aiModal .ltr{direction:ltr;text-align:left}
+.ai-test{margin-top:12px;background:rgba(0,0,0,.2);border-radius:14px;padding:12px 14px;font-size:.88rem;line-height:1.8;display:none;white-space:pre-wrap}
+@media(max-width:600px){.dots-menu{left:auto;right:0}.ai-box{padding:18px}}
 </style>
 <style id="spAdminCss">
 /* ══ الدعم ══ */
@@ -243,7 +278,18 @@ textarea{resize:vertical;min-height:80px}
   <header>
     <img src="images/logo.jpg" alt="Logo" class="logo" onerror="this.style.display='none'">
     <div class="header-title">⚙️ لوحة التحكم — ديراز للعطور</div>
-    <button class="logout-btn" onclick="logout()">خروج 🚪</button>
+    <div class="hd-end">
+      <div class="dots-wrap">
+        <button type="button" class="dots-btn" id="dotsBtn" aria-label="القائمة" aria-haspopup="true" aria-expanded="false" onclick="dotsToggle(event)"><i></i><i></i><i></i></button>
+        <div class="dots-menu" id="dotsMenu" role="menu">
+          <button type="button" role="menuitem" class="pill-item" onclick="dotsGo('ai')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
+            <span>الذكاء الاصطناعي</span>
+          </button>
+        </div>
+      </div>
+      <button class="logout-btn" onclick="logout()">خروج 🚪</button>
+    </div>
   </header>
 
   <main>
@@ -506,6 +552,32 @@ textarea{resize:vertical;min-height:80px}
   </main>
 </div>
 <div id="toast"></div>
+
+<!-- إعدادات الذكاء الاصطناعي -->
+<div id="aiModal" role="dialog" aria-label="الذكاء الاصطناعي" onclick="if(event.target===this)aiClose()">
+  <div class="ai-box">
+    <div class="ai-top"><h2>🤖 الذكاء الاصطناعي</h2><button type="button" class="ai-x" onclick="aiClose()" aria-label="إغلاق">✕</button></div>
+    <div class="ai-note">مساعد ديراز يشتغل <b>هجين</b>: أول شي يجاوب من القائمة مباشرة، وإذا ما لكى جواب يجاوب الذكاء الاصطناعي بعد عدّ 1 2 3 حتى الزبون يعرف إنه الذكاء الي رد.</div>
+    <div id="aiStatus" class="ai-note" style="display:none"></div>
+    <div class="ai-sw"><span>تشغيل الذكاء الاصطناعي بالمساعد</span><label class="switch"><input type="checkbox" id="ai_enabled"><span class="slider-sw"></span></label></div>
+    <label style="display:block;margin-bottom:8px">اختر الذكاء</label>
+    <div class="ai-provs" id="aiProvs"></div>
+    <div class="form-grid">
+      <div class="form-group"><label>الاسم الي يبين للزبون</label><input type="text" id="ai_name" maxlength="30" placeholder="مثال: ChatGPT"></div>
+      <div class="form-group"><label>صورة الذكاء</label>
+        <div class="ai-logo-row"><img id="ai_logoPrev" alt=""><button type="button" class="ai-mini" onclick="document.getElementById('ai_logoFile').click()">📷 رفع صورة</button><button type="button" class="ai-mini" onclick="aiLogoDefault()">↺ الافتراضية</button><input type="file" id="ai_logoFile" accept="image/*" style="display:none" onchange="aiLogoPick(this)"></div>
+      </div>
+      <div class="form-group full"><label>رابط API (الرابط الي يرد منه الذكاء)</label><input type="url" id="ai_url" class="ltr" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off"></div>
+      <div class="form-group"><label>الموديل</label><input type="text" id="ai_model" class="ltr" placeholder="gpt-4o-mini" autocomplete="off"></div>
+      <div class="form-group"><label>نوع الواجهة</label><select id="ai_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option></select></div>
+      <div class="form-group full"><label>مفتاح API</label><input type="password" id="ai_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><small id="ai_keyHint" style="opacity:.8"></small></div>
+      <div class="form-group full"><label>رابط الوسيط (Cloudflare Worker) — يحفظ المفتاح بعيد عن الزبائن</label><input type="url" id="ai_proxy" class="ltr" placeholder="https://diraz-ai.xxxx.workers.dev" autocomplete="off"></div>
+      <div class="form-group full"><label>تعليمات إضافية للذكاء (اختياري)</label><textarea id="ai_prompt" maxlength="1500" placeholder="مثال: لا تذكر خصومات. التوصيل لكل العراق خلال يومين."></textarea></div>
+    </div>
+    <div class="form-actions"><button type="button" class="btn-save" onclick="aiSave()">💾 حفظ</button><button type="button" class="btn-rvlist" onclick="aiTest()">🧪 اختبار</button></div>
+    <div class="ai-test" id="aiTestBox"></div>
+  </div>
+</div>
 
 <script src="perfumes-data.js"></script>
 <script src="supabase-config.js"></script>
@@ -1613,6 +1685,107 @@ function rvLogToggle(){
   rvLogOpen=!rvLogOpen;
   document.getElementById('rvLogBox').style.display=rvLogOpen?'block':'none';
   if(rvLogOpen){ rvLogRender(); rvLogLoad(); }
+}
+</script>
+<script>
+// ══ القائمة (3 نقاط) + إعدادات الذكاء الاصطناعي ══
+function dotsClose(){ var m=document.getElementById('dotsMenu'),b=document.getElementById('dotsBtn'); if(m)m.classList.remove('open'); if(b)b.setAttribute('aria-expanded','false'); }
+function dotsToggle(e){ if(e)e.stopPropagation(); var m=document.getElementById('dotsMenu'),b=document.getElementById('dotsBtn'); var o=m.classList.toggle('open'); b.setAttribute('aria-expanded',o?'true':'false'); }
+function dotsGo(w){ dotsClose(); if(w==='ai') aiOpen(); }
+document.addEventListener('click',function(e){ var m=document.getElementById('dotsMenu'); if(m&&!m.contains(e.target)&&e.target.id!=='dotsBtn') dotsClose(); });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ dotsClose(); aiClose(); } });
+
+function aiLogoSvg(bg1,bg2,inner){
+  var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+bg1+'"/><stop offset="1" stop-color="'+bg2+'"/></linearGradient></defs><circle cx="48" cy="48" r="48" fill="url(#g)"/>'+inner+'</svg>';
+  return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+}
+var AI_STAR='<path d="M48 18 C50 36 60 46 78 48 C60 50 50 60 48 78 C46 60 36 50 18 48 C36 46 46 36 48 18Z" fill="#fff"/>';
+var AI_PROVS={
+  chatgpt:{label:'ChatGPT',name:'ChatGPT',url:'https://api.openai.com/v1/chat/completions',model:'gpt-4o-mini',format:'openai',logo:aiLogoSvg('#19c37d','#0e8f5e','<g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"><circle cx="48" cy="48" r="9"/><ellipse cx="48" cy="30" rx="9" ry="14"/><ellipse cx="48" cy="66" rx="9" ry="14"/><ellipse cx="30" cy="48" rx="14" ry="9"/><ellipse cx="66" cy="48" rx="14" ry="9"/></g>')},
+  claude:{label:'Claude',name:'Claude',url:'https://api.anthropic.com/v1/messages',model:'claude-haiku-5-5',format:'anthropic',logo:aiLogoSvg('#e8906e','#c4623f','<g stroke="#fff" stroke-width="7" stroke-linecap="round"><path d="M48 20V76M20 48H76M28 28L68 68M68 28L28 68"/></g>')},
+  gemini:{label:'Gemini',name:'Gemini',url:'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions',model:'gemini-2.0-flash',format:'openai',logo:aiLogoSvg('#4b8bf5','#9b6bf0',AI_STAR)},
+  deepseek:{label:'DeepSeek',name:'DeepSeek',url:'https://api.deepseek.com/chat/completions',model:'deepseek-chat',format:'openai',logo:aiLogoSvg('#5b78ff','#3a4fd6','<path d="M24 56c8-22 36-30 50-14-14-2-22 4-26 12 6 6 16 6 22 0-4 16-20 24-34 18-6-3-10-8-12-16z" fill="#fff"/><circle cx="62" cy="44" r="3.5" fill="#3a4fd6"/>')},
+  groq:{label:'Groq',name:'Groq',url:'https://api.groq.com/openai/v1/chat/completions',model:'llama-3.3-70b-versatile',format:'openai',logo:aiLogoSvg('#ff7a52','#e0431f','<text x="48" y="64" text-anchor="middle" font-family="Arial,sans-serif" font-size="46" font-weight="800" fill="#fff">G</text>')},
+  custom:{label:'مخصص',name:'الذكاء الاصطناعي',url:'',model:'',format:'openai',logo:aiLogoSvg('#8a93a0','#5d6673','<g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"><circle cx="48" cy="48" r="12"/><path d="M48 20v10M48 66v10M20 48h10M66 48h10M28 28l7 7M61 61l7 7M68 28l-7 7M35 61l-7 7"/></g>')}
+};
+var aiCur={provider:'chatgpt',logo:'',hasKey:false};
+function aiStatus(msg){ var b=document.getElementById('aiStatus'); if(!msg){ b.style.display='none'; return; } b.style.display='block'; b.textContent=msg; }
+function aiEl(id){ return document.getElementById(id); }
+function aiRenderProvs(){
+  aiEl('aiProvs').innerHTML=Object.keys(AI_PROVS).map(function(k){
+    var p=AI_PROVS[k];
+    return '<button type="button" class="ai-prov'+(aiCur.provider===k?' sel':'')+'" onclick="aiPickProv(\''+k+'\')"><img src="'+p.logo+'" alt=""><span>'+p.label+'</span></button>';
+  }).join('');
+}
+function aiPickProv(k){
+  var p=AI_PROVS[k]; aiCur.provider=k; aiCur.logo=p.logo;
+  aiEl('ai_name').value=p.name; aiEl('ai_url').value=p.url; aiEl('ai_model').value=p.model; aiEl('ai_format').value=p.format;
+  aiEl('ai_logoPrev').src=p.logo; aiRenderProvs();
+}
+function aiLogoDefault(){ var p=AI_PROVS[aiCur.provider]||AI_PROVS.custom; aiCur.logo=p.logo; aiEl('ai_logoPrev').src=p.logo; }
+function aiLogoPick(inp){
+  var f=inp.files&&inp.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(){
+    var im=new Image();
+    im.onload=function(){
+      var S=96, c=document.createElement('canvas'); c.width=S; c.height=S; var x=c.getContext('2d');
+      var m=Math.min(im.width,im.height), sx=(im.width-m)/2, sy=(im.height-m)/2;
+      x.drawImage(im,sx,sy,m,m,0,0,S,S);
+      var d=c.toDataURL('image/webp',.85); if(d.indexOf('image/webp')<0) d=c.toDataURL('image/png');
+      aiCur.logo=d; aiEl('ai_logoPrev').src=d;
+    };
+    im.src=rd.result;
+  };
+  rd.readAsDataURL(f); inp.value='';
+}
+async function aiOpen(){
+  aiEl('aiModal').classList.add('open'); aiEl('aiTestBox').style.display='none'; aiStatus('');
+  aiRenderProvs();
+  var cfg=null;
+  try{ var rows=await DirazCloud.list('ai_config','&id=eq.1'); cfg=rows&&rows[0]&&rows[0].data; }
+  catch(e){ var m=String((e&&e.message)||e); aiStatus(/ai_config|PGRST|404|relation/i.test(m)?'⚠️ شغّل supabase-ai.sql في Supabase أولاً حتى تنحفظ الإعدادات':'⚠️ تعذّر تحميل الإعدادات'); }
+  if(!cfg){ aiPickProv(aiCur.provider||'chatgpt'); aiEl('ai_enabled').checked=false; aiEl('ai_proxy').value=''; aiEl('ai_prompt').value=''; aiEl('ai_key').value=''; aiEl('ai_keyHint').textContent=''; aiCur.hasKey=false; return; }
+  aiCur.provider=AI_PROVS[cfg.provider]?cfg.provider:'custom'; aiCur.logo=cfg.logo||(AI_PROVS[aiCur.provider]||AI_PROVS.custom).logo; aiCur.hasKey=!!cfg.key;
+  aiEl('ai_enabled').checked=!!cfg.enabled; aiEl('ai_name').value=cfg.name||''; aiEl('ai_url').value=cfg.url||''; aiEl('ai_model').value=cfg.model||''; aiEl('ai_format').value=cfg.format||'openai';
+  aiEl('ai_proxy').value=cfg.proxy||''; aiEl('ai_prompt').value=cfg.prompt||''; aiEl('ai_key').value=''; aiEl('ai_logoPrev').src=aiCur.logo;
+  aiEl('ai_keyHint').textContent=aiCur.hasKey?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
+  aiRenderProvs();
+}
+function aiClose(){ var m=aiEl('aiModal'); if(m) m.classList.remove('open'); }
+async function aiSave(){
+  var url=aiEl('ai_url').value.trim(), proxy=aiEl('ai_proxy').value.trim(), key=aiEl('ai_key').value.trim();
+  if(aiEl('ai_enabled').checked){
+    if(!/^https:\/\//i.test(url)){ showToast('❌ اكتب رابط API يبدأ بـ https://'); return; }
+    if(!/^https:\/\//i.test(proxy)){ showToast('❌ اكتب رابط الوسيط (Worker) يبدأ بـ https://'); return; }
+    if(!key && !aiCur.hasKey){ showToast('❌ الصق مفتاح API'); return; }
+  }
+  var old=null;
+  try{ var rows=await DirazCloud.list('ai_config','&id=eq.1'); old=rows&&rows[0]&&rows[0].data; }catch(e){}
+  var cfg={
+    enabled:aiEl('ai_enabled').checked, provider:aiCur.provider, name:aiEl('ai_name').value.trim()||'الذكاء الاصطناعي',
+    logo:aiCur.logo||'', url:url, model:aiEl('ai_model').value.trim(), format:aiEl('ai_format').value,
+    proxy:proxy.replace(/\/+$/,''), prompt:aiEl('ai_prompt').value.trim(), key:key||(old&&old.key)||''
+  };
+  try{
+    await DirazCloud.upsert('ai_config',[{id:1,data:cfg,updated_at:new Date().toISOString()}]);
+    aiCur.hasKey=!!cfg.key; aiEl('ai_key').value=''; aiEl('ai_keyHint').textContent=aiCur.hasKey?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
+    showToast('✅ انحفظت إعدادات الذكاء الاصطناعي');
+  }catch(e){
+    var m=String((e&&e.message)||e);
+    showToast(/ai_config|PGRST|404|relation/i.test(m)?'⚠️ شغّل supabase-ai.sql في Supabase أولاً':'❌ فشل الحفظ');
+  }
+}
+async function aiTest(){
+  var box=aiEl('aiTestBox'), proxy=aiEl('ai_proxy').value.trim().replace(/\/+$/,'');
+  box.style.display='block';
+  if(!/^https:\/\//i.test(proxy)){ box.textContent='اكتب رابط الوسيط (Worker) أول، واحفظ، وبعدين اختبر.'; return; }
+  box.textContent='⏳ جاري الاختبار… (احفظ الإعدادات قبل الاختبار)';
+  try{
+    var r=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q:'هلا، شنو أحلى عطر عندكم؟',test:true,history:[],catalog:'',section:''})});
+    var j=await r.json().catch(function(){return {};});
+    box.textContent=r.ok&&j.text?('✅ اشتغل. رد الذكاء:\n\n'+j.text):('❌ '+(j.error||('خطأ '+r.status)));
+  }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker'; }
 }
 </script>
 </body>

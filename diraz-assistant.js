@@ -712,6 +712,75 @@
   }
 
   /* ───────── معالجة الرسالة ───────── */
+  /* ───────── الذكاء الاصطناعي (هجين): القائمة أول، وإذا ما لكت جواب يجاوب الذكاء بعد عدّ 1 2 3 ───────── */
+  var AI=null, aiHist=[], aiLoaded=false;
+  function aiLoad(){
+    if(aiLoaded) return; aiLoaded=true;
+    try{
+      if(!window.DirazCloud || !DirazCloud.rpc) return;
+      DirazCloud.rpc('ai_public').then(function(c){ if(c && c.enabled && c.proxy) AI=c; }).catch(function(){});
+    }catch(e){}
+  }
+  function aiOn(){ return !!(AI && AI.enabled && AI.proxy); }
+  function aiCatalog(){
+    var out=[], len=0;
+    getPerfumes().slice(0,60).forEach(function(p){
+      var line='- '+(p.name||'')+' | '+(p.type||'')+' | '+fmt(priceOf(p,'50ml'))+' دينار (50مل)'+(charLine(p)?' | '+charLine(p):'');
+      if(len+line.length<3500){ out.push(line); len+=line.length; }
+    });
+    return out.join('\n');
+  }
+  function aiCss(){
+    if(document.getElementById('dzA_aiCss')) return;
+    var c=document.createElement('style'); c.id='dzA_aiCss';
+    c.textContent=[
+      '.dzA_ai .dzA_aib{display:flex;align-items:center;gap:7px;margin-bottom:7px;font-size:.72rem;font-weight:800;color:#666}',
+      '.dzA_ai .dzA_aib img{width:24px;height:24px;border-radius:50%;object-fit:cover;flex:none;background:#fff}',
+      '.dzA_ai .dzA_aib .dzA_aitag{background:#e8ecee;color:#111;border-radius:50px;padding:1px 8px;font-size:.62rem;font-weight:800}',
+      '.dzA_ai .dzA_cd{font-weight:700;line-height:1.7}',
+      '.dzA_ai .dzA_cd b{display:inline-block;min-width:1.3em;text-align:center;font-size:1.25rem;color:#c45a7a}',
+      '.dzA_ai .dzA_txt{white-space:pre-wrap;line-height:1.75}'
+    ].join('');
+    document.head.appendChild(c);
+  }
+  function aiAsk(raw){
+    var hist=aiHist.slice(-6);
+    var ctrl=('AbortController' in window)?new AbortController():null;
+    var to=setTimeout(function(){ try{ctrl&&ctrl.abort();}catch(e){} },25000);
+    return fetch(AI.proxy,{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl?ctrl.signal:undefined,
+      body:JSON.stringify({q:raw,history:hist,catalog:aiCatalog(),section:audGender()||''})})
+      .then(function(r){ return r.json().catch(function(){return {};}).then(function(j){ if(!r.ok||!j.text) throw new Error(j.error||('HTTP '+r.status)); return String(j.text); }); })
+      .then(function(x){ clearTimeout(to); return x; },function(e){ clearTimeout(to); throw e; });
+  }
+  /* plain(): الرد القديم من القائمة إذا الذكاء مطفي أو فشل — after(): شنو يظهر بعد جواب الذكاء */
+  function aiFallback(raw,plain,after){
+    if(!aiOn()){ plain(); return; }
+    aiCss();
+    var logo=AI.logo?'<img src="'+esc(AI.logo)+'" alt="">':'';
+    var head='<div class="dzA_aib">'+logo+'<span>'+esc(AI.name||'الذكاء الاصطناعي')+'</span><span class="dzA_aitag">ذكاء اصطناعي</span></div>';
+    var d=document.createElement('div'); d.className='dzA_m dzA_bot dzA_ai';
+    var n=1;
+    function cd(){ d.innerHTML=head+'<div class="dzA_cd">راح يجاوبك الذكاء الاصطناعي… <b>'+n+'</b></div>'; scrollEnd(); }
+    cd(); $('dzA_msgs').appendChild(d); scrollEnd();
+    var result=null, failed=false, done=false;
+    aiAsk(raw).then(function(txt){ result=txt; if(n>=3) finish(); },function(){ failed=true; if(n>=3) finish(); });
+    var iv=setInterval(function(){
+      if(n<3){ n++; cd(); }
+      else { clearInterval(iv); n=3; finish(); }
+    },1000);
+    function finish(){
+      if(done) return;
+      if(result===null && !failed){ return; }          /* ننتظر الجواب بعد ما يكمل العد */
+      done=true; clearInterval(iv);
+      if(failed){ try{ d.remove(); }catch(e){} plain(); return; }
+      aiHist.push({r:'user',t:raw.slice(0,300)}); aiHist.push({r:'bot',t:result.slice(0,600)});
+      if(aiHist.length>12) aiHist=aiHist.slice(-12);
+      d.innerHTML=head+'<div class="dzA_txt">'+esc(result).replace(/\n/g,'<br>')+'</div>';
+      scrollEnd();
+      if(after) after();
+    }
+  }
+
   function handle(text){
     say(esc(text),'me');
     var t=norm(text), perfumes=getPerfumes();
@@ -804,11 +873,16 @@
       if(/(شنو عندكم|شكو|كل العطور|عرض|المتوفر|الاصناف)/.test(t)){ listAll(perfumes); return; }
       /* سؤال عام خارج العطور — نسلك له ونحول الموضوع */
       if(/(كيف حالك|شلونك|شخبارك|وين تعيش|عمرك|شكد عمرك|من وين|جنسيتك|انت انسان|انت روبوت|انت ذكاء|شلون اشتغل|كيف تصنع|شلون تسوي|شنو هوايتك|تحب شنو|عندك صديق|متزوج|عندك عيله|شلون اتعلمت|منو صنعك|شنو اسمك الحقيقي|شلون تكدر|شنو رايك ب|شنو الاخبار|شكو جديد|اخبارك|شلون يومك|كيف يومك)/.test(t)){
-        say('هذا سؤال حلو 🌸 بس أني هنا مخصص للعطور! خليني أرد عليك بسؤال أهم: شنو نوع الريحة اللي تحبها؟ هادية، سويت، منعشة، قوية…؟');
-        chips(BASIC_CHIPS);
+        aiFallback(raw,function(){
+          say('هذا سؤال حلو 🌸 بس أني هنا مخصص للعطور! خليني أرد عليك بسؤال أهم: شنو نوع الريحة اللي تحبها؟ هادية، سويت، منعشة، قوية…؟');
+          chips(BASIC_CHIPS);
+        },function(){ chips(BASIC_CHIPS); });
         return;
       }
-      say('أني متخصص بالعطور بس 🌸 احچيلي شنو نوع الريحة اللي تحبها: هادئة، سويت، منعشة، قوية…؟'); chips(BASIC_CHIPS); return;
+      aiFallback(raw,function(){
+        say('أني متخصص بالعطور بس 🌸 احچيلي شنو نوع الريحة اللي تحبها: هادئة، سويت، منعشة، قوية…؟'); chips(BASIC_CHIPS);
+      },function(){ chips(BASIC_CHIPS); });
+      return;
     }
 
     /* ── التعمق بالتفاصيل: نسأل عن العمر مرة وحدة إذا ما نعرفه ── */
@@ -850,8 +924,13 @@
       return;
     }
     if(!top.length){
-      say('ما لقيت شي يطابق طلبك بالضبط، بس هذي أكثر العطور اللي تنطلب عندنا 🌸');
-      showCards(res.list.slice(0,3),perfumes,true);
+      aiFallback(raw,function(){
+        say('ما لقيت شي يطابق طلبك بالضبط، بس هذي أكثر العطور اللي تنطلب عندنا 🌸');
+        showCards(res.list.slice(0,3),perfumes,true);
+      },function(){
+        say('وهذي أكثر العطور اللي تنطلب عندنا 🌸');
+        showCards(res.list.slice(0,3),perfumes,true);
+      });
       return;
     }
     var intro=buildIntro();
@@ -1247,7 +1326,7 @@
 
   function init(){
     if(document.getElementById('dzA_btn')) return;
-    syncFromPage(); resetState(); injectUI(); addOrderBar();
+    syncFromPage(); resetState(); injectUI(); addOrderBar(); aiLoad();
     window.addEventListener('diraz-section',function(e){
       var sec=(e.detail&&e.detail.section)||null, prev=audience;
       setAudience(sec);
