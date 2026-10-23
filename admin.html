@@ -239,6 +239,17 @@ textarea{resize:vertical;min-height:80px}
 .ai-tab.sel{background:#fff;color:#c45a7a;border-color:#fff;box-shadow:0 6px 18px rgba(0,0,0,.2)}
 .ai-dot{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.45);flex:none}
 .ai-dot.on{background:#22c55e;box-shadow:0 0 0 2px rgba(34,197,94,.3)}
+.ai-usage{background:rgba(255,255,255,.18);border-radius:16px;padding:12px 14px;margin-bottom:14px}
+.ai-usage .uh{display:flex;align-items:center;justify-content:space-between;gap:8px;font-weight:900;font-size:.92rem;margin-bottom:8px}
+.ai-usage .uh small{font-weight:600;opacity:.85;font-size:.72rem}
+.ai-usage .ur{margin-top:9px;font-size:.82rem;font-weight:800}
+.ai-usage .ur .l{display:flex;justify-content:space-between;gap:8px;margin-bottom:4px}
+.ai-usage .ur.tot{font-size:.95rem;padding-bottom:10px;border-bottom:1.5px dashed rgba(255,255,255,.4)}
+.ai-usage .bar{height:8px;border-radius:8px;background:rgba(0,0,0,.22);overflow:hidden}
+.ai-usage .bar i{display:block;height:100%;border-radius:8px;background:#22c55e;transition:width .4s}
+.ai-usage .bar i.mid{background:#f59e0b}.ai-usage .bar i.low{background:#ef4444}
+.ai-usage .ur .sub{font-weight:600;opacity:.85;font-size:.72rem;margin-top:3px}
+#aiModal input[type=number]{padding:11px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);color:#fff;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none;direction:ltr;text-align:left}
 .ai-sub{font-weight:900;font-size:.92rem;margin:6px 0 10px;padding-top:12px;border-top:1.5px dashed rgba(255,255,255,.4)}
 @media(max-width:600px){.ai-tab{font-size:.74rem;padding:9px 4px;gap:5px}}
 </style>
@@ -570,6 +581,7 @@ textarea{resize:vertical;min-height:80px}
 <div id="aiModal" role="dialog" aria-label="الذكاء الاصطناعي" onclick="if(event.target===this)aiClose()">
   <div class="ai-box">
     <div class="ai-top"><h2>🤖 الذكاء الاصطناعي</h2><button type="button" class="ai-x" onclick="aiClose()" aria-label="إغلاق">✕</button></div>
+    <div class="ai-usage" id="aiUsage"><div class="uh"><span>📊 الطلبات المتبقية اليوم</span><span><small id="aiUsageTime"></small> <button type="button" class="ai-mini" style="padding:4px 12px" onclick="aiUsageLoad()">🔄</button></span></div><div id="aiUsageBody">⏳ جاري التحميل…</div></div>
     <div class="ai-note">مساعد ديراز يشتغل <b>هجين</b>: أول شي يجاوب من القائمة، وإذا ما لكى جواب يجاوب الذكاء الاصطناعي <b>كرد عادي بدون ما يبين اسمه أو شعاره للزبون</b>.</div>
     <div id="aiStatus" class="ai-note" style="display:none"></div>
     <div class="ai-sw"><span>تشغيل الذكاء الاصطناعي بالمساعد</span><label class="switch"><input type="checkbox" id="ai_enabled"><span class="slider-sw"></span></label></div>
@@ -582,6 +594,8 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-group"><label>الموديل</label><input type="text" id="ai_model" class="ltr" placeholder="gpt-4o-mini" autocomplete="off"></div>
       <div class="form-group"><label>نوع الواجهة</label><select id="ai_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option><option value="custom">واجهتي الخاصة (API سويته أنا)</option></select></div>
       <div class="form-group full"><label>مفتاح API</label><input type="password" id="ai_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><small id="ai_keyHint" style="opacity:.8"></small></div>
+      <div class="form-group"><label>الحد اليومي لهذا الـ API (عدد الطلبات)</label><input type="number" id="ai_limit" min="0" step="1" placeholder="مثال: 1500" autocomplete="off"></div>
+      <div class="form-group"><label>يتصفّر العدّاد الساعة (UTC)</label><input type="number" id="ai_reset" min="0" max="23" step="1" placeholder="0" autocomplete="off"><small style="opacity:.8">Gemini غالباً 7 أو 8، Groq وأغلب الباقي 0. (العراق = UTC+3)</small></div>
       <div class="form-group full"><button type="button" class="ai-mini" onclick="aiClearSlot()">🗑️ تفريغ هذا الـ API</button></div>
     </div>
     <div class="ai-sub">⚙️ إعدادات عامة (تخص الثلاثة)</div>
@@ -1736,7 +1750,7 @@ var AI_SLOT_NOTES=[
   'API 3 (الطوارئ): يشتغل فقط إذا API 1 و API 2 واقفين. الوسيط يخليه يرد بجملة أو جملتين وبأقل توكنات، فاختر أرخص موديل عندك حتى يصرف قليل.'
 ];
 var aiSlots=[], aiSlot=0;
-function aiNewSlot(){ return {provider:'',url:'',model:'',format:'openai',keyNew:'',hasKey:false}; }
+function aiNewSlot(){ return {provider:'',url:'',model:'',format:'openai',keyNew:'',hasKey:false,limit:'',resetUtc:0}; }
 function aiGuess(url){ url=String(url||''); var k=Object.keys(AI_PROVS).filter(function(x){ return AI_PROVS[x].url && AI_PROVS[x].url===url; })[0]; return k||(url?'custom':''); }
 function aiSlotReady(s){ return /^https:\/\//i.test(s.url) && !!(s.keyNew||s.hasKey||s.format==='custom'); }
 function aiStatus(msg){ var b=document.getElementById('aiStatus'); if(!msg){ b.style.display='none'; return; } b.style.display='block'; b.textContent=msg; }
@@ -1745,6 +1759,7 @@ function aiHint(){ var s=aiSlots[aiSlot]; aiEl('ai_keyHint').textContent=(s&&s.h
 function aiStore(){
   var s=aiSlots[aiSlot]; if(!s) return;
   s.url=aiEl('ai_url').value.trim(); s.model=aiEl('ai_model').value.trim(); s.format=aiEl('ai_format').value; s.keyNew=aiEl('ai_key').value.trim();
+  s.limit=aiEl('ai_limit').value.trim(); s.resetUtc=parseInt(aiEl('ai_reset').value,10)||0;
 }
 function aiRenderTabs(){
   aiEl('aiTabs').innerHTML=AI_SLOT_NAMES.map(function(n,i){
@@ -1761,6 +1776,7 @@ function aiRenderProvs(){
 function aiShow(){
   var s=aiSlots[aiSlot];
   aiEl('ai_url').value=s.url; aiEl('ai_model').value=s.model; aiEl('ai_format').value=s.format||'openai'; aiEl('ai_key').value=s.keyNew;
+  aiEl('ai_limit').value=s.limit||''; aiEl('ai_reset').value=s.resetUtc||0;
   aiEl('aiSlotNote').textContent=AI_SLOT_NOTES[aiSlot];
   aiHint(); aiRenderTabs(); aiRenderProvs();
 }
@@ -1787,7 +1803,7 @@ async function aiOpen(){
     var list=Array.isArray(cfg.apis)?cfg.apis:[{provider:cfg.provider,url:cfg.url,model:cfg.model,format:cfg.format,key:cfg.key}];
     for(var i=0;i<3;i++){
       var a=list[i];
-      if(a && (a.url||a.key)) aiSlots[i]={provider:(a.provider&&AI_PROVS[a.provider])?a.provider:aiGuess(a.url),url:a.url||'',model:a.model||'',format:a.format||'openai',keyNew:'',hasKey:!!a.key};
+      if(a && (a.url||a.key)) aiSlots[i]={provider:(a.provider&&AI_PROVS[a.provider])?a.provider:aiGuess(a.url),url:a.url||'',model:a.model||'',format:a.format||'openai',keyNew:'',hasKey:!!a.key,limit:a.limit||'',resetUtc:a.resetUtc||0};
     }
     aiEl('ai_enabled').checked=!!cfg.enabled; aiEl('ai_proxy').value=cfg.proxy||''; aiEl('ai_prompt').value=cfg.prompt||'';
   } else {
@@ -1795,8 +1811,9 @@ async function aiOpen(){
     aiEl('ai_enabled').checked=false; aiEl('ai_proxy').value=''; aiEl('ai_prompt').value='';
   }
   aiShow();
+  aiUsageLoad(); clearInterval(aiUsageTimer); aiUsageTimer=setInterval(aiUsageLoad,60000);
 }
-function aiClose(){ var m=aiEl('aiModal'); if(m) m.classList.remove('open'); }
+function aiClose(){ var m=aiEl('aiModal'); if(m) m.classList.remove('open'); clearInterval(aiUsageTimer); }
 /* silent=true: بدون رسالة نجاح (يستعملها الاختبار). يرجّع true إذا انحفظ */
 async function aiSave(silent){
   aiStore();
@@ -1816,7 +1833,7 @@ async function aiSave(silent){
   var oldApis=(old&&Array.isArray(old.apis))?old.apis:(old?[{key:old.key}]:[]);
   var apis=aiSlots.map(function(s,i){
     var key=s.keyNew||(s.hasKey?((oldApis[i]&&oldApis[i].key)||''):'');
-    return {provider:s.provider||'',url:s.url,model:s.model,format:s.format||'openai',key:key};
+    return {provider:s.provider||'',url:s.url,model:s.model,format:s.format||'openai',key:key,limit:parseInt(s.limit,10)||0,resetUtc:Math.min(23,Math.max(0,parseInt(s.resetUtc,10)||0))};
   });
   var cfg={enabled:enabled,proxy:proxy.replace(/\/+$/,''),prompt:aiEl('ai_prompt').value.trim(),apis:apis};
   try{
@@ -1830,6 +1847,36 @@ async function aiSave(silent){
     showToast(/ai_config|PGRST|404|relation/i.test(m)?'⚠️ شغّل supabase-ai.sql في Supabase أولاً':'❌ فشل الحفظ');
     return false;
   }
+}
+/* ── عدّاد الطلبات المتبقية: يتحدّث كل دقيقة وأنت فاتح النافذة (وبزر 🔄) ── */
+var aiUsageTimer=null;
+function aiUsageDay(resetUtc){ var h=Math.min(23,Math.max(0,parseInt(resetUtc,10)||0)); return new Date(Date.now()-h*3600*1000).toISOString().slice(0,10); }
+function aiBar(rem,lim){ var pct=lim>0?Math.max(0,Math.min(100,rem/lim*100)):0; return '<div class="bar"><i class="'+(pct<=10?'low':pct<=30?'mid':'')+'" style="width:'+pct+'%"></i></div>'; }
+async function aiUsageLoad(){
+  var body=aiEl('aiUsageBody'); if(!body) return;
+  var cfg=null, rows=[];
+  try{ var c=await DirazCloud.list('ai_config','&id=eq.1'); cfg=c&&c[0]&&c[0].data; }catch(e){}
+  var apis=(cfg&&Array.isArray(cfg.apis))?cfg.apis:[];
+  try{ rows=await DirazCloud.list('ai_usage','&day=gte.'+aiUsageDay(23))||[]; }
+  catch(e){ body.textContent='⚠️ شغّل supabase-ai-usage.sql في Supabase حتى يشتغل العدّاد'; return; }
+  var tLim=0,tRem=0,tUsed=0,counted=0,html='';
+  var items=[];
+  apis.forEach(function(a,i){
+    if(!a||!(a.url&&a.key)) return;
+    var day=aiUsageDay(a.resetUtc), used=0;
+    rows.forEach(function(r){ if(r.slot===i&&r.day===day) used=r.n||0; });
+    var lim=parseInt(a.limit,10)||0, rem=Math.max(0,lim-used);
+    tUsed+=used; if(lim>0){ tLim+=lim; tRem+=rem; counted++; }
+    items.push({i:i,a:a,used:used,lim:lim,rem:rem});
+  });
+  if(!items.length){ body.textContent='ما في API محفوظ لسا — أضف API واحد على الأقل واحفظ.'; return; }
+  html+='<div class="ur tot"><div class="l"><span>🧮 المجموع من كل الـ APIs</span><span>'+(counted?(tRem.toLocaleString('en')+' متبقي من '+tLim.toLocaleString('en')):'حدّد الحد اليومي')+'</span></div>'+(counted?aiBar(tRem,tLim):'')+'<div class="sub">انصرف اليوم: '+tUsed.toLocaleString('en')+' طلب'+(counted<items.length?' — بعض الـ APIs بدون حد يومي، ما تدخل بالمتبقي':'')+'</div></div>';
+  items.forEach(function(it){
+    var nm=AI_SLOT_NAMES[it.i]+' — '+((AI_PROVS[it.a.provider]||{}).label||it.a.model||'');
+    html+='<div class="ur"><div class="l"><span>'+nm+'</span><span>'+(it.lim?(it.rem.toLocaleString('en')+' متبقي من '+it.lim.toLocaleString('en')):('انصرف '+it.used.toLocaleString('en')+' (بدون حد)'))+'</span></div>'+(it.lim?aiBar(it.rem,it.lim):'')+'<div class="sub">انصرف اليوم: '+it.used.toLocaleString('en')+'</div></div>';
+  });
+  body.innerHTML=html;
+  var d=new Date(); aiEl('aiUsageTime').textContent='آخر تحديث '+d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
 }
 /* all=false: يختبر الـ API المفتوح فقط (بدون تحويل). all=true: يختبر السلسلة كاملة مثل الزبون (1 ثم 2 ثم 3) */
 async function aiTest(all){
@@ -1849,6 +1896,7 @@ async function aiTest(all){
         ? ('✅ اشتغل — اللي رد: API '+(j.slot||'?')+(j.eco?' (طوارئ اقتصادي)':'')+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'\n\n'+j.text)
         : ('✅ API '+(aiSlot+1)+' اشتغل'+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'. رد الذكاء:\n\n'+j.text);
     } else box.textContent='❌ '+(j.error||('خطأ '+r.status));
+    setTimeout(aiUsageLoad,1500);
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker (لازم يحتوي رابط لوحة التحكم)'; }
 }
 </script>
