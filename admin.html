@@ -1836,8 +1836,8 @@ async function aiTest(all){
     var j=await r.json().catch(function(){return {};});
     if(r.ok&&j.text){
       box.textContent=all
-        ? ('✅ اشتغل — اللي رد: API '+(j.slot||'?')+(j.eco?' (طوارئ اقتصادي)':'')+'\n\n'+j.text)
-        : ('✅ API '+(aiSlot+1)+' اشتغل. رد الذكاء:\n\n'+j.text);
+        ? ('✅ اشتغل — اللي رد: API '+(j.slot||'?')+(j.eco?' (طوارئ اقتصادي)':'')+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'\n\n'+j.text)
+        : ('✅ API '+(aiSlot+1)+' اشتغل'+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'. رد الذكاء:\n\n'+j.text);
     } else box.textContent='❌ '+(j.error||('خطأ '+r.status));
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker (لازم يحتوي رابط لوحة التحكم)'; }
 }
