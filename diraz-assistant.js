@@ -405,6 +405,37 @@
       'body.sec-men .dzA_form button,body.sec-men .dzA_reg button{background:#1a2456}',
       'body.sec-men .dzA_flash{animation-name:dzAflashM}',
       '@keyframes dzAflashM{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,0)}25%,70%{box-shadow:0 0 0 6px rgba(255,255,255,.95),0 0 30px 8px rgba(26,36,86,.7)}}',
+      '.dzA_tabs{display:flex;gap:6px;padding:8px 10px;background:#fff;border-bottom:1px solid #f4c6d6}',
+      '.dzA_tab{flex:1;border:1.5px solid #e07898;background:#fff;color:#c45a7a;font-family:Cairo,sans-serif;font-weight:800;font-size:.78rem;padding:7px 6px;border-radius:50px;cursor:pointer}',
+      '.dzA_tab.sel{background:#c45a7a;color:#fff}',
+      'body.sec-men .dzA_tabs{border-bottom-color:#c5cbee}',
+      'body.sec-men .dzA_tab{border-color:#4a5bb0;color:#1a2456}',
+      'body.sec-men .dzA_tab.sel{background:#1a2456;color:#fff}',
+      '#dzA_msgsF{flex:1;overflow-y:auto;padding:14px 12px;display:none;flex-direction:column;gap:10px}',
+      '#dzA_box.full #dzA_msgs{display:none}',
+      '#dzA_box.full #dzA_msgsF{display:flex}',
+      '#dzA_box.full #dzA_orderbar{display:none!important}',
+      '#dzA_box.full{background:rgba(240,235,252,.98)}',
+      '#dzA_box.full .dzA_head{background:#4b2e83}',
+      '#dzA_box.full .dzA_tabs{border-bottom-color:#d9cdf2}',
+      '#dzA_box.full .dzA_tab{border-color:#7a5bc0;color:#4b2e83}',
+      '#dzA_box.full .dzA_tab.sel{background:#4b2e83;color:#fff}',
+      '#dzA_box.full .dzA_bot{color:#3b2466;box-shadow:0 2px 10px rgba(75,46,131,.15)}',
+      '#dzA_box.full .dzA_me{background:#7a5bc0;color:#fff}',
+      '#dzA_box.full .dzA_form{border-top-color:#d9cdf2}',
+      '#dzA_box.full .dzA_form input{border-color:#d9cdf2}',
+      '#dzA_box.full .dzA_form input:focus{border-color:#7a5bc0}',
+      '#dzA_box.full .dzA_form button{background:#4b2e83}',
+      '.dzA_form input:disabled{background:#f3f3f3;cursor:not-allowed}',
+      '.dzA_lock{background:#fff;border:1.5px solid #d9cdf2;border-radius:18px;padding:18px 16px;text-align:center;color:#3b2466;display:flex;flex-direction:column;gap:9px;align-items:stretch}',
+      '.dzA_lock .lk{font-size:2rem;line-height:1}',
+      '.dzA_lock b{font-size:1rem;font-weight:900}',
+      '.dzA_lock p{font-size:.8rem;line-height:1.7;font-weight:600;margin:0;opacity:.85}',
+      '.dzA_lock input{border:1.5px solid #d9cdf2;border-radius:50px;padding:10px 14px;font-family:monospace;font-size:1rem;letter-spacing:2px;text-align:center;outline:none;direction:ltr;text-transform:uppercase;color:#3b2466}',
+      '.dzA_lock input:focus{border-color:#7a5bc0}',
+      '.dzA_lock button{border:none;cursor:pointer;background:#4b2e83;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.88rem;padding:11px;border-radius:50px}',
+      '.dzA_lock button:disabled{opacity:.6;cursor:default}',
+      '.dzA_lock .err{color:#d32f2f;font-size:.78rem;font-weight:700;min-height:1em}',
       '@media(max-width:480px){#dzA_btn{bottom:14px;right:14px;padding:7px 14px 7px 8px}#dzA_box{right:12px;bottom:72px}}'
     ].join('\n');
     document.head.appendChild(css);
@@ -415,11 +446,13 @@
 
     var box=document.createElement('div');
     box.id='dzA_box';
-    box.innerHTML='<div class="dzA_head"><div><b>🌸 مساعد ديراز للعطور</b><small>أخبرني شنو تحب وأرشح لك الأنسب</small></div><button class="dzA_x" type="button" aria-label="إغلاق">✕</button></div>'+
-      '<div id="dzA_msgs"></div>'+
+    box.innerHTML='<div class="dzA_head"><div><b id="dzA_ttl">🌸 مساعد ديراز للعطور</b><small id="dzA_sub">أخبرني شنو تحب وأرشح لك الأنسب</small></div><button class="dzA_x" type="button" aria-label="إغلاق">✕</button></div>'+
+      '<div class="dzA_tabs"><button type="button" class="dzA_tab sel" data-m="cust">🌸 نسخة الزبون</button><button type="button" class="dzA_tab" data-m="full">🔒 النسخة الكاملة</button></div>'+
+      '<div id="dzA_msgs"></div><div id="dzA_msgsF"></div>'+
       '<div class="dzA_form"><input id="dzA_in" type="text" placeholder="مثال: أريد عطر هادئ للدوام..." autocomplete="off"><button type="button" id="dzA_send" aria-label="إرسال">➤</button></div>';
     document.body.appendChild(box);
     box.querySelector('.dzA_x').onclick=toggle;
+    box.querySelectorAll('.dzA_tab').forEach(function(b){ b.onclick=function(){ setMode(b.getAttribute('data-m')); }; });
     $('dzA_send').onclick=submit;
     $('dzA_in').addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); submit(); } });
   }
@@ -464,7 +497,9 @@
   }
   function submit(){
     var i=$('dzA_in'), v=(i.value||'').trim(); if(!v) return;
-    i.value=''; handle(v.slice(0,300));
+    i.value='';
+    if(fullMode){ fullSubmit(v.slice(0,1500)); return; }
+    handle(v.slice(0,300));
   }
 
   /* ───────── كلام اجتماعي: سلام، شلونك، شكر، وداع ───────── */
@@ -1399,6 +1434,142 @@
 
   /* للاختبار */
   window.DirazAssistant={_mention:function(q){ return mentionIdx(norm(q),getPerfumes()); },_ai:function(){return AI;},_listKnows:function(q){ var t=norm(q); return listKnows(t,parseMessage(q),getPerfumes()); },_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
+
+  /* ═════════ النسخة الكاملة: مقفولة بكود لمرة وحدة، وبعدها الزبون يسأل أي شي بحرية ═════════ */
+  var FULL_KEY='diraz_ai_full';
+  var fullMode=false, fullToken=null, fullHist=[], fullBusy=false, fullWelcomed=false;
+  try{ fullToken=localStorage.getItem(FULL_KEY)||null; }catch(e){}
+
+  function fBox(){ return $('dzA_msgsF'); }
+  function fScroll(){ var m=fBox(); if(m) m.scrollTop=m.scrollHeight; }
+  function fText(text,who){
+    var d=document.createElement('div'); d.className='dzA_m '+(who==='me'?'dzA_me':'dzA_bot');
+    d.style.whiteSpace='pre-wrap'; d.textContent=text;
+    fBox().appendChild(d); fScroll(); return d;
+  }
+  function fHtml(html){
+    var d=document.createElement('div'); d.className='dzA_m dzA_bot'; d.innerHTML=html;
+    fBox().appendChild(d); fScroll(); return d;
+  }
+  function setInputState(){
+    var inp=$('dzA_in'); if(!inp) return;
+    if(fullMode){
+      inp.disabled=!fullToken;
+      inp.placeholder=fullToken?'اسأل أي شي تريده...':'أدخل كود الفتح أول 🔒';
+    }else{
+      inp.disabled=false; inp.placeholder='مثال: أريد عطر هادئ للدوام...';
+    }
+  }
+  function setMode(m){
+    var box=$('dzA_box'); if(!box) return;
+    fullMode=(m==='full');
+    box.classList.toggle('full',fullMode);
+    box.querySelectorAll('.dzA_tab').forEach(function(b){ b.classList.toggle('sel',b.getAttribute('data-m')===m); });
+    var ttl=$('dzA_ttl'), sub=$('dzA_sub');
+    if(fullMode){
+      if(ttl) ttl.textContent='✨ مساعد ديراز — النسخة الكاملة';
+      if(sub) sub.textContent='اسأل أي شي بحرية';
+      fullEnter();
+    }else{
+      if(ttl) ttl.textContent='🌸 مساعد ديراز للعطور';
+      if(sub) sub.textContent='أخبرني شنو تحب وأرشح لك الأنسب';
+    }
+    setInputState();
+    setTimeout(function(){ var i=$('dzA_in'); if(i&&!i.disabled) i.focus(); },50);
+  }
+  function fullEnter(){
+    if(!fullToken){ showLock(); return; }
+    if(!fullWelcomed){
+      fullWelcomed=true;
+      fHtml('أهلاً بيك بالنسخة الكاملة ✨<br>هنا تكدر تسألني عن أي شي براحتك، مو بس العطور.');
+    }
+    /* نتأكد إن الجلسة ما انطردت */
+    try{
+      if(window.DirazCloud && DirazCloud.rpc){
+        DirazCloud.rpc('ai_full_check',{p_token:fullToken}).then(function(ok){ if(ok===false) lostAccess(); }).catch(function(){});
+      }
+    }catch(e){}
+  }
+  function showLock(){
+    setInputState();
+    if(fBox().querySelector('.dzA_lock')) return;
+    var c=document.createElement('div'); c.className='dzA_lock';
+    c.innerHTML='<div class="lk">🔒</div><b>النسخة الكاملة مقفولة</b>'+
+      '<p>هنا تسأل أي شي بحرية. حتى تفتحها اطلب الكود من الإدارة وادخله هنا (الكود يشتغل مرة وحدة بس).</p>'+
+      '<input type="text" class="dzA_code" placeholder="XXXXX-XXXXX" autocomplete="off" maxlength="14">'+
+      '<div class="err"></div><button type="button" class="dzA_codebtn">🔓 فتح</button>';
+    fBox().appendChild(c);
+    var inp=c.querySelector('.dzA_code'), btn=c.querySelector('.dzA_codebtn'), err=c.querySelector('.err');
+    function go(){
+      var code=String(inp.value||'').trim(); if(!code) return;
+      if(!window.DirazCloud || !DirazCloud.rpc){ err.textContent='الخدمة مو جاهزة، جرّب بعد شوي'; return; }
+      btn.disabled=true; err.textContent='';
+      var cu=getCustomer()||{};
+      DirazCloud.rpc('ai_full_redeem',{p_code:code,p_name:String(cu.name||'').slice(0,60),p_phone:String(cu.phone||'').replace(/\D/g,'').slice(0,15)})
+        .then(function(tok){
+          if(typeof tok==='string' && tok.length>=20){
+            fullToken=tok; try{ localStorage.setItem(FULL_KEY,tok); }catch(e){}
+            c.remove(); fullWelcomed=false; fullHist=[]; fullEnter(); setInputState();
+            setTimeout(function(){ var i=$('dzA_in'); if(i) i.focus(); },50);
+          }else{
+            err.textContent='❌ الكود غلط أو انستخدم قبل'; btn.disabled=false;
+          }
+        })
+        .catch(function(){ err.textContent='صار خطأ، جرّب مرة ثانية'; btn.disabled=false; });
+    }
+    btn.onclick=go;
+    inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); go(); } });
+  }
+  /* انطرد من الإدارة (أو التوكن ما عاد صالح): نرجّعه للقفل */
+  function lostAccess(){
+    fullToken=null; fullWelcomed=false; fullHist=[]; fullBusy=false;
+    try{ localStorage.removeItem(FULL_KEY); }catch(e){}
+    fBox().innerHTML='';
+    fHtml('انسحبت صلاحية النسخة الكاملة من هذا الجهاز 🔒<br>إذا تحتاجها اطلب كود جديد من الإدارة.');
+    showLock();
+  }
+  function fullSubmit(v){
+    if(!fullToken){ showLock(); return; }
+    if(fullBusy) return;
+    if(!aiOn()){ fText('الذكاء الاصطناعي مطفي هسه، جرّب بعد شوي 🌸'); return; }
+    fText(v,'me');
+    fullBusy=true;
+    var d=fText('...','bot'); d.style.opacity='.6';
+    var ctrl=('AbortController' in window)?new AbortController():null;
+    var to=setTimeout(function(){ try{ctrl&&ctrl.abort();}catch(e){} },40000);
+    fetch(AI.proxy,{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl?ctrl.signal:undefined,
+      body:JSON.stringify({q:v,history:fullHist.slice(-10),catalog:aiCatalog(),section:'',full:true,token:fullToken})})
+      .then(function(r){
+        return r.json().catch(function(){return {};}).then(function(j){
+          if(r.status===403 && j.error==='kicked') throw {kicked:true};
+          if(!r.ok||!j.text) throw new Error(j.error||('HTTP '+r.status));
+          return String(j.text);
+        });
+      })
+      .then(function(txt){
+        d.style.opacity=''; d.textContent=txt;
+        fullHist.push({r:'user',t:v.slice(0,1500)}); fullHist.push({r:'bot',t:txt.slice(0,1500)});
+        if(fullHist.length>20) fullHist=fullHist.slice(-20);
+        try{ showMentionCardsFull(v,txt); }catch(e){}
+      },function(e){
+        if(e && e.kicked){ try{d.remove();}catch(x){} lostAccess(); return; }
+        d.style.opacity=''; d.textContent='ما كدرت أجاوبك هسه 😔 جرّب مرة ثانية.';
+      })
+      .then(function(){ clearTimeout(to); fullBusy=false; fScroll(); });
+  }
+  /* بطاقات العطور اللي انذكرت (نفس بطاقات النسخة العادية) تنعرض داخل النسخة الكاملة */
+  function showMentionCardsFull(raw,txt){
+    var perfumes=getPerfumes(), out=[];
+    mentionIdx(norm(raw),perfumes).concat(mentionIdx(norm(txt),perfumes)).forEach(function(i){ if(out.indexOf(i)<0) out.push(i); });
+    var real=$('dzA_msgs'), tmp=fBox();
+    out.slice(0,2).forEach(function(i){
+      if(!perfumes[i]) return;
+      perfumeCard(i,perfumes[i]);               /* تنضاف لحاوية الزبون… */
+      var last=real.lastElementChild;
+      if(last && last.classList.contains('dzA_card')) tmp.appendChild(last);   /* …ونحوّلها لحاوية النسخة الكاملة */
+    });
+    fScroll();
+  }
 
   function init(){
     if(document.getElementById('dzA_btn')) return;

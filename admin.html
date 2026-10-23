@@ -252,6 +252,19 @@ textarea{resize:vertical;min-height:80px}
 #aiModal input[type=number]{padding:11px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);color:#fff;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none;direction:ltr;text-align:left}
 .ai-sub{font-weight:900;font-size:.92rem;margin:6px 0 10px;padding-top:12px;border-top:1.5px dashed rgba(255,255,255,.4)}
 @media(max-width:600px){.ai-tab{font-size:.74rem;padding:9px 4px;gap:5px}}
+/* ══ النسخة الكاملة ══ */
+#fullModal{position:fixed;inset:0;z-index:2000;display:none;align-items:flex-start;justify-content:center;background:rgba(40,10,25,.55);backdrop-filter:blur(4px);overflow-y:auto;padding:24px 12px}
+#fullModal.open{display:flex}
+.fc-box{background:rgba(255,255,255,.18);border-radius:16px;padding:12px 14px;margin-bottom:14px;text-align:center}
+.fc-box .fc{display:block;direction:ltr;font-family:monospace;font-size:1.6rem;font-weight:900;letter-spacing:4px;background:rgba(0,0,0,.22);border-radius:12px;padding:10px;margin:8px 0;user-select:all}
+.fc-box small{display:block;opacity:.85;font-size:.74rem;line-height:1.7}
+.fc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;font-weight:900;font-size:.92rem;margin-bottom:8px}
+.fu-row{display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,.18);border-radius:14px;padding:10px 14px;margin-bottom:8px}
+.fu-i{display:flex;flex-direction:column;gap:2px;min-width:0}
+.fu-i b{font-size:.92rem}.fu-i small{opacity:.85;font-size:.72rem;font-weight:600}
+.fu-kick{flex:none;border:0;background:#fff;color:#d32f2f;font-family:'Cairo',sans-serif;font-weight:800;font-size:.78rem;padding:8px 14px;border-radius:50px;cursor:pointer}
+.fu-kick:hover{background:#ffe3e3}
+.fu-empty{text-align:center;opacity:.9;font-weight:700;padding:14px 0;font-size:.88rem}
 </style>
 <style id="spAdminCss">
 /* ══ الدعم ══ */
@@ -320,6 +333,10 @@ textarea{resize:vertical;min-height:80px}
           <button type="button" role="menuitem" class="pill-item" onclick="dotsGo('ai')">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z"/></svg>
             <span>الذكاء الاصطناعي</span>
+          </button>
+          <button type="button" role="menuitem" class="pill-item" onclick="dotsGo('full')">
+            <span>🔓</span>
+            <span>النسخة الكاملة</span>
           </button>
         </div>
       </div>
@@ -597,6 +614,10 @@ textarea{resize:vertical;min-height:80px}
     <div class="ai-note">مساعد ديراز يشتغل <b>هجين</b>: أول شي يجاوب من القائمة، وإذا ما لكى جواب يجاوب الذكاء الاصطناعي <b>كرد عادي بدون ما يبين اسمه أو شعاره للزبون</b>.</div>
     <div id="aiStatus" class="ai-note" style="display:none"></div>
     <div class="ai-sw"><span>تشغيل الذكاء الاصطناعي بالمساعد</span><label class="switch"><input type="checkbox" id="ai_enabled"><span class="slider-sw"></span></label></div>
+    <div class="ai-sub" style="margin-top:0;border-top:0;padding-top:0">🔑 كود النسخة الكاملة</div>
+    <div class="ai-note">ولّد كود وادفعه للزبون. الزبون يفتح «النسخة الكاملة» بالمساعد ويدخل الكود، وإذا صح يفتح له والكود <b>ينحذف</b> (يشتغل مرة وحدة، وصلاحيته 24 ساعة).</div>
+    <div class="fc-box" id="aiFullCode" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><button type="button" class="ai-mini" onclick="fullCopy('aiFullCode')">📋 نسخ</button></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button type="button" class="ai-mini" onclick="fullGen()">🔑 توليد كود جديد</button><button type="button" class="ai-mini" onclick="aiClose();fullOpen()">👥 المفعّلين</button></div>
     <div class="ai-tabs" id="aiTabs"></div>
     <div class="ai-note" id="aiSlotNote"></div>
     <label style="display:block;margin-bottom:8px">اختر الذكاء</label>
@@ -617,6 +638,17 @@ textarea{resize:vertical;min-height:80px}
     </div>
     <div class="form-actions" style="flex-wrap:wrap"><button type="button" class="btn-save" onclick="aiSave()">💾 حفظ</button><button type="button" class="btn-rvlist" onclick="aiTest(false)">🧪 اختبار هذا الـ API</button><button type="button" class="btn-rvlist" onclick="aiTest(true)">🧪 اختبار الكل (بالتحويل التلقائي)</button></div>
     <div class="ai-test" id="aiTestBox"></div>
+  </div>
+</div>
+
+<!-- النسخة الكاملة: المفعّلين + طرد -->
+<div id="fullModal" role="dialog" aria-label="النسخة الكاملة" onclick="if(event.target===this)fullClose()">
+  <div class="ai-box">
+    <div class="ai-top"><h2>🔓 النسخة الكاملة</h2><button type="button" class="ai-x" onclick="fullClose()" aria-label="إغلاق">✕</button></div>
+    <div class="ai-note">هذولا الزبائن اللي فتحوا النسخة الكاملة بكود. اللي تبقيه ما تسوي له شي، واللي تريد تقفل عليه اضغط <b>طرد</b> وتنقفل عنده فوراً (وإذا يريدها يحتاج كود جديد).</div>
+    <div class="fc-box" id="fullCodeBox2" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><button type="button" class="ai-mini" onclick="fullCopy('fullCodeBox2')">📋 نسخ</button></div>
+    <div class="fc-head"><span id="fullCount">⏳ جاري التحميل…</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="ai-mini" onclick="fullGen()">🔑 كود جديد</button><button type="button" class="ai-mini" onclick="fullLoad()">🔄</button><button type="button" class="ai-mini" onclick="fullKickAll()">🚫 طرد الكل</button></span></div>
+    <div id="fullList"></div>
   </div>
 </div>
 
@@ -1738,9 +1770,9 @@ function rvLogToggle(){
 // ══ القائمة (3 نقاط) + إعدادات الذكاء الاصطناعي ══
 function dotsClose(){ var m=document.getElementById('dotsMenu'),b=document.getElementById('dotsBtn'); if(m)m.classList.remove('open'); if(b)b.setAttribute('aria-expanded','false'); }
 function dotsToggle(e){ if(e)e.stopPropagation(); var m=document.getElementById('dotsMenu'),b=document.getElementById('dotsBtn'); var o=m.classList.toggle('open'); b.setAttribute('aria-expanded',o?'true':'false'); }
-function dotsGo(w){ dotsClose(); if(w==='ai') aiOpen(); }
+function dotsGo(w){ dotsClose(); if(w==='ai') aiOpen(); else if(w==='full') fullOpen(); }
 document.addEventListener('click',function(e){ var m=document.getElementById('dotsMenu'); if(m&&!m.contains(e.target)&&e.target.id!=='dotsBtn') dotsClose(); });
-document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ dotsClose(); aiClose(); } });
+document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ dotsClose(); aiClose(); fullClose(); } });
 
 function aiLogoSvg(bg1,bg2,inner){
   var svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+bg1+'"/><stop offset="1" stop-color="'+bg2+'"/></linearGradient></defs><circle cx="48" cy="48" r="48" fill="url(#g)"/>'+inner+'</svg>';
@@ -1911,6 +1943,51 @@ async function aiTest(all){
     } else box.textContent='❌ '+(j.error||('خطأ '+r.status));
     setTimeout(aiUsageLoad,1500);
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker (لازم يحتوي رابط لوحة التحكم)'; }
+}
+
+// ══ النسخة الكاملة: توليد كود + قائمة المفعّلين + طرد ══
+function fEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function fFmt(x){ if(!x) return '—'; var d=new Date(x); if(isNaN(d)) return '—'; return d.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function fMissing(e){ var m=String((e&&e.message)||e); return /ai_full|PGRST|404|function|relation/i.test(m); }
+var fullGenBusy=false, fullTimer=null;
+async function fullGen(){
+  if(fullGenBusy) return; fullGenBusy=true;
+  try{
+    var code=await DirazCloud.rpc('ai_full_gen');
+    if(typeof code!=='string'||!code) throw new Error('empty');
+    ['aiFullCode','fullCodeBox2'].forEach(function(id){ var b=document.getElementById(id); if(b){ b.style.display='block'; b.dataset.code=code; b.querySelector('.fc').textContent=code; } });
+    showToast('🔑 انولد كود جديد — يشتغل مرة وحدة');
+    if(document.getElementById('fullModal').classList.contains('open')) fullLoad();
+  }catch(e){ showToast(fMissing(e)?'⚠️ شغّل supabase-ai-full.sql في Supabase أولاً':'❌ فشل توليد الكود'); }
+  fullGenBusy=false;
+}
+function fullCopy(id){
+  var b=document.getElementById(id), c=b&&b.dataset.code; if(!c) return;
+  function ok(){ showToast('📋 اننسخ الكود'); }
+  try{ navigator.clipboard.writeText(c).then(ok,function(){ fbCopy(c); ok(); }); }catch(e){ fbCopy(c); ok(); }
+}
+function fbCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} a.remove(); }
+function fullOpen(){ document.getElementById('fullModal').classList.add('open'); fullLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
+function fullClose(){ var m=document.getElementById('fullModal'); if(m) m.classList.remove('open'); clearInterval(fullTimer); }
+async function fullLoad(){
+  var list=document.getElementById('fullList'), cnt=document.getElementById('fullCount'); if(!list) return;
+  try{
+    var r=await DirazCloud.rpc('ai_full_list');
+    var s=(r&&Array.isArray(r.sessions))?r.sessions:[], codes=(r&&r.codes)||0;
+    cnt.textContent='👥 المفعّلين: '+s.length+(codes?' • أكواد بانتظار الاستعمال: '+codes:'');
+    list.innerHTML=s.length?s.map(function(x){
+      var id=Number(x.id)||0;
+      return '<div class="fu-row"><div class="fu-i"><b>'+fEsc(x.name||'بدون اسم')+'</b>'+(x.phone?'<small style="direction:ltr;text-align:right">'+fEsc(x.phone)+'</small>':'')+'<small>فعّل: '+fFmt(x.created_at)+' • آخر نشاط: '+fFmt(x.last_seen)+' • رسائل: '+(x.msgs||0)+'</small></div><button type="button" class="fu-kick" onclick="fullKick('+id+')">🚫 طرد</button></div>';
+    }).join(''):'<div class="fu-empty">ما في أحد مفعّل هسه</div>';
+  }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل supabase-ai-full.sql في Supabase أولاً':'⚠️ تعذّر تحميل القائمة')+'</div>'; }
+}
+async function fullKick(id){
+  if(!confirm('تريد تطرد هذا الزبون من النسخة الكاملة؟')) return;
+  try{ await DirazCloud.rpc('ai_full_kick',{p_id:id}); showToast('🚫 انطرد'); fullLoad(); }catch(e){ showToast('❌ فشل الطرد'); }
+}
+async function fullKickAll(){
+  if(!confirm('تطرد كل المفعّلين؟')) return;
+  try{ await DirazCloud.rpc('ai_full_kick_all'); showToast('🚫 انطرد الكل'); fullLoad(); }catch(e){ showToast('❌ فشل الطرد'); }
 }
 </script>
 <script id="dzAccJs">
