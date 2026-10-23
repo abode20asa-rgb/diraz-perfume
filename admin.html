@@ -131,6 +131,10 @@ textarea{resize:vertical;min-height:80px}
 .order-phone,.order-date{color:rgba(255,255,255,0.7);font-size:.83rem}
 .status-badge{padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:800;border:none;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s}
 .status-pending{background:rgba(255,193,7,0.35);color:#ffe566;border:1px solid rgba(255,193,7,0.5)}
+.status-received{background:rgba(59,130,246,0.3);color:#a8d0ff;border:1px solid rgba(59,130,246,0.55)}
+.btn-st{padding:8px 14px;border-radius:50px;border:1px solid rgba(255,255,255,.5);background:rgba(255,255,255,.12);color:#fff;font-family:'Cairo',sans-serif;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s}
+.btn-st:hover{background:rgba(255,255,255,.28)}
+.btn-st.on{background:#fff;color:var(--pink-deep);cursor:default}
 .status-delivered{background:rgba(37,211,102,0.3);color:#5fffaa;border:1px solid rgba(37,211,102,0.5)}
 .order-items-list{margin:10px 0;padding:10px;background:rgba(0,0,0,0.1);border-radius:10px}
 .order-item-row{color:rgba(255,255,255,0.85);font-size:.85rem;padding:3px 0}
@@ -386,8 +390,9 @@ textarea{resize:vertical;min-height:80px}
       <h2>📦 إدارة الطلبات</h2>
       <div class="filter-bar">
         <button class="filter-btn active" onclick="filterOrders('all',this)">الكل</button>
-        <button class="filter-btn" onclick="filterOrders('pending',this)">🟡 قيد الانتظار</button>
-        <button class="filter-btn" onclick="filterOrders('delivered',this)">🟢 تم التسليم</button>
+        <button class="filter-btn" onclick="filterOrders('pending',this)">⏳ 1 · في انتظار القبول</button>
+        <button class="filter-btn" onclick="filterOrders('received',this)">📦 2 · جاري التجهيز</button>
+        <button class="filter-btn" onclick="filterOrders('delivered',this)">✅ 3 · تم التوصيل</button>
       </div>
       <div class="order-list" id="ordersList"></div>
     </div>
@@ -855,7 +860,9 @@ function resetVisitors(){
 function renderStats(){
   var orders    = tryParse(ORDERS_KEY, []);
   var pending   = orders.filter(function(o){ return o.status==='pending'; }).length;
+  var received  = orders.filter(function(o){ return o.status==='received'; }).length;
   var delivered = orders.filter(function(o){ return o.status==='delivered'; }).length;
+  pending = orders.length - received - delivered;
   var phones    = {};
   orders.forEach(function(o){ if(o.customer&&o.customer.phone) phones[o.customer.phone]=1; });
   tryParse(CUSTOMERS_KEY, []).forEach(function(c){ if(c&&c.phone) phones[c.phone]=1; });
@@ -863,8 +870,9 @@ function renderStats(){
   var visitors = tryParse('diraz_visitors', 0);
   document.getElementById('statsGrid').innerHTML =
     '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-num">' + orders.length + '</div><div class="stat-label">إجمالي الطلبات</div></div>' +
-    '<div class="stat-card"><div class="stat-icon">🟡</div><div class="stat-num">' + pending + '</div><div class="stat-label">قيد الانتظار</div></div>' +
-    '<div class="stat-card"><div class="stat-icon">🟢</div><div class="stat-num">' + delivered + '</div><div class="stat-label">تم التسليم</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-num">' + pending + '</div><div class="stat-label">في انتظار القبول</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">📦</div><div class="stat-num">' + received + '</div><div class="stat-label">جاري التجهيز</div></div>' +
+    '<div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num">' + delivered + '</div><div class="stat-label">تم التوصيل</div></div>' +
     '<div class="stat-card"><div class="stat-icon">👥</div><div class="stat-num">' + custs + '</div><div class="stat-label">عدد الزبائن</div></div>' +
     '<div class="stat-card"><div class="stat-icon">👁️</div><div class="stat-num">' + visitors + '</div><div class="stat-label">عدد الزوار</div></div>';
 }
@@ -878,35 +886,37 @@ function couponLine(order){
   }
   return '<div style="margin:8px 0;padding:8px 12px;border-radius:12px;background:rgba(255,255,255,.2);color:rgba(255,255,255,.85);font-weight:700;font-size:.85rem">🚫 بدون كود خصم</div>';
 }
+var STL = {pending:'⏳ 1 · في انتظار القبول', received:'📦 2 · جاري تجهيز الطلب', delivered:'✅ 3 · تم التوصيل'};
+function ordSt(o){ return o && o.status==='delivered' ? 'delivered' : (o && o.status==='received' ? 'received' : 'pending'); }
 function renderOrders(){
   var orders   = tryParse(ORDERS_KEY, []);
   var list     = document.getElementById('ordersList');
-  var filtered = currentFilter === 'all' ? orders : orders.filter(function(o){ return o.status === currentFilter; });
+  var filtered = currentFilter === 'all' ? orders : orders.filter(function(o){ return ordSt(o) === currentFilter; });
   if(!filtered.length){ list.innerHTML = '<div class="no-items">📭 لا توجد طلبات</div>'; return; }
   list.innerHTML = filtered.map(function(order){
     var idx  = orders.indexOf(order);
     var d    = new Date(order.date).toLocaleString('ar', {dateStyle:'medium', timeStyle:'short'});
-    var ip   = order.status === 'pending';
+    var st   = ordSt(order);
     var items = (order.items||[]).map(function(i,n){ return '<div class="order-item-row">'+(n+1)+'. '+esc(i.name)+' × '+esc(i.qty)+' — '+esc((i.price*i.qty).toLocaleString('en-US'))+' '+esc(i.currency)+'</div>'; }).join('');
     return '<div class="order-card">' +
       '<div class="order-top">' +
         '<div><div class="order-id"># '+esc(order.id||idx+1)+(order.manual?' <small style="opacity:.8;font-weight:700">📝 مضاف يدوياً</small>':'')+'</div><div class="order-cust">👤 '+esc(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+esc(order.customer&&order.customer.phone||'—')+'</div></div>' +
         '<div style="text-align:left"><div class="order-date">🕐 '+d+'</div>' +
-        '<button class="status-badge '+(ip?'status-pending':'status-delivered')+'" onclick="toggleStatus('+idx+')">'+(ip?'🟡 قيد الانتظار':'🟢 تم التسليم')+'</button></div>' +
+        '<span class="status-badge status-'+st+'">'+STL[st]+'</span></div>' +
       '</div>' +
       '<div class="order-items-list">'+(items||'—')+'</div>' +
       couponLine(order) +
       (order.notes?'<div style="margin:8px 0;padding:8px 12px;border-radius:10px;background:rgba(255,255,255,.28);font-size:.85rem;line-height:1.7">📝 <b>ملاحظات الزبون:</b> '+esc(order.notes)+'</div>':'') +
       '<div class="order-total-row"><span class="order-total-label">الإجمالي</span><span class="order-total-val">'+esc((order.total||0).toLocaleString('en-US'))+' '+esc(order.currency||'دينار')+'</span></div>' +
       '<div class="order-actions">' +
-        '<button class="btn-deliver" onclick="toggleStatus('+idx+')">'+(ip?'✅ تحديد كمُسلَّم':'↩️ إرجاع لقيد الانتظار')+'</button>' +
+        ['pending','received','delivered'].map(function(k){ return '<button class="btn-st'+(st===k?' on':'')+'" '+(st===k?'disabled':'onclick="setStatus('+idx+',\''+k+'\')"')+'>'+STL[k]+'</button>'; }).join('') +
         '<button class="btn-wa-resend" onclick="resendWA('+idx+')">💬 إعادة إرسال</button>' +
         '<button class="btn-del-order" onclick="deleteOrder('+idx+')">🗑️ حذف</button>' +
       '</div></div>';
   }).join('');
 }
 function filterOrders(f,btn){ currentFilter=f; document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); }); btn.classList.add('active'); renderOrders(); }
-function toggleStatus(i){ var o=tryParse(ORDERS_KEY,[]); if(!o[i])return; o[i].status=o[i].status==='pending'?'delivered':'pending'; localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); DirazCloud.update('orders','id=eq.'+encodeURIComponent(String(o[i].id)),{data:o[i],updated_at:new Date().toISOString()}).catch(cloudFail); renderStats(); renderOrders(); showToast(o[i].status==='delivered'?'✅ تم التسليم':'↩️ رُجّع لقيد الانتظار'); }
+function setStatus(i,st){ var o=tryParse(ORDERS_KEY,[]); if(!o[i]||['pending','received','delivered'].indexOf(st)<0)return; o[i].status=st; if(st==='received') o[i].receivedAt=new Date().toISOString(); if(st==='delivered') o[i].deliveredAt=new Date().toISOString(); localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); DirazCloud.update('orders','id=eq.'+encodeURIComponent(String(o[i].id)),{data:o[i],updated_at:new Date().toISOString()}).catch(cloudFail); renderStats(); renderOrders(); showToast('✅ '+STL[st]); }
 function deleteOrder(i){ if(!confirm('حذف الطلب؟'))return; var o=tryParse(ORDERS_KEY,[]); var gone=o.splice(i,1)[0]; localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); if(gone) DirazCloud.remove('orders','id=eq.'+encodeURIComponent(String(gone.id))).catch(cloudFail); renderStats(); renderOrders(); showToast('🗑️ تم حذف الطلب'); }
 function resendWA(i){
   var order = tryParse(ORDERS_KEY,[])[i]; if(!order)return;

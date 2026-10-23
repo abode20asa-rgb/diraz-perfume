@@ -656,6 +656,10 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
       <span class="support-dot" id="supportDot"></span>
     </button>
     <div class="hdr-menu" id="hdrMenu" role="menu">
+      <button type="button" role="menuitem" class="rev-btn" onclick="dzMenuGo('orders')">
+        <span class="mi-ico">📦</span>
+        <span class="mi-txt">طلباتي<small>تابع حالة طلباتك</small></span>
+      </button>
       <button type="button" role="menuitem" class="support-btn" onclick="dzMenuGo('support')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11h3a2 2 0 0 1 2 2v3a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-5Zm0 0a9 9 0 1 1 18 0m0 0v5a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3Z"/><path d="M21 16v2a4 4 0 0 1-4 4h-5"/></svg>
         <span>الدعم</span>
@@ -1282,7 +1286,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
       return;
     }
   }
-  const order={id:Date.now(),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  const order={id:Date.now(),...(window.dzOrderToken?{ctoken:window.dzOrderToken()}:{}),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   { const nt=(document.getElementById('orderNotes')||{}).value; if(nt&&nt.trim()) order.notes=nt.trim().slice(0,200); }
   // بدون واتساب: الطلب لازم يوصل للسيرفر فعلاً قبل ما نأكد للزبون (محاولتين)
   let saved=false, saveErr=null;
@@ -1859,6 +1863,125 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 })();
 </script>
 
+<!-- ═══ طلباتي: الزبون يشوف حالة طلباته (للعرض فقط) ═══ -->
+<style>
+#dzoModal{position:fixed;inset:0;z-index:10100;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(60,15,40,.55);direction:rtl;font-family:'Cairo',sans-serif}
+#dzoModal.on{display:flex}
+.dzo-box{background:#fff;color:#333;width:min(440px,100%);max-height:calc(100vh - 28px);overflow:auto;border-radius:22px;padding:20px 16px;box-shadow:0 18px 60px rgba(120,30,70,.4)}
+.dzo-box h3{color:var(--pink-deep);font-size:1.15rem;font-weight:900;text-align:center;margin-bottom:2px}
+.dzo-sub{font-size:.74rem;color:#999;text-align:center;margin-bottom:12px;line-height:1.6}
+.dzo-card{border:1.5px solid #f1dbe4;border-radius:16px;padding:12px;margin-bottom:12px;background:#fffafc}
+.dzo-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.dzo-id{font-weight:900;color:var(--pink-deep);font-size:.9rem}
+.dzo-date{font-size:.7rem;color:#999}
+.dzo-items{font-size:.78rem;color:#555;line-height:1.7;margin:4px 0}
+.dzo-total{font-size:.8rem;font-weight:800;color:var(--pink-deep);margin-bottom:8px}
+.dzo-chip{display:inline-block;color:#fff;font-weight:800;font-size:.78rem;padding:4px 12px;border-radius:50px}
+.dzo-mean{font-size:.76rem;color:#666;line-height:1.7;margin-top:6px}
+.dzo-steps{display:flex;justify-content:space-between;position:relative;margin:12px 4px 4px}
+.dzo-steps:before{content:"";position:absolute;top:13px;right:16%;left:16%;height:3px;background:#eadde3;z-index:0}
+.dzo-step{flex:1;text-align:center;position:relative;z-index:1;font-size:.64rem;color:#aaa;font-weight:700;line-height:1.3}
+.dzo-step i{display:flex;align-items:center;justify-content:center;width:28px;height:28px;margin:0 auto 4px;border-radius:50%;background:#eadde3;color:#fff;font-style:normal;font-weight:900;font-size:.8rem}
+.dzo-step.on i{background:var(--pink-deep)}
+.dzo-step.on{color:#555}
+.dzo-step.cur i{box-shadow:0 0 0 4px rgba(196,90,122,.25)}
+.dzo-legend{border-top:1.5px dashed #eadde3;margin-top:6px;padding-top:10px}
+.dzo-legend h4{font-size:.82rem;font-weight:900;color:var(--pink-deep);margin-bottom:6px}
+.dzo-leg{display:flex;gap:8px;align-items:flex-start;font-size:.74rem;color:#666;line-height:1.7;margin-bottom:6px}
+.dzo-leg b{color:#333}
+.dzo-empty{text-align:center;color:#888;font-size:.85rem;padding:22px 8px;line-height:1.8}
+.dzo-note{font-size:.7rem;color:#c0392b;text-align:center;margin-bottom:8px;display:none}
+.dzo-act{display:flex;gap:10px;margin-top:10px}
+.dzo-act button{flex:1;padding:11px;border-radius:50px;border:0;font-family:inherit;font-weight:800;font-size:.88rem;cursor:pointer}
+.dzo-act .a{background:var(--pink-deep);color:#fff}
+.dzo-act .b{background:#f1e6ea;color:var(--pink-deep)}
+</style>
+<div id="dzoModal" role="dialog" aria-label="طلباتي" onclick="if(event.target===this)dzOrdersClose()">
+  <div class="dzo-box">
+    <h3>📦 طلباتي</h3>
+    <div class="dzo-sub">هنا تشوف حالة طلباتك. الحالة تتحدث تلقائياً من الإدارة.</div>
+    <div class="dzo-note" id="dzoNote">تعذّر تحديث الحالة، المعروض آخر حالة معروفة.</div>
+    <div id="dzoList"></div>
+    <div class="dzo-legend" id="dzoLegend"></div>
+    <div class="dzo-act"><button type="button" class="a" onclick="dzOrdersRefresh()">🔄 تحديث</button><button type="button" class="b" onclick="dzOrdersClose()">إغلاق</button></div>
+  </div>
+</div>
+<script>
+(function(){
+  var ST={
+    pending:{n:1,t:'في انتظار القبول',c:'#e6a100',d:'وصلنا طلبك وننتظر موافقة الإدارة عليه. أول ما ينقبل يبدأ تجهيزه.'},
+    received:{n:2,t:'جاري تجهيز طلبك',c:'#2f6fe0',d:'تم قبول طلبك وهسه نجهّزه ونغلّفه حتى يطلع للتوصيل.'},
+    delivered:{n:3,t:'تم التوصيل',c:'#1f9d4a',d:'وصل طلبك لعنوانك. نتمنى يعجبك، وشاركنا رأيك 🌸'}
+  };
+  var ORDER=['pending','received','delivered'], timer=null;
+  function $(id){ return document.getElementById(id); }
+  function esc(t){ return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function norm(s){ return s==='delivered'?'delivered':(s==='received'?'received':'pending'); }
+  window.dzOrderToken=function(){
+    try{ var a=new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
+    catch(e){ return Math.random().toString(16).slice(2)+Date.now().toString(16); }
+  };
+  function localOrders(){
+    try{ var a=JSON.parse(localStorage.getItem('diraz_orders')||'[]'); return Array.isArray(a)?a.filter(function(o){ return o&&o.id; }).slice(0,20):[]; }
+    catch(e){ return []; }
+  }
+  function saveStatuses(map){
+    try{
+      var a=JSON.parse(localStorage.getItem('diraz_orders')||'[]'), ch=false;
+      a.forEach(function(o){ var s=map[String(o.id)]; if(s && o.status!==s){ o.status=s; ch=true; } });
+      if(ch) localStorage.setItem('diraz_orders',JSON.stringify(a));
+    }catch(e){}
+  }
+  function steps(cur){
+    var n=ST[cur].n;
+    return '<div class="dzo-steps">'+ORDER.map(function(k){
+      var s=ST[k];
+      return '<div class="dzo-step'+(s.n<=n?' on':'')+(s.n===n?' cur':'')+'"><i>'+s.n+'</i>'+esc(s.t)+'</div>';
+    }).join('')+'</div>';
+  }
+  function card(o){
+    var st=norm(o.status), s=ST[st], d='';
+    try{ d=new Date(o.date).toLocaleString('ar-IQ',{dateStyle:'medium',timeStyle:'short'}); }catch(e){}
+    var items=(o.items||[]).map(function(i){
+      return '• '+esc(i.name||'')+(i.size?' ('+esc(String(i.size).replace('ml',' مل'))+')':'')+' × '+esc(i.qty||1);
+    }).join('<br>');
+    return '<div class="dzo-card"><div class="dzo-top"><span class="dzo-id">طلب #'+esc(String(o.id).slice(-6))+'</span><span class="dzo-date">'+esc(d)+'</span></div>'+
+      '<div class="dzo-items">'+(items||'—')+'</div>'+
+      '<div class="dzo-total">💰 '+esc(Number(o.total||0).toLocaleString('en-US'))+' '+esc(o.currency||'دينار')+'</div>'+
+      '<span class="dzo-chip" style="background:'+s.c+'">'+s.n+' · '+esc(s.t)+'</span>'+
+      '<div class="dzo-mean">'+esc(s.d)+'</div>'+steps(st)+'</div>';
+  }
+  function legend(){
+    $('dzoLegend').innerHTML='<h4>شنو تعني كل حالة؟</h4>'+ORDER.map(function(k){
+      var s=ST[k];
+      return '<div class="dzo-leg"><span class="dzo-chip" style="background:'+s.c+'">'+s.n+'</span><span><b>'+esc(s.t)+':</b> '+esc(s.d)+'</span></div>';
+    }).join('');
+  }
+  function render(list){
+    $('dzoList').innerHTML=list.length?list.map(card).join(''):'<div class="dzo-empty">ما عندك طلبات بعد 🌸<br>أول ما تطلب يظهر طلبك هنا وتتابع حالته.<br><small>تظهر هنا الطلبات اللي سويتها من هذا الجهاز.</small></div>';
+  }
+  function refresh(){
+    var list=localOrders(); render(list); legend();
+    var note=$('dzoNote'); if(note) note.style.display='none';
+    if(!list.length || !window.DirazCloud) return;
+    var items=list.map(function(o){
+      return {id:String(o.id), k:o.ctoken?String(o.ctoken):String((o.customer&&o.customer.phone)||'').replace(/\D/g,'')};
+    });
+    DirazCloud.rpc('my_orders_status',{p_items:items}).then(function(rows){
+      if(!Array.isArray(rows)) return;
+      var map={}; rows.forEach(function(r){ map[String(r.id)]=norm(r.status); });
+      saveStatuses(map); render(localOrders());
+    }).catch(function(){ if(note) note.style.display='block'; });
+  }
+  window.dzOrdersRefresh=refresh;
+  window.dzOrdersOpen=function(){
+    $('dzoModal').classList.add('on'); refresh();
+    clearInterval(timer); timer=setInterval(refresh,20000);
+  };
+  window.dzOrdersClose=function(){ $('dzoModal').classList.remove('on'); clearInterval(timer); };
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') window.dzOrdersClose(); });
+})();
+</script>
 <!-- ═══ Diraz AI — مساعد العطور (يظهر داخل القسم فقط) ═══ -->
 <script src="diraz-assistant.js?v=3"></script>
 <script>
@@ -1870,7 +1993,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   window.dzMenuToggle=function(e){ if(e) e.stopPropagation(); menu.classList.contains('open') ? closeMenu() : openMenu(); };
   window.dzMenuGo=function(what){
     closeMenu();
-    if(what==='support' && window.dzSupportOpen) window.dzSupportOpen();
+    if(what==='orders' && window.dzOrdersOpen) window.dzOrdersOpen();
+    else if(what==='support' && window.dzSupportOpen) window.dzSupportOpen();
     else if(what==='review' && window.dzReviewOpen) window.dzReviewOpen();
   };
   document.addEventListener('click',function(e){ if(!menu.contains(e.target) && !btn.contains(e.target)) closeMenu(); });
