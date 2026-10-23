@@ -279,6 +279,18 @@ textarea{resize:vertical;min-height:80px}
 .sp-del{background:#e53935;color:#fff;border:none;border-radius:50px;padding:6px 14px;font-family:'Cairo',sans-serif;font-weight:700;cursor:pointer;font-size:.78rem}
 @media(max-width:760px){.sp-wrap{grid-template-columns:1fr}.sp-list{max-height:220px}}
 </style>
+<style id="dzAccCss">
+/* أقسام لوحة التحكم كمستطيلات تنفتح وتنطوي */
+#adminPanel .section-card.dz-acc{padding:0;overflow:hidden;margin-bottom:12px}
+#adminPanel .section-card.dz-acc>h2{position:relative;margin:0;padding:16px 20px 16px 52px;border:0;text-align:right;font-size:1.1rem;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;transition:background .2s}
+#adminPanel .section-card.dz-acc>h2:hover{background:rgba(255,255,255,.14)}
+#adminPanel .section-card.dz-acc>h2::after{content:'▾';position:absolute;left:20px;top:50%;transform:translateY(-50%);font-size:1.1rem;opacity:.9;transition:transform .25s}
+#adminPanel .section-card.dz-acc.open>h2{border-bottom:1.5px solid rgba(255,255,255,.35)}
+#adminPanel .section-card.dz-acc.open>h2::after{transform:translateY(-50%) rotate(180deg)}
+#adminPanel .section-card.dz-acc>.dz-body{display:none;padding:20px 24px 24px}
+#adminPanel .section-card.dz-acc.open>.dz-body{display:block}
+@media(max-width:600px){#adminPanel .section-card.dz-acc>.dz-body{padding:16px 14px 18px}}
+</style>
 </head>
 <body>
 
@@ -1238,6 +1250,7 @@ function editPerfume(i){
   editIndex=i; document.getElementById('formTitle').textContent='✏️ تعديل العطر'; document.getElementById('cancelBtn').style.display='inline-block';
   var card=document.getElementById('formTitle').closest('.section-card')||document.getElementById('formTitle');
   card.style.scrollMarginTop='12px';
+  if(window.dzOpenCard) dzOpenCard(card,true);
   card.scrollIntoView({behavior:'smooth',block:'start'});
   setTimeout(function(){ try{ document.getElementById('f_name').focus({preventScroll:true}); }catch(e){} },400);
 }
@@ -1899,6 +1912,36 @@ async function aiTest(all){
     setTimeout(aiUsageLoad,1500);
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker (لازم يحتوي رابط لوحة التحكم)'; }
 }
+</script>
+<script id="dzAccJs">
+/* يلف كل قسم بمستطيل: العنوان فقط ظاهر، والضغط عليه يفتح القسم (يغلق الباقي). ما انحذف أي شي من الأقسام */
+(function(){
+  function openCard(c,keepOthers){
+    if(!c||!c.classList.contains('dz-acc')) return;
+    if(!keepOthers) document.querySelectorAll('#adminPanel .section-card.dz-acc.open').forEach(function(o){ if(o!==c) o.classList.remove('open'); });
+    c.classList.add('open');
+  }
+  function toggle(c){
+    if(c.classList.contains('open')){ c.classList.remove('open'); return; }
+    openCard(c);
+    setTimeout(function(){ try{ c.style.scrollMarginTop='12px'; c.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){} },60);
+  }
+  window.dzOpenCard=function(c){ openCard(c); };
+  function init(){
+    document.querySelectorAll('#adminPanel main .section-card').forEach(function(c){
+      if(c.classList.contains('dz-acc')) return;
+      var h=null; for(var i=0;i<c.children.length;i++){ if(c.children[i].tagName==='H2'){ h=c.children[i]; break; } }
+      if(!h) return;
+      var body=document.createElement('div'); body.className='dz-body';
+      while(h.nextSibling) body.appendChild(h.nextSibling);
+      c.appendChild(body); c.classList.add('dz-acc');
+      h.setAttribute('role','button'); h.tabIndex=0;
+      h.addEventListener('click',function(){ toggle(c); });
+      h.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(c); } });
+    });
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
 </script>
 </body>
 </html>
