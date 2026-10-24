@@ -1528,6 +1528,11 @@
     fHtml('انسحبت صلاحية النسخة الكاملة من هذا الجهاز 🔒<br>إذا تحتاجها اطلب كود جديد من الإدارة.');
     showLock();
   }
+  /* النسخة الكاملة: الكتالوج وبطاقات العطور ننرسلها بس إذا السؤال عن العطور، وإلا يجاوب بحرية بدون ما نشدّه للعطور */
+  var FULL_PERF_RX=/عطر|عطور|ريحه|ريحة|رائحه|رائحة|بخاخ|برفان|بيرفيوم|perfume|fragrance|parfum|cologne|ديراز|diraz|نوتات|ثبات|فواح|oud|musk/i;
+  function fullWantsCatalog(v){
+    try{ if(FULL_PERF_RX.test(v)) return true; return mentionIdx(norm(v),getPerfumes()).length>0; }catch(e){ return false; }
+  }
   function fullSubmit(v){
     if(!fullToken){ showLock(); return; }
     if(fullBusy) return;
@@ -1538,7 +1543,7 @@
     var ctrl=('AbortController' in window)?new AbortController():null;
     var to=setTimeout(function(){ try{ctrl&&ctrl.abort();}catch(e){} },40000);
     fetch(AI.proxy,{method:'POST',headers:{'Content-Type':'application/json'},signal:ctrl?ctrl.signal:undefined,
-      body:JSON.stringify({q:v,history:fullHist.slice(-10),catalog:aiCatalog(),section:'',full:true,token:fullToken})})
+      body:JSON.stringify({q:v,history:fullHist.slice(-10),catalog:(fullWantsCatalog(v)?aiCatalog():''),section:'',full:true,token:fullToken})})
       .then(function(r){
         return r.json().catch(function(){return {};}).then(function(j){
           if(r.status===403 && j.error==='kicked') throw {kicked:true};
@@ -1550,7 +1555,7 @@
         d.style.opacity=''; d.textContent=txt;
         fullHist.push({r:'user',t:v.slice(0,1500)}); fullHist.push({r:'bot',t:txt.slice(0,1500)});
         if(fullHist.length>20) fullHist=fullHist.slice(-20);
-        try{ showMentionCardsFull(v,txt); }catch(e){}
+        try{ if(fullWantsCatalog(v)) showMentionCardsFull(v,txt); }catch(e){}
       },function(e){
         if(e && e.kicked){ try{d.remove();}catch(x){} lostAccess(); return; }
         d.style.opacity=''; d.textContent='ما كدرت أجاوبك هسه 😔 جرّب مرة ثانية.';
