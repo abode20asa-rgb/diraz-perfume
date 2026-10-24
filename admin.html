@@ -614,10 +614,6 @@ textarea{resize:vertical;min-height:80px}
     <div class="ai-note">مساعد ديراز يشتغل <b>هجين</b>: أول شي يجاوب من القائمة، وإذا ما لكى جواب يجاوب الذكاء الاصطناعي <b>كرد عادي بدون ما يبين اسمه أو شعاره للزبون</b>.</div>
     <div id="aiStatus" class="ai-note" style="display:none"></div>
     <div class="ai-sw"><span>تشغيل الذكاء الاصطناعي بالمساعد</span><label class="switch"><input type="checkbox" id="ai_enabled"><span class="slider-sw"></span></label></div>
-    <div class="ai-sub" style="margin-top:0;border-top:0;padding-top:0">🔑 كود النسخة الكاملة</div>
-    <div class="ai-note">ولّد كود وادفعه للزبون. الزبون يفتح «النسخة الكاملة» بالمساعد ويدخل الكود، وإذا صح يفتح له والكود <b>ينحذف</b> (يشتغل مرة وحدة، وصلاحيته 24 ساعة).</div>
-    <div class="fc-box" id="aiFullCode" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><button type="button" class="ai-mini" onclick="fullCopy('aiFullCode')">📋 نسخ</button></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px"><button type="button" class="ai-mini" onclick="fullGen()">🔑 توليد كود جديد</button><button type="button" class="ai-mini" onclick="aiClose();fullOpen()">👥 المفعّلين</button></div>
     <div class="ai-tabs" id="aiTabs"></div>
     <div class="ai-note" id="aiSlotNote"></div>
     <label style="display:block;margin-bottom:8px">اختر الذكاء</label>
@@ -645,9 +641,28 @@ textarea{resize:vertical;min-height:80px}
 <div id="fullModal" role="dialog" aria-label="النسخة الكاملة" onclick="if(event.target===this)fullClose()">
   <div class="ai-box">
     <div class="ai-top"><h2>🔓 النسخة الكاملة</h2><button type="button" class="ai-x" onclick="fullClose()" aria-label="إغلاق">✕</button></div>
-    <div class="ai-note">هذولا الزبائن اللي فتحوا النسخة الكاملة بكود. اللي تبقيه ما تسوي له شي، واللي تريد تقفل عليه اضغط <b>طرد</b> وتنقفل عنده فوراً (وإذا يريدها يحتاج كود جديد).</div>
+    <div class="ai-sub" style="margin-top:0;border-top:0;padding-top:0">🔑 كود الفتح</div>
+    <div class="ai-note">ولّد كود وابعثه للزبون. الزبون يدوس «النسخة الكاملة» بالمساعد ويدخل الكود، وإذا صح يفتح له والكود <b>ينحذف</b> (يشتغل مرة وحدة، وصلاحيته 24 ساعة).</div>
     <div class="fc-box" id="fullCodeBox2" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><button type="button" class="ai-mini" onclick="fullCopy('fullCodeBox2')">📋 نسخ</button></div>
-    <div class="fc-head"><span id="fullCount">⏳ جاري التحميل…</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="ai-mini" onclick="fullGen()">🔑 كود جديد</button><button type="button" class="ai-mini" onclick="fullLoad()">🔄</button><button type="button" class="ai-mini" onclick="fullKickAll()">🚫 طرد الكل</button></span></div>
+    <div style="margin-bottom:16px"><button type="button" class="ai-mini" onclick="fullGen()">🔑 توليد كود جديد</button></div>
+
+    <div class="ai-sub">🤖 الـ API الخاص بالنسخة الكاملة</div>
+    <div class="ai-note">هذا الـ API يستعمله المفعّلين بالنسخة الكاملة فقط، حتى ما يصرفون من رصيد الـ APIs مال الزبائن. إذا تتركه فارغ، النسخة الكاملة تستعمل الـ APIs الثلاثة العادية. اختر موديل قوي لأن الأسئلة حرّة وأجوبتها أطول.</div>
+    <div class="form-grid">
+      <div class="form-group full"><label>اختر الذكاء</label><select id="fa_prov" onchange="faPickProv()"></select></div>
+      <div class="form-group full"><label>رابط API</label><input type="url" id="fa_url" class="ltr" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off"></div>
+      <div class="form-group"><label>الموديل</label><input type="text" id="fa_model" class="ltr" placeholder="gpt-4o" autocomplete="off"></div>
+      <div class="form-group"><label>نوع الواجهة</label><select id="fa_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option><option value="custom">واجهتي الخاصة (API سويته أنا)</option></select></div>
+      <div class="form-group full"><label>مفتاح API</label><input type="password" id="fa_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><small id="fa_keyHint" style="opacity:.8"></small></div>
+      <div class="form-group"><label>الحد اليومي (عدد الطلبات)</label><input type="number" id="fa_limit" min="0" step="1" placeholder="مثال: 500" autocomplete="off"></div>
+      <div class="form-group"><label>يتصفّر العدّاد الساعة (UTC)</label><input type="number" id="fa_reset" min="0" max="23" step="1" placeholder="0" autocomplete="off"></div>
+    </div>
+    <div class="form-actions" style="flex-wrap:wrap"><button type="button" class="btn-save" onclick="faSave()">💾 حفظ الـ API</button><button type="button" class="btn-rvlist" onclick="faTest()">🧪 اختبار</button><button type="button" class="ai-mini" onclick="faClear()">🗑️ تفريغ</button></div>
+    <div class="ai-test" id="faTestBox"></div>
+
+    <div class="ai-sub">👥 المفعّلين</div>
+    <div class="ai-note">هذولا الزبائن اللي فتحوا النسخة الكاملة بكود. اللي تبقيه ما تسوي له شي، واللي تريد تقفل عليه اضغط <b>طرد</b> وتنقفل عنده فوراً (وإذا يريدها يحتاج كود جديد).</div>
+    <div class="fc-head"><span id="fullCount">⏳ جاري التحميل…</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="ai-mini" onclick="fullLoad()">🔄</button><button type="button" class="ai-mini" onclick="fullKickAll()">🚫 طرد الكل</button></span></div>
     <div id="fullList"></div>
   </div>
 </div>
@@ -1788,11 +1803,12 @@ var AI_PROVS={
   custom:{label:'مخصص',name:'الذكاء الاصطناعي',url:'',model:'',format:'openai',logo:aiLogoSvg('#8a93a0','#5d6673','<g fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"><circle cx="48" cy="48" r="12"/><path d="M48 20v10M48 66v10M20 48h10M66 48h10M28 28l7 7M61 61l7 7M68 28l-7 7M35 61l-7 7"/></g>')}
 };
 /* ثلاث APIs: 1 أساسي، 2 احتياطي (يشتغل إذا الأول وقف)، 3 طوارئ اقتصادي (يشتغل إذا الاثنين وقفوا) — التحويل يسويه الـ Worker */
-var AI_SLOT_NAMES=['1 · أساسي','2 · احتياطي','3 · طوارئ 💰'];
+var AI_SLOT_NAMES=['1 · أساسي','2 · احتياطي','3 · طوارئ 💰','4 · النسخة الكاملة 🔓'];
 var AI_SLOT_NOTES=[
   'API 1 (الأساسي): أول واحد يجرّبه المساعد دائماً.',
   'API 2 (الاحتياطي): يشتغل تلقائياً إذا API 1 خلص رصيده أو تعطّل. بعدها الوسيط يرجع يجرّب API 1 كل 10 دقايق، فإذا تجدد رصيده يرجع يشتغل لحاله.',
-  'API 3 (الطوارئ): يشتغل فقط إذا API 1 و API 2 واقفين. الوسيط يخليه يرد بجملة أو جملتين وبأقل توكنات، فاختر أرخص موديل عندك حتى يصرف قليل.'
+  'API 3 (الطوارئ): يشتغل فقط إذا API 1 و API 2 واقفين. الوسيط يخليه يرد بجملة أو جملتين وبأقل توكنات، فاختر أرخص موديل عندك حتى يصرف قليل.',
+  'API 4 (خاص بالنسخة الكاملة): يستعمله المفعّلين بالنسخة الكاملة فقط، بدون ما يصرفون من رصيد الـ APIs مال الزبائن. إذا تتركه فارغ، النسخة الكاملة تستعمل الثلاثة الأولى. اختر موديل قوي لأن الأسئلة حرّة وأجوبتها أطول.'
 ];
 var aiSlots=[], aiSlot=0;
 function aiNewSlot(){ return {provider:'',url:'',model:'',format:'openai',keyNew:'',hasKey:false,limit:'',resetUtc:0}; }
@@ -1807,7 +1823,7 @@ function aiStore(){
   s.limit=aiEl('ai_limit').value.trim(); s.resetUtc=parseInt(aiEl('ai_reset').value,10)||0;
 }
 function aiRenderTabs(){
-  aiEl('aiTabs').innerHTML=AI_SLOT_NAMES.map(function(n,i){
+  aiEl('aiTabs').innerHTML=AI_SLOT_NAMES.slice(0,3).map(function(n,i){
     return '<button type="button" class="ai-tab'+(aiSlot===i?' sel':'')+'" onclick="aiSelSlot('+i+')"><span class="ai-dot'+(aiSlotReady(aiSlots[i])?' on':'')+'"></span>'+n+'</button>';
   }).join('');
 }
@@ -1880,6 +1896,7 @@ async function aiSave(silent){
     var key=s.keyNew||(s.hasKey?((oldApis[i]&&oldApis[i].key)||''):'');
     return {provider:s.provider||'',url:s.url,model:s.model,format:s.format||'openai',key:key,limit:parseInt(s.limit,10)||0,resetUtc:Math.min(23,Math.max(0,parseInt(s.resetUtc,10)||0))};
   });
+  if(old&&Array.isArray(old.apis)&&old.apis[3]) apis[3]=old.apis[3]; /* API النسخة الكاملة ينحفظ من نافذتها، هنا نخليه مثل ما هو */
   var cfg={enabled:enabled,proxy:proxy.replace(/\/+$/,''),prompt:aiEl('ai_prompt').value.trim(),apis:apis};
   try{
     await DirazCloud.upsert('ai_config',[{id:1,data:cfg,updated_at:new Date().toISOString()}]);
@@ -1967,7 +1984,7 @@ function fullCopy(id){
   try{ navigator.clipboard.writeText(c).then(ok,function(){ fbCopy(c); ok(); }); }catch(e){ fbCopy(c); ok(); }
 }
 function fbCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} a.remove(); }
-function fullOpen(){ document.getElementById('fullModal').classList.add('open'); fullLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
+function fullOpen(){ document.getElementById('fullModal').classList.add('open'); faLoad(); fullLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
 function fullClose(){ var m=document.getElementById('fullModal'); if(m) m.classList.remove('open'); clearInterval(fullTimer); }
 async function fullLoad(){
   var list=document.getElementById('fullList'), cnt=document.getElementById('fullCount'); if(!list) return;
@@ -1985,6 +2002,63 @@ async function fullKick(id){
   if(!confirm('تريد تطرد هذا الزبون من النسخة الكاملة؟')) return;
   try{ await DirazCloud.rpc('ai_full_kick',{p_id:id}); showToast('🚫 انطرد'); fullLoad(); }catch(e){ showToast('❌ فشل الطرد'); }
 }
+// ── الـ API الخاص بالنسخة الكاملة (يُحفظ كـ apis[3] داخل ai_config بدون ما يلمس الباقي) ──
+function faEl(id){ return document.getElementById(id); }
+async function faCfg(){ try{ var r=await DirazCloud.list('ai_config','&id=eq.1'); return (r&&r[0]&&r[0].data)||null; }catch(e){ return null; } }
+function faPickProv(){
+  var k=faEl('fa_prov').value, p=AI_PROVS[k]; if(!p) return;
+  faEl('fa_url').value=p.url; faEl('fa_model').value=p.model; faEl('fa_format').value=p.format;
+}
+async function faLoad(){
+  var sel=faEl('fa_prov');
+  if(!sel.options.length) sel.innerHTML='<option value="">— اختر —</option>'+Object.keys(AI_PROVS).map(function(k){ return '<option value="'+k+'">'+AI_PROVS[k].label+'</option>'; }).join('');
+  var cfg=await faCfg(), a=(cfg&&Array.isArray(cfg.apis)&&cfg.apis[3])||{};
+  sel.value=(a.provider&&AI_PROVS[a.provider])?a.provider:(a.url?aiGuess(a.url):'');
+  faEl('fa_url').value=a.url||''; faEl('fa_model').value=a.model||''; faEl('fa_format').value=a.format||'openai';
+  faEl('fa_key').value=''; faEl('fa_limit').value=a.limit||''; faEl('fa_reset').value=a.resetUtc||0;
+  faEl('fa_keyHint').textContent=a.key?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
+  faEl('faTestBox').style.display='none';
+}
+/* clear=true: يفرّغ الـ API الخاص. silent=true: بدون رسالة (يستعملها الاختبار). يرجّع true إذا انحفظ */
+async function faSave(silent,clear){
+  var url=faEl('fa_url').value.trim(), keyNew=faEl('fa_key').value.trim(), fmt=faEl('fa_format').value;
+  var old=await faCfg(), oldApis=(old&&Array.isArray(old.apis))?old.apis.slice():[];
+  while(oldApis.length<3) oldApis.push({});
+  var key=keyNew||((oldApis[3]&&oldApis[3].key)||'');
+  var item={};
+  if(!clear && (url||keyNew)){
+    if(!/^https:\/\//i.test(url)||(!key&&fmt!=='custom')){ showToast('❌ لازم رابط يبدأ بـ https:// ومفتاح'); return false; }
+    item={provider:faEl('fa_prov').value||'',url:url,model:faEl('fa_model').value.trim(),format:fmt||'openai',key:key,limit:parseInt(faEl('fa_limit').value,10)||0,resetUtc:Math.min(23,Math.max(0,parseInt(faEl('fa_reset').value,10)||0))};
+  }
+  oldApis[3]=item;
+  var cfg=Object.assign({enabled:false,proxy:'',prompt:''},old||{},{apis:oldApis});
+  try{
+    await DirazCloud.upsert('ai_config',[{id:1,data:cfg,updated_at:new Date().toISOString()}]);
+    faEl('fa_key').value='';
+    faEl('fa_keyHint').textContent=item.key?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
+    if(!silent) showToast(clear?'🧹 تفرّغ الـ API الخاص':'✅ انحفظ الـ API الخاص بالنسخة الكاملة');
+    return true;
+  }catch(e){ showToast(/ai_config|PGRST|404|relation/i.test(String((e&&e.message)||e))?'⚠️ شغّل supabase-ai.sql في Supabase أولاً':'❌ فشل الحفظ'); return false; }
+}
+async function faClear(){
+  if(!confirm('تفرّغ الـ API الخاص؟ النسخة الكاملة ترجع تستعمل الـ APIs العادية.')) return;
+  ['fa_url','fa_model','fa_key','fa_limit'].forEach(function(i){ faEl(i).value=''; }); faEl('fa_prov').value=''; faEl('fa_reset').value=0;
+  await faSave(false,true);
+}
+async function faTest(){
+  var box=faEl('faTestBox'); box.style.display='block'; box.textContent='⏳ أحفظ وأختبر…';
+  if(!(await faSave(true))){ box.textContent='❌ ما انحفظ — صلّح الرسالة اللي ظهرت أول.'; return; }
+  var cfg=await faCfg(), proxy=String((cfg&&cfg.proxy)||'').replace(/\/+$/,'');
+  var a=(cfg&&cfg.apis&&cfg.apis[3])||{};
+  if(!a.url){ box.textContent='املأ رابط API ومفتاح أول.'; return; }
+  if(!/^https:\/\//i.test(proxy)){ box.textContent='اكتب رابط الوسيط (Worker) من نافذة الذكاء الاصطناعي أول.'; return; }
+  try{
+    var r=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q:'اشرحلي بجملتين شنو الفرق بين العطر والكولونيا',test:true,slot:3,full:true,history:[],catalog:'',section:''})});
+    var j=await r.json().catch(function(){return {};});
+    box.textContent=(r.ok&&j.text)?('✅ اشتغل'+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'. رد الذكاء:\n\n'+j.text):('❌ '+(j.error||('خطأ '+r.status)));
+  }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN'; }
+}
+
 async function fullKickAll(){
   if(!confirm('تطرد كل المفعّلين؟')) return;
   try{ await DirazCloud.rpc('ai_full_kick_all'); showToast('🚫 انطرد الكل'); fullLoad(); }catch(e){ showToast('❌ فشل الطرد'); }
