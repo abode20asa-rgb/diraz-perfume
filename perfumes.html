@@ -561,7 +561,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   <div class="popup-box">
     <div class="pop-icon">🌸</div>
     <h2>مرحباً بك!</h2>
-    <p id="popIntro">اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small></p>
+    <p id="popIntro">اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>الرقم يُسجَّل مرة وحدة فقط</small></p>
     <input type="text" id="popName"  class="popup-input" placeholder="الاسم الأول فقط *">
     <input type="tel" id="popPhone" class="popup-input" placeholder="رقم الهاتف *" maxlength="11" inputmode="numeric" pattern="[0-9]*" oninput="this.value=this.value.replace(/\D/g,'').slice(0,11)">
     <div class="addr-block" id="popAddrBlock" style="display:none">
@@ -874,7 +874,7 @@ function editCustomer(needAddr){
   initAddrFields();
   const popH=document.querySelector('#customerPopup h2'), popP=document.getElementById('popIntro');
   if(hasAcc){ popH.textContent='بياناتي'; popP.textContent='تكدر تعدّل اسمك أو رقمك أو عنوانك من هنا'; }
-  else { popH.textContent='مرحباً بك!'; popP.innerHTML='اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>إذا طلبت منا قبل، اكتب نفس الرقم</small>'; }
+  else { popH.textContent='مرحباً بك!'; popP.innerHTML='اكتب اسمك الأول ورقم هاتفك لإتمام الطلب<br><small>الرقم يُسجَّل مرة وحدة فقط</small>'; }
   document.getElementById('popAddrBlock').style.display=showAddr?'block':'none';
   document.getElementById('popProvince').value=c.province||'';
   document.getElementById('popArea').value=c.area||'';
@@ -896,7 +896,7 @@ function withTimeout(promise,ms,fallback){
   return Promise.race([promise,new Promise(res=>setTimeout(()=>res(fallback),ms))]);
 }
 
-function saveCustomer(){
+async function saveCustomer(){
   const nameInput=(document.getElementById('popName').value||'').trim();
   const phone=(document.getElementById('popPhone').value||'').trim();
   const name=nameInput.split(/\s+/)[0]||'';
@@ -923,6 +923,21 @@ function saveCustomer(){
     if(all) addrPatch={province:pv,area:ar,address:ad};
   }
   const oldCustomer=tryParse(CUSTOMER_KEY,{});
+  // منع التسجيل برقم مسجّل مسبقاً (إلا إذا هو نفس رقم الزبون الحالي وهو يعدّل بياناته)
+  const oldDigits=String(oldCustomer.phone||'').replace(/\D/g,'');
+  if(phoneDigits!==oldDigits && window.DirazCloud){
+    const btn=document.querySelector('#customerPopup .popup-btn');
+    if(btn){ btn.disabled=true; btn.dataset.t=btn.textContent; btn.textContent='جاري التحقق...'; }
+    let taken=false;
+    try{ taken=(await withTimeout(DirazCloud.rpc('customer_exists',{p_phone:phoneDigits}),5000,'timeout'))===true; }catch(e){ taken=false; }
+    if(btn){ btn.disabled=false; btn.textContent=btn.dataset.t||'متابعة ←'; }
+    if(taken){
+      document.getElementById('popError').textContent='❗ هذا الرقم مسجّل مسبقاً، استخدم رقم ثاني';
+      document.getElementById('popError').style.display='block';
+      setTimeout(()=>document.getElementById('popError').style.display='none',3500);
+      return;
+    }
+  }
   const customer={...oldCustomer,name,phone:phoneDigits,...addrPatch};
   document.getElementById('customerPopup').style.display='none';
   try {
