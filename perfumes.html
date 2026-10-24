@@ -833,7 +833,7 @@ async function checkCustomer(){
     try{
       const exists=await DirazCloud.rpc('customer_exists',{p_phone:c.phone});
       if(exists===false){
-        localStorage.removeItem(CUSTOMER_KEY);
+        clearCustomerLocal();
         c=null;
       }
     }catch(e){}
@@ -863,8 +863,12 @@ function initAddrFields(){
   if(pv && !pv.options.length) pv.innerHTML=document.getElementById('deliveryProvince').innerHTML;
   if(ar && !ar.options.length) ar.innerHTML=document.getElementById('deliveryArea').innerHTML;
 }
-function editCustomer(needAddr){
+async function editCustomer(needAddr){
   popupForced=false;
+  // إذا الزبون انحذف من الأدمن: نمسح بياناته القديمة ونعرض نافذة تسجيل فاضية (ما نعرض بياناته القديمة)
+  if(!pendingCartOpen && needAddr!==true && tryParse(CUSTOMER_KEY,{}).phone){
+    if(!(await verifyCustomer())) return;   // handleCustomerDeleted يفتح نافذة التسجيل الجديدة
+  }
   const c=tryParse(CUSTOMER_KEY,{});
   const hasAcc=!!(c.name&&c.phone);
   document.getElementById('popName').value=c.name||'';
@@ -885,6 +889,19 @@ function editCustomer(needAddr){
   document.getElementById('customerPopup').style.display='flex';
 }
 const SYNC_KEY='diraz_synced_phone';
+// مسح كل أثر للزبون المحذوف من هذا الجهاز (الحساب، علامة المزامنة، نسخته بالقائمة، وحقول النافذة)
+function clearCustomerLocal(){
+  try{
+    const pd=String((tryParse(CUSTOMER_KEY,{})||{}).phone||'').replace(/\D/g,'');
+    localStorage.removeItem(CUSTOMER_KEY);
+    localStorage.removeItem(SYNC_KEY);
+    if(pd){
+      const lst=tryParse(CUSTOMERS_KEY,[]).filter(x=>(x&&String(x.phone||'').replace(/\D/g,''))!==pd);
+      localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(lst));
+    }
+  }catch(e){}
+  ['popName','popPhone','popProvince','popArea','popAddress'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+}
 function syncCustomer(c){
   const pd=String(c&&c.phone||'').replace(/\D/g,'');
   if(!window.DirazCloud || !/^07[0-9]{9}$/.test(pd)) return Promise.resolve(false);
@@ -937,6 +954,10 @@ async function saveCustomer(){
       setTimeout(()=>document.getElementById('popError').style.display='none',3500);
       return;
     }
+  }
+  else if(oldDigits && window.DirazCloud){
+    // يعدّل حسابه الحالي: نتأكد أنه ما انحذف، وإلا ما نعيد حفظ بياناته القديمة
+    if(!(await verifyCustomer())) return;
   }
   const customer={...oldCustomer,name,phone:phoneDigits,...addrPatch};
   document.getElementById('customerPopup').style.display='none';
@@ -1041,6 +1062,7 @@ function removeFromCart(idx,size){
   renderCards(); 
 }
 // هل الزبون ما زال موجود عند الأدمن؟ إذا انحذف: نمسح حسابه وسلته ونطلب منه يسوي حساب جديد
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && tryParse(CUSTOMER_KEY,null)?.phone) verifyCustomer(); });
 async function verifyCustomer(){
   const c=tryParse(CUSTOMER_KEY,null);
   if(!c?.phone||!window.DirazCloud) return true;
@@ -1056,7 +1078,7 @@ async function verifyCustomer(){
   return true;
 }
 function handleCustomerDeleted(){
-  localStorage.removeItem(CUSTOMER_KEY);
+  clearCustomerLocal();
   cart=[]; saveCart();
   appliedCoupon=null; discountAmount=0;
   closeCart(); updateCartUI(); renderCards();
