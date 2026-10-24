@@ -645,6 +645,11 @@ textarea{resize:vertical;min-height:80px}
     <div class="ai-note">ولّد كود وابعثه للزبون. الزبون يدوس «النسخة الكاملة» بالمساعد ويدخل الكود، وإذا صح يفتح له والكود <b>ينحذف</b> (يشتغل مرة وحدة، وصلاحيته 24 ساعة).</div>
     <div class="fc-box" id="fullCodeBox2" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><button type="button" class="ai-mini" onclick="fullCopy('fullCodeBox2')">📋 نسخ</button></div>
     <div style="margin-bottom:16px"><button type="button" class="ai-mini" onclick="fullGen()">🔑 توليد كود جديد</button></div>
+    <div class="ai-sub">🗝️ أكواد غير مستخدمة</div>
+    <div class="ai-note">هذي الأكواد اللي ولّدتها وبعد ما استخدمها أحد. تكدر تنسخ الكود أو تحذفه (مثلاً إذا ولّدته بالغلط أو انرسل لغلط). الكود اللي ينحذف ما يشتغل.</div>
+    <div class="fc-head"><span id="fullCodesCount">⏳ جاري التحميل…</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="ai-mini" onclick="fullCodesLoad()">🔄</button><button type="button" class="ai-mini" onclick="fullCodesDelAll()">🗑️ حذف الكل</button></span></div>
+    <div id="fullCodesList" style="margin-bottom:16px"></div>
+
 
     <div class="ai-sub">🤖 الـ API الخاص بالنسخة الكاملة</div>
     <div class="ai-note">هذا الـ API يستعمله المفعّلين بالنسخة الكاملة فقط، حتى ما يصرفون من رصيد الـ APIs مال الزبائن. إذا تتركه فارغ، النسخة الكاملة تستعمل الـ APIs الثلاثة العادية. اختر موديل قوي لأن الأسئلة حرّة وأجوبتها أطول.</div>
@@ -1974,7 +1979,7 @@ async function fullGen(){
     if(typeof code!=='string'||!code) throw new Error('empty');
     ['aiFullCode','fullCodeBox2'].forEach(function(id){ var b=document.getElementById(id); if(b){ b.style.display='block'; b.dataset.code=code; b.querySelector('.fc').textContent=code; } });
     showToast('🔑 انولد كود جديد — يشتغل مرة وحدة');
-    if(document.getElementById('fullModal').classList.contains('open')) fullLoad();
+    if(document.getElementById('fullModal').classList.contains('open')){ fullLoad(); fullCodesLoad(); }
   }catch(e){ showToast(fMissing(e)?'⚠️ شغّل supabase-ai-full.sql في Supabase أولاً':'❌ فشل توليد الكود'); }
   fullGenBusy=false;
 }
@@ -1984,7 +1989,7 @@ function fullCopy(id){
   try{ navigator.clipboard.writeText(c).then(ok,function(){ fbCopy(c); ok(); }); }catch(e){ fbCopy(c); ok(); }
 }
 function fbCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} a.remove(); }
-function fullOpen(){ document.getElementById('fullModal').classList.add('open'); faLoad(); fullLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
+function fullOpen(){ document.getElementById('fullModal').classList.add('open'); faLoad(); fullLoad(); fullCodesLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
 function fullClose(){ var m=document.getElementById('fullModal'); if(m) m.classList.remove('open'); clearInterval(fullTimer); }
 async function fullLoad(){
   var list=document.getElementById('fullList'), cnt=document.getElementById('fullCount'); if(!list) return;
@@ -1997,6 +2002,29 @@ async function fullLoad(){
       return '<div class="fu-row"><div class="fu-i"><b>'+fEsc(x.name||'بدون اسم')+'</b>'+(x.phone?'<small style="direction:ltr;text-align:right">'+fEsc(x.phone)+'</small>':'')+'<small>فعّل: '+fFmt(x.created_at)+' • آخر نشاط: '+fFmt(x.last_seen)+' • رسائل: '+(x.msgs||0)+'</small></div><button type="button" class="fu-kick" onclick="fullKick('+id+')">🚫 طرد</button></div>';
     }).join(''):'<div class="fu-empty">ما في أحد مفعّل هسه</div>';
   }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل supabase-ai-full.sql في Supabase أولاً':'⚠️ تعذّر تحميل القائمة')+'</div>'; }
+}
+async function fullCodesLoad(){
+  var list=document.getElementById('fullCodesList'), cnt=document.getElementById('fullCodesCount'); if(!list) return;
+  try{
+    var r=await DirazCloud.rpc('ai_full_codes_list');
+    var a=Array.isArray(r)?r:((r&&Array.isArray(r.codes))?r.codes:[]);
+    cnt.textContent='🗝️ أكواد غير مستخدمة: '+a.length;
+    list.innerHTML=a.length?a.map(function(x){
+      var c=fEsc(x.code);
+      return '<div class="fu-row"><div class="fu-i"><b style="font-family:monospace;letter-spacing:2px;direction:ltr;text-align:right">'+c+'</b><small>انولد: '+fFmt(x.created_at)+(x.expires_at?' • ينتهي: '+fFmt(x.expires_at):'')+'</small></div>'+
+        '<span style="display:flex;gap:6px"><button type="button" class="ai-mini" data-code="'+c+'" onclick="fullCodeCopy(this)">📋</button><button type="button" class="fu-kick" data-code="'+c+'" onclick="fullCodeDel(this)">🗑️ حذف</button></span></div>';
+    }).join(''):'<div class="fu-empty">ما في أكواد غير مستخدمة</div>';
+  }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل ملف SQL الجديد (ai_full_codes) في Supabase أولاً':'⚠️ تعذّر تحميل الأكواد')+'</div>'; }
+}
+function fullCodeCopy(b){ var c=b&&b.dataset.code; if(!c) return; function ok(){ showToast('📋 اننسخ الكود'); } try{ navigator.clipboard.writeText(c).then(ok,function(){ fbCopy(c); ok(); }); }catch(e){ fbCopy(c); ok(); } }
+async function fullCodeDel(b){
+  var c=b&&b.dataset.code; if(!c) return;
+  if(!confirm('تحذف هذا الكود؟ ما راح يشتغل بعد.')) return;
+  try{ await DirazCloud.rpc('ai_full_code_del',{p_code:c}); showToast('🗑️ انحذف الكود'); fullCodesLoad(); fullLoad(); }catch(e){ showToast('❌ فشل الحذف'); }
+}
+async function fullCodesDelAll(){
+  if(!confirm('تحذف كل الأكواد غير المستخدمة؟')) return;
+  try{ await DirazCloud.rpc('ai_full_codes_del_all'); showToast('🗑️ انحذفت كل الأكواد'); fullCodesLoad(); fullLoad(); }catch(e){ showToast('❌ فشل الحذف'); }
 }
 async function fullKick(id){
   if(!confirm('تريد تطرد هذا الزبون من النسخة الكاملة؟')) return;
