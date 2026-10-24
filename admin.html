@@ -127,6 +127,7 @@ textarea{resize:vertical;min-height:80px}
 .order-list{display:flex;flex-direction:column;gap:12px}
 .order-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px}
 .order-id{color:rgba(255,255,255,0.55);font-size:.78rem}
+.order-code{display:inline-block;margin-right:6px;padding:2px 12px;border-radius:50px;background:#fff;color:#8e2a5a;font-size:.95rem;font-weight:900;letter-spacing:3px;direction:ltr}
 .order-cust{color:white;font-weight:900;font-size:1rem}
 .order-phone,.order-date{color:rgba(255,255,255,0.7);font-size:.83rem}
 .status-badge{padding:5px 14px;border-radius:20px;font-size:.78rem;font-weight:800;border:none;cursor:pointer;font-family:'Cairo',sans-serif;transition:all .2s}
@@ -434,6 +435,7 @@ textarea{resize:vertical;min-height:80px}
         <button class="filter-btn" onclick="filterOrders('received',this)">📦 2 · جاري التجهيز</button>
         <button class="filter-btn" onclick="filterOrders('delivered',this)">✅ 3 · تم التوصيل</button>
       </div>
+      <input type="text" id="orderSearch" placeholder="🔍 ابحث بكود الطلب أو الاسم أو الرقم أو العنوان…" oninput="renderOrders()" autocomplete="off" style="width:100%;margin-bottom:16px">
       <div class="order-list" id="ordersList"></div>
     </div>
 
@@ -970,7 +972,17 @@ function renderOrders(){
   var orders   = tryParse(ORDERS_KEY, []);
   var list     = document.getElementById('ordersList');
   var filtered = currentFilter === 'all' ? orders : orders.filter(function(o){ return ordSt(o) === currentFilter; });
-  if(!filtered.length){ list.innerHTML = '<div class="no-items">📭 لا توجد طلبات</div>'; return; }
+  var q = ((document.getElementById('orderSearch')||{}).value||'').trim().toLowerCase();
+  if(q){
+    var qc = q.replace(/[\s\-#]/g,'');
+    filtered = filtered.filter(function(o){
+      var c = o.customer||{};
+      var hay = [o.code, o.id, c.name, c.phone, c.address, c.province, c.area, o.notes, o.coupon&&o.coupon.code]
+        .concat((o.items||[]).map(function(i){ return i.name; })).join(' ').toLowerCase();
+      return hay.indexOf(q) > -1 || (o.code && String(o.code).toLowerCase() === qc);
+    });
+  }
+  if(!filtered.length){ list.innerHTML = '<div class="no-items">'+(q?'🔍 ما لقيت طلب يطابق البحث':'📭 لا توجد طلبات')+'</div>'; return; }
   list.innerHTML = filtered.map(function(order){
     var idx  = orders.indexOf(order);
     var d    = new Date(order.date).toLocaleString('ar', {dateStyle:'medium', timeStyle:'short'});
@@ -978,7 +990,7 @@ function renderOrders(){
     var items = (order.items||[]).map(function(i,n){ return '<div class="order-item-row">'+(n+1)+'. '+esc(i.name)+' × '+esc(i.qty)+' — '+esc((i.price*i.qty).toLocaleString('en-US'))+' '+esc(i.currency)+'</div>'; }).join('');
     return '<div class="order-card">' +
       '<div class="order-top">' +
-        '<div><div class="order-id"># '+esc(order.id||idx+1)+(order.manual?' <small style="opacity:.8;font-weight:700">📝 مضاف يدوياً</small>':'')+'</div><div class="order-cust">👤 '+esc(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+esc(order.customer&&order.customer.phone||'—')+'</div></div>' +
+        '<div><div class="order-id"># '+esc(order.id||idx+1)+(order.code?' <b class="order-code">🔖 '+esc(order.code)+'</b>':'')+(order.manual?' <small style="opacity:.8;font-weight:700">📝 مضاف يدوياً</small>':'')+'</div><div class="order-cust">👤 '+esc(order.customer&&order.customer.name||'—')+'</div><div class="order-phone">📱 '+esc(order.customer&&order.customer.phone||'—')+'</div></div>' +
         '<div style="text-align:left"><div class="order-date">🕐 '+d+'</div>' +
         '<span class="status-badge status-'+st+'">'+STL[st]+'</span></div>' +
       '</div>' +
@@ -992,6 +1004,15 @@ function renderOrders(){
         '<button class="btn-del-order" onclick="deleteOrder('+idx+')">🗑️ حذف</button>' +
       '</div></div>';
   }).join('');
+}
+var ORDER_CODE_CHARS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function genOrderCode(){
+  var used={}; tryParse(ORDERS_KEY,[]).forEach(function(o){ if(o&&o.code) used[String(o.code).toUpperCase()]=1; });
+  for(var t=0;t<200;t++){
+    var c=''; for(var k=0;k<4;k++) c+=ORDER_CODE_CHARS.charAt(Math.floor(Math.random()*ORDER_CODE_CHARS.length));
+    if(!used[c]) return c;
+  }
+  return 'X'+String(Date.now()).slice(-3);
 }
 function filterOrders(f,btn){ currentFilter=f; document.querySelectorAll('.filter-btn').forEach(function(b){ b.classList.remove('active'); }); btn.classList.add('active'); renderOrders(); }
 function setStatus(i,st){ var o=tryParse(ORDERS_KEY,[]); if(!o[i]||['pending','received','delivered'].indexOf(st)<0)return; o[i].status=st; if(st==='received') o[i].receivedAt=new Date().toISOString(); if(st==='delivered') o[i].deliveredAt=new Date().toISOString(); localStorage.setItem(ORDERS_KEY,JSON.stringify(o)); DirazCloud.update('orders','id=eq.'+encodeURIComponent(String(o[i].id)),{data:o[i],updated_at:new Date().toISOString()}).catch(cloudFail); renderStats(); renderOrders(); showToast('✅ '+STL[st]); }
@@ -1551,7 +1572,7 @@ async function siteOrderAdd(){
   var items=[];
   if(n50) items.push({name:'عطر 50 مل',price:unit,currency:'دينار',qty:n50,size:'50ml'});
   if(n30) items.push({name:'عطر 30 مل',price:unit,currency:'دينار',qty:n30,size:'30ml'});
-  var order={id:Date.now(),customer:{name:'',phone:'',address:'',province:'',area:'',age:''},items:items,subtotal:total,deliveryFee:0,total:total,currency:'دينار',date:when.toISOString(),status:'delivered',coupon:{code:s.c.code,discount:0},manual:true};
+  var order={id:Date.now(),code:genOrderCode(),customer:{name:'',phone:'',address:'',province:'',area:'',age:''},items:items,subtotal:total,deliveryFee:0,total:total,currency:'دينار',date:when.toISOString(),status:'delivered',coupon:{code:s.c.code,discount:0},manual:true};
   try{ await DirazCloud.upsert('orders',[{id:String(order.id),data:order}]); }
   catch(e){ cloudFail(e); return; }
   var os=tryParse(ORDERS_KEY,[]); os.push(order);

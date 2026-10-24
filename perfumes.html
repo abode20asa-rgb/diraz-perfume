@@ -230,6 +230,11 @@ body.sec-men select.popup-input option{background:#1a2456}
 @keyframes dzSuccessDraw{to{stroke-dashoffset:0}}
 .success-title{margin-top:28px;font-size:1.5rem;font-weight:900;color:#1a1a1a}
 .success-sub{margin-top:10px;font-size:1.05rem;color:#8a8a8e;font-weight:700}
+.success-code-box{margin-top:22px;padding:14px 22px;border-radius:18px;background:#f4faf6;border:2px dashed #34c759;max-width:min(340px,88vw)}
+.success-code-lbl{font-size:.95rem;font-weight:800;color:#1a1a1a}
+.success-code{font-size:2.4rem;font-weight:900;letter-spacing:6px;color:#1f9d4a;direction:ltr;line-height:1.3}
+.success-code-note{font-size:.88rem;font-weight:700;color:#555;line-height:1.7}
+.success-ok{margin-top:18px;padding:10px 38px;border:none;border-radius:50px;background:#34c759;color:#fff;font-family:'Cairo',sans-serif;font-size:1rem;font-weight:800;cursor:pointer}
 .success-bar{width:min(280px,70vw);height:5px;background:#e8e8ed;border-radius:99px;margin-top:30px;overflow:hidden}
 .success-bar-fill{height:100%;width:0;background:#34c759;border-radius:99px;animation:dzSuccessBar 5s linear forwards}
 @keyframes dzSuccessBar{from{width:0}to{width:100%}}
@@ -641,6 +646,12 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   </div>
   <div class="success-title">تم اتمام عملية الشراء</div>
   <div class="success-sub">وصل طلبك بنجاح 🌸 راح نتواصل وياك</div>
+  <div class="success-code-box" id="successCodeBox" style="display:none">
+    <div class="success-code-lbl">🔖 كود طلبك</div>
+    <div class="success-code" id="successCode"></div>
+    <div class="success-code-note">إذا صار أي خطأ أو تأخر طلبك، أعطِ هذا الكود للدعم حتى نحلّها لك بسرعة. تلكاه أيضاً بـ «طلباتي».</div>
+  </div>
+  <button type="button" class="success-ok" onclick="hideOrderSuccess()">تمام</button>
   <div class="success-bar"><div class="success-bar-fill"></div></div>
 </div>
 
@@ -1327,7 +1338,8 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
       return;
     }
   }
-  const order={id:Date.now(),...(window.dzOrderToken?{ctoken:window.dzOrderToken()}:{}),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
+  const orderCode=await getOrderCode();
+  const order={id:Date.now(),code:orderCode,...(window.dzOrderToken?{ctoken:window.dzOrderToken()}:{}),customer:{name:cust.name||'—',phone:cust.phone||'—',address:cust.address||'—',province:cust.province||'—',area:cust.area||'—',age:cust.age||''},items:JSON.parse(JSON.stringify(cart)),subtotal,deliveryFee,total,currency:cur,date:new Date().toISOString(),status:'pending',coupon:appliedCoupon?{code:appliedCoupon.code,discount:discountAmount}:null};
   { const nt=(document.getElementById('orderNotes')||{}).value; if(nt&&nt.trim()) order.notes=nt.trim().slice(0,200); }
   // بدون واتساب: الطلب لازم يوصل للسيرفر فعلاً قبل ما نأكد للزبون (محاولتين)
   let saved=false, saveErr=null;
@@ -1360,7 +1372,7 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
   closeCart(); updateCartUI(); renderCards();
 
   // شاشة النجاح (الصح الأخضر) بدون تحويل لأي صفحة
-  showOrderSuccess();
+  showOrderSuccess(null,order.code);
 }
 
 // ── Toast ──
@@ -1397,17 +1409,48 @@ function playApplePayChime(){
     });
   }catch(e){}
 }
-function showOrderSuccess(done){
+// كود الطلب: 4 خانات عشوائية (أحرف وأرقام واضحة) مختلفة عن كل الطلبات. الأفضل من السيرفر، وإذا ما اشتغل نولّده محلياً
+const ORDER_CODE_CHARS='ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+function localOrderCode(){
+  const used={}; tryParse(ORDERS_KEY,[]).forEach(o=>{ if(o&&o.code) used[String(o.code).toUpperCase()]=1; });
+  for(let t=0;t<200;t++){
+    let c=''; const a=new Uint32Array(4);
+    try{ crypto.getRandomValues(a); }catch(e){ for(let k=0;k<4;k++) a[k]=Math.floor(Math.random()*4294967295); }
+    for(let k=0;k<4;k++) c+=ORDER_CODE_CHARS[a[k]%ORDER_CODE_CHARS.length];
+    if(!used[c]) return c;
+  }
+  return 'X'+String(Date.now()).slice(-3);
+}
+async function getOrderCode(){
+  try{
+    if(window.DirazCloud){
+      const c=await withTimeout(DirazCloud.rpc('new_order_code'),3000,null);
+      if(typeof c==='string' && /^[A-Z0-9]{4}$/.test(c)) return c;
+    }
+  }catch(e){}
+  return localOrderCode();
+}
+let dzSuccessTimer=null;
+function hideOrderSuccess(done){
+  const ov=document.getElementById('orderSuccessOverlay'); if(!ov) return;
+  clearTimeout(dzSuccessTimer);
+  done&&done();
+  ov.classList.add('hide');
+  setTimeout(()=>{ ov.classList.remove('show','hide'); },350);
+}
+function showOrderSuccess(done,code){
   const ov=document.getElementById('orderSuccessOverlay');
   if(!ov){ done&&done(); return; }
+  const box=document.getElementById('successCodeBox');
+  if(box){ if(code){ document.getElementById('successCode').textContent=code; box.style.display='block'; } else box.style.display='none'; }
+  const ms=code?15000:5000;   // مع الكود: وقت أطول حتى الزبون يلحك يقرا
+  const fill=ov.querySelector('.success-bar-fill');
+  if(fill){ fill.style.animation='none'; void fill.offsetWidth; fill.style.animation='dzSuccessBar '+ms+'ms linear forwards'; }
   ov.classList.remove('hide');
   ov.classList.add('show');
   playApplePayChime();
-  setTimeout(()=>{
-    done&&done();
-    ov.classList.add('hide');
-    setTimeout(()=>{ ov.classList.remove('show','hide'); },350);
-  },5000);
+  clearTimeout(dzSuccessTimer);
+  dzSuccessTimer=setTimeout(()=>hideOrderSuccess(done),ms);
 }
 
 function openImageLightbox(src){
@@ -1914,6 +1957,9 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 .dzo-card{border:1.5px solid #f1dbe4;border-radius:16px;padding:12px;margin-bottom:12px;background:#fffafc}
 .dzo-top{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
 .dzo-id{font-weight:900;color:var(--pink-deep);font-size:.9rem}
+.dzo-code{margin:8px 0;padding:8px 12px;border-radius:12px;background:#fff;border:1.5px dashed var(--pink-deep);font-weight:800;font-size:.9rem;color:#333}
+.dzo-code b{font-size:1.15rem;letter-spacing:3px;color:var(--pink-deep);direction:ltr;display:inline-block}
+.dzo-code small{display:block;font-weight:700;color:#777;font-size:.78rem;margin-top:2px}
 .dzo-date{font-size:.7rem;color:#999}
 .dzo-items{font-size:.78rem;color:#555;line-height:1.7;margin:4px 0}
 .dzo-total{font-size:.8rem;font-weight:800;color:var(--pink-deep);margin-bottom:8px}
@@ -1987,6 +2033,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
       return '• '+esc(i.name||'')+(i.size?' ('+esc(String(i.size).replace('ml',' مل'))+')':'')+' × '+esc(i.qty||1);
     }).join('<br>');
     return '<div class="dzo-card"><div class="dzo-top"><span class="dzo-id">طلب #'+esc(String(o.id).slice(-6))+'</span><span class="dzo-date">'+esc(d)+'</span></div>'+
+      (o.code?'<div class="dzo-code">🔖 كود طلبك: <b>'+esc(o.code)+'</b><small>إذا تأخر طلبك أو صار أي خطأ، أعطِ هذا الكود للدعم</small></div>':'')+
       '<div class="dzo-items">'+(items||'—')+'</div>'+
       '<div class="dzo-total">💰 '+esc(Number(o.total||0).toLocaleString('en-US'))+' '+esc(o.currency||'دينار')+'</div>'+
       '<span class="dzo-chip" style="background:'+s.c+'">'+s.n+' · '+esc(s.t)+'</span>'+
