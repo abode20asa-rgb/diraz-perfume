@@ -895,12 +895,14 @@ function clearCustomerLocal(){
     const pd=String((tryParse(CUSTOMER_KEY,{})||{}).phone||'').replace(/\D/g,'');
     localStorage.removeItem(CUSTOMER_KEY);
     localStorage.removeItem(SYNC_KEY);
+    localStorage.removeItem(ORDERS_KEY);   // طلباته المحفوظة بالجهاز (قائمة «طلباتي»)
     if(pd){
       const lst=tryParse(CUSTOMERS_KEY,[]).filter(x=>(x&&String(x.phone||'').replace(/\D/g,''))!==pd);
       localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(lst));
     }
   }catch(e){}
   ['popName','popPhone','popProvince','popArea','popAddress'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  try{ if(window.dzOrdersRefresh) window.dzOrdersRefresh(); }catch(e){}
 }
 function syncCustomer(c){
   const pd=String(c&&c.phone||'').replace(/\D/g,'');
@@ -2015,6 +2017,8 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   window.dzOrdersRefresh=refresh;
   window.dzOrdersOpen=function(){
     $('dzoModal').classList.add('on'); refresh();
+    // إذا الزبون انحذف: نمسح طلباته ونسكّر القائمة (verifyCustomer يعرض نافذة التسجيل الجديدة)
+    try{ if(typeof verifyCustomer==='function') verifyCustomer().then(function(ok){ if(ok===false) window.dzOrdersClose(); }).catch(function(){}); }catch(e){}
     clearInterval(timer); timer=setInterval(refresh,20000);
   };
   window.dzOrdersClose=function(){ $('dzoModal').classList.remove('on'); clearInterval(timer); };
