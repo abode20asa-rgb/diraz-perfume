@@ -942,13 +942,15 @@ async function saveCustomer(){
   const oldCustomer=tryParse(CUSTOMER_KEY,{});
   // منع التسجيل برقم مسجّل مسبقاً (إلا إذا هو نفس رقم الزبون الحالي وهو يعدّل بياناته)
   const oldDigits=String(oldCustomer.phone||'').replace(/\D/g,'');
+  let claimed=null;   // بيانات حساب رجّعه الأدمن من سلة المحذوفات (يستلمه الزبون مرة وحدة)
   if(phoneDigits!==oldDigits && window.DirazCloud){
     const btn=document.querySelector('#customerPopup .popup-btn');
     if(btn){ btn.disabled=true; btn.dataset.t=btn.textContent; btn.textContent='جاري التحقق...'; }
     let taken=false;
     try{ taken=(await withTimeout(DirazCloud.rpc('customer_exists',{p_phone:phoneDigits}),5000,'timeout'))===true; }catch(e){ taken=false; }
+    if(taken){ try{ claimed=await withTimeout(DirazCloud.rpc('customer_claim_restored',{p_phone:phoneDigits}),5000,null); }catch(e){ claimed=null; } }
     if(btn){ btn.disabled=false; btn.textContent=btn.dataset.t||'متابعة ←'; }
-    if(taken){
+    if(taken && !(claimed && typeof claimed==='object')){
       document.getElementById('popError').textContent='❗ هذا الرقم مسجّل مسبقاً، استخدم رقم ثاني';
       document.getElementById('popError').style.display='block';
       setTimeout(()=>document.getElementById('popError').style.display='none',3500);
@@ -959,7 +961,7 @@ async function saveCustomer(){
     // يعدّل حسابه الحالي: نتأكد أنه ما انحذف، وإلا ما نعيد حفظ بياناته القديمة
     if(!(await verifyCustomer())) return;
   }
-  const customer={...oldCustomer,name,phone:phoneDigits,...addrPatch};
+  const customer={...oldCustomer,...((claimed&&typeof claimed==='object')?claimed:{}),name,phone:phoneDigits,...addrPatch};
   document.getElementById('customerPopup').style.display='none';
   try {
     localStorage.setItem(CUSTOMER_KEY, JSON.stringify(customer));

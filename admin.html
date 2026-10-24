@@ -1115,7 +1115,7 @@ async function restoreCustomer(i){
   var t = _trash[i]; if(!t) return;
   var os = (t.orders||[]).filter(function(o){ return o && o.id; });
   try{
-    await DirazCloud.upsert('customers', [{ phone:t.phone, data:t.data }]);
+    await DirazCloud.upsert('customers', [{ phone:t.phone, data:Object.assign({}, t.data||{}, {restored:true}) }]);
     if(os.length) await DirazCloud.upsert('orders', os.map(function(o){ return { id:String(o.id), data:o }; }));
     await DirazCloud.remove(TRASH_TABLE, 'phone=eq.'+encodeURIComponent(t.phone));
   }catch(e){ cloudFail(e); return; }
