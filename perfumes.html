@@ -216,6 +216,10 @@ body.sec-men select.popup-input option{background:#1a2456}
 /* ══ Toast ══ */
 #cartToast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(40px);background:rgba(30,30,30,0.92);color:white;padding:10px 26px;border-radius:50px;font-size:.88rem;font-weight:700;z-index:9000;opacity:0;transition:all .35s;pointer-events:none}
 #cartToast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#dzWelcome{position:fixed;top:16px;left:50%;transform:translateX(-50%) translateY(-40px);width:min(92vw,420px);box-sizing:border-box;background:linear-gradient(135deg,#c2185b,#ec407a);color:#fff;padding:14px 18px;border-radius:20px;text-align:center;direction:rtl;font-family:'Cairo',sans-serif;box-shadow:0 14px 40px rgba(0,0,0,.28);z-index:100000;opacity:0;pointer-events:none;transition:all .45s cubic-bezier(.2,1.2,.4,1)}
+#dzWelcome.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#dzWelcome b{display:block;font-size:1.12rem;font-weight:900}
+#dzWelcome span{display:block;margin-top:4px;font-size:.9rem;font-weight:700;line-height:1.7;opacity:.96}
 
 /* ── شاشة نجاح عملية الشراء ── */
 #orderSuccessOverlay{position:fixed;inset:0;background:#fff;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;text-align:center;direction:rtl;font-family:'Cairo',sans-serif;animation:dzSuccessFadeIn .3s ease}
@@ -849,6 +853,7 @@ async function checkCustomer(){
       }
     }catch(e){}
   }
+  if(!c && await tryAutoRestore()) c=tryParse(CUSTOMER_KEY,null);
   if(c){
     document.getElementById('popName').value=c.name||'';
     document.getElementById('popPhone').value=c.phone||'';
@@ -876,6 +881,7 @@ function initAddrFields(){
 }
 async function editCustomer(needAddr){
   popupForced=false;
+  if(!tryParse(CUSTOMER_KEY,{}).phone) await tryAutoRestore();   // إذا الأدمن رجّع حسابه، يرجع هسه بدل نافذة «سوّي حساب»
   // إذا الزبون انحذف من الأدمن: نمسح بياناته القديمة ونعرض نافذة تسجيل فاضية (ما نعرض بياناته القديمة)
   if(!pendingCartOpen && needAddr!==true && tryParse(CUSTOMER_KEY,{}).phone){
     if(!(await verifyCustomer())) return;   // handleCustomerDeleted يفتح نافذة التسجيل الجديدة
@@ -900,6 +906,7 @@ async function editCustomer(needAddr){
   document.getElementById('customerPopup').style.display='flex';
 }
 const SYNC_KEY='diraz_synced_phone';
+const RESTORE_KEY='diraz_pending_restore';   // رقم حساب انحذف من الأدمن (بدون أي بيانات) حتى يرجع تلقائياً إذا الأدمن استرجعه
 // مسح كل أثر للزبون المحذوف من هذا الجهاز (الحساب، علامة المزامنة، نسخته بالقائمة، وحقول النافذة)
 function clearCustomerLocal(){
   try{
@@ -907,6 +914,7 @@ function clearCustomerLocal(){
     localStorage.removeItem(CUSTOMER_KEY);
     localStorage.removeItem(SYNC_KEY);
     localStorage.removeItem(ORDERS_KEY);   // طلباته المحفوظة بالجهاز (قائمة «طلباتي»)
+    if(pd) localStorage.setItem(RESTORE_KEY,pd);
     if(pd){
       const lst=tryParse(CUSTOMERS_KEY,[]).filter(x=>(x&&String(x.phone||'').replace(/\D/g,''))!==pd);
       localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(lst));
@@ -926,6 +934,26 @@ function withTimeout(promise,ms,fallback){
   return Promise.race([promise,new Promise(res=>setTimeout(()=>res(fallback),ms))]);
 }
 
+// الأدمن استرجع الحساب من سلة المحذوفات؟ نرجّعه لهذا الجهاز تلقائياً (مرة وحدة)
+async function tryAutoRestore(){
+  let pd=''; try{ pd=localStorage.getItem(RESTORE_KEY)||''; }catch(e){}
+  if(!pd || !window.DirazCloud || tryParse(CUSTOMER_KEY,null)?.phone) return false;
+  try{
+    const d=await withTimeout(DirazCloud.rpc('customer_claim_restored',{p_phone:pd}),5000,null);
+    if(d && typeof d==='object'){
+      const customer={...d,phone:pd};
+      localStorage.setItem(CUSTOMER_KEY,JSON.stringify(customer));
+      localStorage.removeItem(RESTORE_KEY);
+      const lst=tryParse(CUSTOMERS_KEY,[]).filter(x=>String(x&&x.phone||'').replace(/\D/g,'')!==pd);
+      lst.unshift(customer); localStorage.setItem(CUSTOMERS_KEY,JSON.stringify(lst));
+      localStorage.setItem(SYNC_KEY,pd);
+      try{ refreshCheckoutUI(); renderCards(); }catch(e){}
+      showWelcome('♻️ رجع حسابك','أهلاً بيك مرة ثانية، تصفّح الموقع وشاهد عطورك المفضلة 🌸');
+      return true;
+    }
+  }catch(e){}
+  return false;
+}
 async function saveCustomer(){
   const nameInput=(document.getElementById('popName').value||'').trim();
   const phone=(document.getElementById('popPhone').value||'').trim();
@@ -986,11 +1014,14 @@ async function saveCustomer(){
     if(existing>=0) customers[existing]=customer; else customers.unshift(customer);
     localStorage.setItem(CUSTOMERS_KEY, JSON.stringify(customers));
   } catch(e) {}
+  try{ localStorage.removeItem(RESTORE_KEY); }catch(e){}
   syncCustomer(customer);
   const fromCart=pendingCartOpen;
   pendingCartOpen=false;
   refreshCheckoutUI();
   if(fromCart) showToast('✅ تم حفظ عنوانك — اضغط متابعة');
+  else if(claimed) showWelcome('♻️ رجع حسابك','أهلاً بيك مرة ثانية، تصفّح الموقع وشاهد عطورك المفضلة 🌸');
+  else if(!oldDigits) showWelcome('🎉 تم إنشاء حسابك بنجاح','تصفّح الموقع وشاهد العطور، أحلى الروائح بانتظارك 🌸');
 }
 
 // ── Cart ──
@@ -1077,7 +1108,7 @@ function removeFromCart(idx,size){
   renderCards(); 
 }
 // هل الزبون ما زال موجود عند الأدمن؟ إذا انحذف: نمسح حسابه وسلته ونطلب منه يسوي حساب جديد
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden && tryParse(CUSTOMER_KEY,null)?.phone) verifyCustomer(); });
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) return; if(tryParse(CUSTOMER_KEY,null)?.phone) verifyCustomer(); else tryAutoRestore(); });
 async function verifyCustomer(){
   const c=tryParse(CUSTOMER_KEY,null);
   if(!c?.phone||!window.DirazCloud) return true;
@@ -1376,6 +1407,16 @@ async function sendOrder(deliveryFee=0, deliveryCustomer=tryParse(CUSTOMER_KEY,{
 }
 
 // ── Toast ──
+let dzWelcomeTimer=null;
+function showWelcome(title,sub,ms){
+  let el=document.getElementById('dzWelcome');
+  if(!el){ el=document.createElement('div'); el.id='dzWelcome'; el.setAttribute('role','status'); document.body.appendChild(el); }
+  el.innerHTML='<b></b><span></span>';
+  el.firstChild.textContent=title; el.lastChild.textContent=sub||'';
+  void el.offsetWidth; el.classList.add('show');
+  clearTimeout(dzWelcomeTimer);
+  dzWelcomeTimer=setTimeout(()=>el.classList.remove('show'),ms||6000);
+}
 function showToast(msg){ const t=document.getElementById('cartToast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2500); }
 
 // ── شاشة نجاح الشراء + صوت Apple Pay ──
