@@ -913,7 +913,7 @@ function clearCustomerLocal(){
     const pd=String((tryParse(CUSTOMER_KEY,{})||{}).phone||'').replace(/\D/g,'');
     localStorage.removeItem(CUSTOMER_KEY);
     localStorage.removeItem(SYNC_KEY);
-    localStorage.removeItem(ORDERS_KEY);   // طلباته المحفوظة بالجهاز (قائمة «طلباتي»)
+    if(pd){ const od=tryParse(ORDERS_KEY,[]).filter(o=>String(o&&o.customer&&o.customer.phone||'').replace(/\D/g,'')!==pd); localStorage.setItem(ORDERS_KEY,JSON.stringify(od)); }   // طلبات هذا الزبون فقط
     if(pd) localStorage.setItem(RESTORE_KEY,pd);
     if(pd){
       const lst=tryParse(CUSTOMERS_KEY,[]).filter(x=>(x&&String(x.phone||'').replace(/\D/g,''))!==pd);
@@ -1762,9 +1762,16 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   }
 
   function warn(m){ var el=$('rvMsg'); if(!el) return; el.textContent=m||''; el.classList.toggle('on',!!m); }
-  window.dzReviewOpen=function(){
+  function hasAcc(){ try{ var c=JSON.parse(localStorage.getItem('diraz_customer')||'{}')||{}; return !!(c.name&&c.phone); }catch(e){ return false; } }
+  window.dzReviewOpen=async function(){
     warn('');
     var c={}; try{ c=JSON.parse(localStorage.getItem('diraz_customer')||'{}')||{}; }catch(e){}
+    if(!(c.name&&c.phone)){   // بدون حساب ما يكدر يكتب رأي
+      try{ showToast('📝 سوّي حساب أول حتى تكدر تكتب رأيك'); }catch(e){}
+      try{ if(typeof editCustomer==='function') editCustomer(); }catch(e){}
+      return;
+    }
+    try{ if(typeof verifyCustomer==='function' && (await verifyCustomer())===false) return; }catch(e){}   // إذا انحذف حسابه يطلب منه حساب جديد
     if(!$('rvName').value) $('rvName').value=String(c.name||'').trim().split(/\s+/)[0]||'';
     $('rvForm').style.display='block'; $('rvDone').style.display='none';
     $('rvModal').classList.add('on');
@@ -1777,6 +1784,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
   window.dzRvSend=async function(){
     if(sending) return;
     warn('');
+    if(!hasAcc()){ warn('📝 سوّي حساب أول حتى تكدر تنشر رأيك'); return; }
     var name=$('rvName').value.trim().split(/\s+/)[0]||'', body=$('rvBody').value.trim();
     if(!name){ warn('✏️ اكتب اسمك الأول'); return; }
     if(body.length<3){ warn('✏️ اكتب رأيك'); return; }
@@ -2049,8 +2057,13 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     try{ var a=new Uint8Array(12); crypto.getRandomValues(a); return Array.prototype.map.call(a,function(b){ return ('0'+b.toString(16)).slice(-2); }).join(''); }
     catch(e){ return Math.random().toString(16).slice(2)+Date.now().toString(16); }
   };
+  function myPhone(){
+    try{ var c=JSON.parse(localStorage.getItem('diraz_customer')||'{}')||{}; return (c.name&&c.phone)?String(c.phone).replace(/\D/g,''):''; }
+    catch(e){ return ''; }
+  }
   function localOrders(){
-    try{ var a=JSON.parse(localStorage.getItem('diraz_orders')||'[]'); return Array.isArray(a)?a.filter(function(o){ return o&&o.id; }).slice(0,20):[]; }
+    var ph=myPhone(); if(!ph) return [];   // بدون حساب: ما يطلع أي طلب
+    try{ var a=JSON.parse(localStorage.getItem('diraz_orders')||'[]'); return Array.isArray(a)?a.filter(function(o){ return o&&o.id&&String((o.customer&&o.customer.phone)||'').replace(/\D/g,'')===ph; }).slice(0,20):[]; }
     catch(e){ return []; }
   }
   function saveStatuses(map){
@@ -2087,7 +2100,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     }).join('');
   }
   function render(list){
-    $('dzoList').innerHTML=list.length?list.map(card).join(''):'<div class="dzo-empty">ما عندك طلبات بعد 🌸<br>أول ما تطلب يظهر طلبك هنا وتتابع حالته.<br><small>تظهر هنا الطلبات اللي سويتها من هذا الجهاز.</small></div>';
+    $('dzoList').innerHTML=list.length?list.map(card).join(''):(!myPhone()?'<div class="dzo-empty">سجّل حساب أول حتى تشوف طلباتك 🌸<br><small>بعد ما تسوي حساب وتطلب، تظهر طلباتك وكودها هنا.</small></div>':'<div class="dzo-empty">ما عندك طلبات بعد 🌸<br>أول ما تطلب يظهر طلبك هنا وتتابع حالته.<br><small>تظهر هنا الطلبات اللي سويتها من هذا الجهاز.</small></div>');
   }
   function refresh(){
     var list=localOrders(); render(list); legend();
