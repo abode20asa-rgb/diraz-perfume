@@ -252,6 +252,10 @@ textarea{resize:vertical;min-height:80px}
 .ai-usage .ur .sub{font-weight:600;opacity:.85;font-size:.72rem;margin-top:3px}
 #aiModal input[type=number]{padding:11px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.4);background:rgba(255,255,255,.2);color:#fff;font-family:'Cairo',sans-serif;font-size:.95rem;outline:none;direction:ltr;text-align:left}
 .ai-sub{font-weight:900;font-size:.92rem;margin:6px 0 10px;padding-top:12px;border-top:1.5px dashed rgba(255,255,255,.4)}
+.key-wrap{position:relative;width:100%}
+.key-wrap input{width:100%;box-sizing:border-box;padding-right:50px!important}
+.key-eye{position:absolute;top:50%;right:8px;transform:translateY(-50%);width:34px;height:34px;border:0;border-radius:10px;background:#f3e7ec;color:#c45a7a;cursor:pointer;font-size:1.05rem;line-height:1;display:flex;align-items:center;justify-content:center;padding:0}
+.key-eye:hover{background:#ead3dd}
 @media(max-width:600px){.ai-tab{font-size:.74rem;padding:9px 4px;gap:5px}}
 /* ══ النسخة الكاملة ══ */
 #fullModal{position:fixed;inset:0;z-index:2000;display:none;align-items:flex-start;justify-content:center;background:rgba(40,10,25,.55);backdrop-filter:blur(4px);overflow-y:auto;padding:24px 12px}
@@ -624,7 +628,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-group full"><label>رابط API (الرابط الي يرد منه الذكاء)</label><input type="url" id="ai_url" class="ltr" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off"></div>
       <div class="form-group"><label>الموديل</label><input type="text" id="ai_model" class="ltr" placeholder="gpt-4o-mini" autocomplete="off"></div>
       <div class="form-group"><label>نوع الواجهة</label><select id="ai_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option><option value="custom">واجهتي الخاصة (API سويته أنا)</option></select></div>
-      <div class="form-group full"><label>مفتاح API</label><input type="password" id="ai_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><small id="ai_keyHint" style="opacity:.8"></small></div>
+      <div class="form-group full"><label>مفتاح API</label><div class="key-wrap"><input type="password" id="ai_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><button type="button" class="key-eye" onclick="dzEye('ai_key',this)" aria-label="إظهار المفتاح" title="إظهار / إخفاء المفتاح">👁️</button></div><small id="ai_keyHint" style="opacity:.8"></small></div>
       <div class="form-group"><label>الحد اليومي لهذا الـ API (عدد الطلبات)</label><input type="number" id="ai_limit" min="0" step="1" placeholder="مثال: 1500" autocomplete="off"></div>
       <div class="form-group"><label>يتصفّر العدّاد الساعة (UTC)</label><input type="number" id="ai_reset" min="0" max="23" step="1" placeholder="0" autocomplete="off"><small style="opacity:.8">Gemini غالباً 7 أو 8، Groq وأغلب الباقي 0. (العراق = UTC+3)</small></div>
       <div class="form-group full"><button type="button" class="ai-mini" onclick="aiClearSlot()">🗑️ تفريغ هذا الـ API</button></div>
@@ -660,7 +664,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-group full"><label>رابط API</label><input type="url" id="fa_url" class="ltr" placeholder="https://api.openai.com/v1/chat/completions" autocomplete="off"></div>
       <div class="form-group"><label>الموديل</label><input type="text" id="fa_model" class="ltr" placeholder="gpt-4o" autocomplete="off"></div>
       <div class="form-group"><label>نوع الواجهة</label><select id="fa_format"><option value="openai">OpenAI (يشتغل مع أغلب المواقع)</option><option value="anthropic">Anthropic (Claude)</option><option value="custom">واجهتي الخاصة (API سويته أنا)</option></select></div>
-      <div class="form-group full"><label>مفتاح API</label><input type="password" id="fa_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><small id="fa_keyHint" style="opacity:.8"></small></div>
+      <div class="form-group full"><label>مفتاح API</label><div class="key-wrap"><input type="password" id="fa_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><button type="button" class="key-eye" onclick="dzEye('fa_key',this)" aria-label="إظهار المفتاح" title="إظهار / إخفاء المفتاح">👁️</button></div><small id="fa_keyHint" style="opacity:.8"></small></div>
       <div class="form-group"><label>الحد اليومي (عدد الطلبات)</label><input type="number" id="fa_limit" min="0" step="1" placeholder="مثال: 500" autocomplete="off"></div>
       <div class="form-group"><label>يتصفّر العدّاد الساعة (UTC)</label><input type="number" id="fa_reset" min="0" max="23" step="1" placeholder="0" autocomplete="off"></div>
     </div>
@@ -1839,10 +1843,10 @@ var AI_SLOT_NOTES=[
 var aiSlots=[], aiSlot=0;
 function aiNewSlot(){ return {provider:'',url:'',model:'',format:'openai',keyNew:'',hasKey:false,limit:'',resetUtc:0}; }
 function aiGuess(url){ url=String(url||''); var k=Object.keys(AI_PROVS).filter(function(x){ return AI_PROVS[x].url && AI_PROVS[x].url===url; })[0]; return k||(url?'custom':''); }
-function aiSlotReady(s){ return /^https:\/\//i.test(s.url) && !!(s.keyNew||s.hasKey||s.format==='custom'); }
+function aiSlotReady(s){ return /^https:\/\//i.test(s.url) && !!(s.keyNew||s.format==='custom'); }
 function aiStatus(msg){ var b=document.getElementById('aiStatus'); if(!msg){ b.style.display='none'; return; } b.style.display='block'; b.textContent=msg; }
 function aiEl(id){ return document.getElementById(id); }
-function aiHint(){ var s=aiSlots[aiSlot]; aiEl('ai_keyHint').textContent=(s&&s.hasKey&&!s.keyNew)?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':''; }
+function aiHint(){ var s=aiSlots[aiSlot]; aiEl('ai_keyHint').textContent=(s&&s.hasKey&&s.keyNew)?'🔒 المفتاح محفوظ ومخفي — اضغط 👁️ لإظهاره':''; }
 function aiStore(){
   var s=aiSlots[aiSlot]; if(!s) return;
   s.url=aiEl('ai_url').value.trim(); s.model=aiEl('ai_model').value.trim(); s.format=aiEl('ai_format').value; s.keyNew=aiEl('ai_key').value.trim();
@@ -1862,7 +1866,7 @@ function aiRenderProvs(){
 }
 function aiShow(){
   var s=aiSlots[aiSlot];
-  aiEl('ai_url').value=s.url; aiEl('ai_model').value=s.model; aiEl('ai_format').value=s.format||'openai'; aiEl('ai_key').value=s.keyNew;
+  dzEyeReset(); aiEl('ai_url').value=s.url; aiEl('ai_model').value=s.model; aiEl('ai_format').value=s.format||'openai'; aiEl('ai_key').value=s.keyNew;
   aiEl('ai_limit').value=s.limit||''; aiEl('ai_reset').value=s.resetUtc||0;
   aiEl('aiSlotNote').textContent=AI_SLOT_NOTES[aiSlot];
   aiHint(); aiRenderTabs(); aiRenderProvs();
@@ -1873,7 +1877,7 @@ function aiPickProv(k){
   var p=AI_PROVS[k], s=aiSlots[aiSlot], changed=!!s.provider && s.provider!==k;
   s.provider=k; s.url=p.url; s.model=p.model; s.format=p.format;
   aiShow();
-  if(changed && s.hasKey && !s.keyNew) aiEl('ai_keyHint').textContent='⚠️ غيّرت نوع الذكاء — الصق مفتاحه الخاص (المفتاح المحفوظ يخص الذكاء السابق)';
+  if(changed && s.keyNew) aiEl('ai_keyHint').textContent='⚠️ غيّرت نوع الذكاء — تأكد أن المفتاح يخص الذكاء الجديد (امسحه والصق مفتاحه)';
 }
 function aiClearSlot(){
   aiSlots[aiSlot]=aiNewSlot(); aiShow();
@@ -1890,7 +1894,7 @@ async function aiOpen(){
     var list=Array.isArray(cfg.apis)?cfg.apis:[{provider:cfg.provider,url:cfg.url,model:cfg.model,format:cfg.format,key:cfg.key}];
     for(var i=0;i<3;i++){
       var a=list[i];
-      if(a && (a.url||a.key)) aiSlots[i]={provider:(a.provider&&AI_PROVS[a.provider])?a.provider:aiGuess(a.url),url:a.url||'',model:a.model||'',format:a.format||'openai',keyNew:'',hasKey:!!a.key,limit:a.limit||'',resetUtc:a.resetUtc||0};
+      if(a && (a.url||a.key)) aiSlots[i]={provider:(a.provider&&AI_PROVS[a.provider])?a.provider:aiGuess(a.url),url:a.url||'',model:a.model||'',format:a.format||'openai',keyNew:a.key||'',hasKey:!!a.key,limit:a.limit||'',resetUtc:a.resetUtc||0};
     }
     aiEl('ai_enabled').checked=!!cfg.enabled; aiEl('ai_proxy').value=cfg.proxy||''; aiEl('ai_prompt').value=cfg.prompt||'';
   } else {
@@ -1900,7 +1904,7 @@ async function aiOpen(){
   aiShow();
   aiUsageLoad(); clearInterval(aiUsageTimer); aiUsageTimer=setInterval(aiUsageLoad,60000);
 }
-function aiClose(){ var m=aiEl('aiModal'); if(m) m.classList.remove('open'); clearInterval(aiUsageTimer); }
+function aiClose(){ var m=aiEl('aiModal'); if(m) m.classList.remove('open'); clearInterval(aiUsageTimer); dzEyeReset(); }
 /* silent=true: بدون رسالة نجاح (يستعملها الاختبار). يرجّع true إذا انحفظ */
 async function aiSave(silent){
   aiStore();
@@ -1919,14 +1923,14 @@ async function aiSave(silent){
   try{ var rows=await DirazCloud.list('ai_config','&id=eq.1'); old=rows&&rows[0]&&rows[0].data; }catch(e){}
   var oldApis=(old&&Array.isArray(old.apis))?old.apis:(old?[{key:old.key}]:[]);
   var apis=aiSlots.map(function(s,i){
-    var key=s.keyNew||(s.hasKey?((oldApis[i]&&oldApis[i].key)||''):'');
+    var key=s.keyNew; /* حقل المفتاح هو المرجع: يطلع بالمفتاح المحفوظ، وإذا مسحته ينمسح */
     return {provider:s.provider||'',url:s.url,model:s.model,format:s.format||'openai',key:key,limit:parseInt(s.limit,10)||0,resetUtc:Math.min(23,Math.max(0,parseInt(s.resetUtc,10)||0))};
   });
   if(old&&Array.isArray(old.apis)&&old.apis[3]) apis[3]=old.apis[3]; /* API النسخة الكاملة ينحفظ من نافذتها، هنا نخليه مثل ما هو */
   var cfg={enabled:enabled,proxy:proxy.replace(/\/+$/,''),prompt:aiEl('ai_prompt').value.trim(),apis:apis};
   try{
     await DirazCloud.upsert('ai_config',[{id:1,data:cfg,updated_at:new Date().toISOString()}]);
-    aiSlots.forEach(function(s,i){ s.hasKey=!!apis[i].key; s.keyNew=''; });
+    aiSlots.forEach(function(s,i){ s.hasKey=!!apis[i].key; s.keyNew=apis[i].key||''; });
     aiShow();
     if(!silent) showToast('✅ انحفظت إعدادات الذكاء الاصطناعي');
     return true;
@@ -1988,6 +1992,9 @@ async function aiTest(all){
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker (لازم يحتوي رابط لوحة التحكم)'; }
 }
 
+/* إظهار/إخفاء المفتاح: يرجع مخفي تلقائياً كل ما تغيّر التبويب أو سكّرت النافذة */
+function dzEye(id,btn){ var i=document.getElementById(id); if(!i) return; var show=i.type==='password'; i.type=show?'text':'password'; btn.textContent=show?'🙈':'👁️'; btn.setAttribute('aria-label',show?'إخفاء المفتاح':'إظهار المفتاح'); }
+function dzEyeReset(){ ['ai_key','fa_key'].forEach(function(id){ var i=document.getElementById(id); if(!i) return; i.type='password'; var b=i.parentNode&&i.parentNode.querySelector('.key-eye'); if(b){ b.textContent='👁️'; b.setAttribute('aria-label','إظهار المفتاح'); } }); }
 // ══ النسخة الكاملة: توليد كود + قائمة المفعّلين + طرد ══
 function fEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function fFmt(x){ if(!x) return '—'; var d=new Date(x); if(isNaN(d)) return '—'; return d.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
@@ -2011,7 +2018,7 @@ function fullCopy(id){
 }
 function fbCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} a.remove(); }
 function fullOpen(){ document.getElementById('fullModal').classList.add('open'); faLoad(); fullLoad(); fullCodesLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
-function fullClose(){ var m=document.getElementById('fullModal'); if(m) m.classList.remove('open'); clearInterval(fullTimer); }
+function fullClose(){ var m=document.getElementById('fullModal'); if(m) m.classList.remove('open'); clearInterval(fullTimer); dzEyeReset(); }
 async function fullLoad(){
   var list=document.getElementById('fullList'), cnt=document.getElementById('fullCount'); if(!list) return;
   try{
@@ -2059,13 +2066,14 @@ function faPickProv(){
   faEl('fa_url').value=p.url; faEl('fa_model').value=p.model; faEl('fa_format').value=p.format;
 }
 async function faLoad(){
+  dzEyeReset();
   var sel=faEl('fa_prov');
   if(!sel.options.length) sel.innerHTML='<option value="">— اختر —</option>'+Object.keys(AI_PROVS).map(function(k){ return '<option value="'+k+'">'+AI_PROVS[k].label+'</option>'; }).join('');
   var cfg=await faCfg(), a=(cfg&&Array.isArray(cfg.apis)&&cfg.apis[3])||{};
   sel.value=(a.provider&&AI_PROVS[a.provider])?a.provider:(a.url?aiGuess(a.url):'');
   faEl('fa_url').value=a.url||''; faEl('fa_model').value=a.model||''; faEl('fa_format').value=a.format||'openai';
-  faEl('fa_key').value=''; faEl('fa_limit').value=a.limit||''; faEl('fa_reset').value=a.resetUtc||0;
-  faEl('fa_keyHint').textContent=a.key?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
+  faEl('fa_key').value=a.key||''; faEl('fa_limit').value=a.limit||''; faEl('fa_reset').value=a.resetUtc||0;
+  faEl('fa_keyHint').textContent=a.key?'🔒 المفتاح محفوظ ومخفي — اضغط 👁️ لإظهاره':'';
   faEl('faTestBox').style.display='none';
 }
 /* clear=true: يفرّغ الـ API الخاص. silent=true: بدون رسالة (يستعملها الاختبار). يرجّع true إذا انحفظ */
@@ -2073,7 +2081,7 @@ async function faSave(silent,clear){
   var url=faEl('fa_url').value.trim(), keyNew=faEl('fa_key').value.trim(), fmt=faEl('fa_format').value;
   var old=await faCfg(), oldApis=(old&&Array.isArray(old.apis))?old.apis.slice():[];
   while(oldApis.length<3) oldApis.push({});
-  var key=keyNew||((oldApis[3]&&oldApis[3].key)||'');
+  var key=keyNew;
   var item={};
   if(!clear && (url||keyNew)){
     if(!/^https:\/\//i.test(url)||(!key&&fmt!=='custom')){ showToast('❌ لازم رابط يبدأ بـ https:// ومفتاح'); return false; }
@@ -2083,8 +2091,8 @@ async function faSave(silent,clear){
   var cfg=Object.assign({enabled:false,proxy:'',prompt:''},old||{},{apis:oldApis});
   try{
     await DirazCloud.upsert('ai_config',[{id:1,data:cfg,updated_at:new Date().toISOString()}]);
-    faEl('fa_key').value='';
-    faEl('fa_keyHint').textContent=item.key?'🔒 المفتاح محفوظ — اتركه فارغ إذا ما تريد تغيّره':'';
+    faEl('fa_key').value=item.key||'';
+    faEl('fa_keyHint').textContent=item.key?'🔒 المفتاح محفوظ ومخفي — اضغط 👁️ لإظهاره':'';
     if(!silent) showToast(clear?'🧹 تفرّغ الـ API الخاص':'✅ انحفظ الـ API الخاص بالنسخة الكاملة');
     return true;
   }catch(e){ showToast(/ai_config|PGRST|404|relation/i.test(String((e&&e.message)||e))?'⚠️ شغّل supabase-ai.sql في Supabase أولاً':'❌ فشل الحفظ'); return false; }
