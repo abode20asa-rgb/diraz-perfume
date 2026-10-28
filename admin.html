@@ -667,6 +667,7 @@ textarea{resize:vertical;min-height:80px}
       <div class="form-group full"><label>مفتاح API</label><div class="key-wrap"><input type="password" id="fa_key" class="ltr" placeholder="الصق المفتاح هنا" autocomplete="new-password"><button type="button" class="key-eye" onclick="dzEye('fa_key',this)" aria-label="إظهار المفتاح" title="إظهار / إخفاء المفتاح">👁️</button></div><small id="fa_keyHint" style="opacity:.8"></small></div>
       <div class="form-group"><label>الحد اليومي (عدد الطلبات)</label><input type="number" id="fa_limit" min="0" step="1" placeholder="مثال: 500" autocomplete="off"></div>
       <div class="form-group"><label>يتصفّر العدّاد الساعة (UTC)</label><input type="number" id="fa_reset" min="0" max="23" step="1" placeholder="0" autocomplete="off"></div>
+      <div class="form-group full"><label style="display:flex;align-items:center;gap:10px;cursor:pointer"><input type="checkbox" id="fa_search" style="width:auto;height:auto;margin:0;flex:none"> 🔎 بحث بالإنترنت للأسئلة الحديثة (أخبار، رياضة، أسعار…)</label><small style="opacity:.85">يشتغل فقط مع Groq وموديلات <b>openai/gpt-oss-*</b>. الذكاء يقرر بنفسه متى يبحث، ويصير الرد أبطأ شوي وقت يبحث.</small></div>
     </div>
     <div class="form-actions" style="flex-wrap:wrap"><button type="button" class="btn-save" onclick="faSave()">💾 حفظ الـ API</button><button type="button" class="btn-rvlist" onclick="faTest()">🧪 اختبار</button><button type="button" class="ai-mini" onclick="faClear()">🗑️ تفريغ</button></div>
     <div class="ai-test" id="faTestBox"></div>
@@ -2074,7 +2075,7 @@ async function faLoad(){
   var cfg=await faCfg(), a=(cfg&&Array.isArray(cfg.apis)&&cfg.apis[3])||{};
   sel.value=(a.provider&&AI_PROVS[a.provider])?a.provider:(a.url?aiGuess(a.url):'');
   faEl('fa_url').value=a.url||''; faEl('fa_model').value=a.model||''; faEl('fa_format').value=a.format||'openai';
-  faEl('fa_key').value=a.key||''; faEl('fa_limit').value=a.limit||''; faEl('fa_reset').value=a.resetUtc||0;
+  faEl('fa_key').value=a.key||''; faEl('fa_limit').value=a.limit||''; faEl('fa_reset').value=a.resetUtc||0; faEl('fa_search').checked=a.search===true;
   faEl('fa_keyHint').textContent=a.key?'🔒 المفتاح محفوظ ومخفي — اضغط 👁️ لإظهاره':'';
   faEl('faTestBox').style.display='none';
 }
@@ -2087,7 +2088,7 @@ async function faSave(silent,clear){
   var item={};
   if(!clear && (url||keyNew)){
     if(!/^https:\/\//i.test(url)||(!key&&fmt!=='custom')){ showToast('❌ لازم رابط يبدأ بـ https:// ومفتاح'); return false; }
-    item={provider:faEl('fa_prov').value||'',url:url,model:faEl('fa_model').value.trim(),format:fmt||'openai',key:key,limit:parseInt(faEl('fa_limit').value,10)||0,resetUtc:Math.min(23,Math.max(0,parseInt(faEl('fa_reset').value,10)||0))};
+    item={provider:faEl('fa_prov').value||'',url:url,model:faEl('fa_model').value.trim(),format:fmt||'openai',key:key,limit:parseInt(faEl('fa_limit').value,10)||0,resetUtc:Math.min(23,Math.max(0,parseInt(faEl('fa_reset').value,10)||0)),search:!!faEl('fa_search').checked};
   }
   oldApis[3]=item;
   var cfg=Object.assign({enabled:false,proxy:'',prompt:''},old||{},{apis:oldApis});
@@ -2101,7 +2102,7 @@ async function faSave(silent,clear){
 }
 async function faClear(){
   if(!confirm('تفرّغ الـ API الخاص؟ النسخة الكاملة ترجع تستعمل الـ APIs العادية.')) return;
-  ['fa_url','fa_model','fa_key','fa_limit'].forEach(function(i){ faEl(i).value=''; }); faEl('fa_prov').value=''; faEl('fa_reset').value=0;
+  ['fa_url','fa_model','fa_key','fa_limit'].forEach(function(i){ faEl(i).value=''; }); faEl('fa_prov').value=''; faEl('fa_reset').value=0; faEl('fa_search').checked=false;
   await faSave(false,true);
 }
 async function faTest(){
@@ -2112,7 +2113,7 @@ async function faTest(){
   if(!a.url){ box.textContent='املأ رابط API ومفتاح أول.'; return; }
   if(!/^https:\/\//i.test(proxy)){ box.textContent='اكتب رابط الوسيط (Worker) من نافذة الذكاء الاصطناعي أول.'; return; }
   try{
-    var r=await fetch(proxy,{method:'POST',headers:await dzAuthHeaders(),body:JSON.stringify({q:'اشرحلي بجملتين شنو الفرق بين العطر والكولونيا',test:true,slot:3,full:true,history:[],catalog:'',section:''})});
+    var r=await fetch(proxy,{method:'POST',headers:await dzAuthHeaders(),body:JSON.stringify({q:(a.search?'منو فاز بكأس العالم 2026؟ جاوب بجملتين وبلا تخمين':'اشرحلي بجملتين شنو الفرق بين العطر والكولونيا'),test:true,slot:3,full:true,history:[],catalog:'',section:''})});
     var j=await r.json().catch(function(){return {};});
     box.textContent=(r.ok&&j.text)?('✅ اشتغل'+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'. رد الذكاء:\n\n'+j.text):('❌ '+(j.error||('خطأ '+r.status)));
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN'; }
