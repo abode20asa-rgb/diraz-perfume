@@ -72,7 +72,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
     }catch(e){
       if(!first) return;
       var m = String((e && e.message) || e);
-      if(/PGRST202|creator_stats|Could not find/i.test(m)) fail('⚠️ دالة creator_stats غير موجودة — شغّل supabase-creators-v4.sql في Supabase');
+      if(/PGRST202|creator_stats|Could not find/i.test(m)) fail('⚠️ دالة creator_stats غير موجودة — شغّل supabase-creators-v5.sql في Supabase');
       else if(/Failed to fetch|NetworkError|Load failed/i.test(m)) fail('⚠️ تعذّر الاتصال بـ Supabase');
       else fail('⚠️ تعذّر تحميل البيانات<br><small style="opacity:.8;word-break:break-all">'+esc(m.slice(0,200))+'</small>');
     }
@@ -80,12 +80,10 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
 
   function render(d){
     var disc = d.type==='percent' ? fmt(d.value)+'%' : fmt(d.value)+' دينار';
-    var noCom = !d.legacy && !Number(d.commission50) && !Number(d.commission30);
+    var noCom = !d.legacy && !Number(d.commissionUnit);
     function items(o){
-      var parts = [];
-      if((o.n50||0)>0) parts.push('50 مل × '+o.n50);
-      if((o.n30||0)>0) parts.push('30 مل × '+o.n30);
-      return parts.join(' • ');
+      var n = (o.n!=null) ? (Number(o.n)||0) : ((Number(o.n50)||0)+(Number(o.n30)||0));
+      return n>0 ? (n===1 ? 'عطر واحد' : n+' عطور') : '';
     }
     // الإضافات الخارجية (طلبات انستغرام) تنعرض وتنحسب كطلبات؛ المبلغ المباشر (manual) يبقى بقسم الأموال
     var extAll = d.externalRecent||[];
@@ -113,7 +111,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
         '<div class="meta"><span class="pill">خصم '+esc(disc)+'</span><span class="pill '+(d.active?'on':'off')+'">'+(d.active?'🟢 فعال':'🔴 متوقف')+'</span></div>'+
       '</div>'+
       '<div class="grid" style="margin-bottom:18px">'+
-        (noCom?'':'<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'50 مل: '+fmt(d.commission50)+' • 30 مل: '+fmt(d.commission30)+' لكل عطر')+'</div></div>')+
+        (noCom?'':'<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'عطر واحد: '+fmt(d.commissionUnit)+' • عطرين وفوق: '+fmt(Number(d.commissionUnit)*2)+' للطلب')+'</div></div>')+
         '<div class="stat wide"><div class="n">'+fmt(ordersCount)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
       '</div>'+
       '<div class="card"><h2>آخر 3 طلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>'+

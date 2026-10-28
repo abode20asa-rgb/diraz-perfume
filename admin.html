@@ -523,8 +523,7 @@ textarea{resize:vertical;min-height:80px}
         <div class="form-group"><label>حد الاستخدام / شخص</label><input type="number" id="cp_maxUses" value="1" min="1"></div>
         <div class="form-group"><label>اسم منشئ المحتوى (اختياري)</label><input type="text" id="cp_creator" placeholder="مثال: سارة"></div>
         <div class="form-group" style="grid-column:1/-1"><label>العمولة</label><select id="cp_mode" onchange="cpModeChange()"><option value="with">مع عمولة (المنشئ يشوف أرباحه وطلباته)</option><option value="without">بدون عمولة (المنشئ يشوف الطلبات فقط)</option></select></div>
-        <div class="form-group" id="cp_com50_wrap"><label>عمولة المنشئ على كل عطر 50 مل (دينار)</label><input type="number" id="cp_commission50" value="1000" min="0"></div>
-        <div class="form-group" id="cp_com30_wrap"><label>عمولة المنشئ على كل عطر 30 مل (دينار)</label><input type="number" id="cp_commission30" value="500" min="0"></div>
+        <div class="form-group" id="cp_com_wrap" style="grid-column:1/-1"><label>عمولة المنشئ لطلب عطر واحد (دينار) — طلب عطرين وفوق ينعطى الضعف (للطلب كله مو لكل عطر)</label><input type="number" id="cp_commission1" value="1000" min="0"></div>
       </div>
       <div class="form-actions" style="margin-top:14px"><button class="btn-save" onclick="addCoupon()">➕ إنشاء الكود</button></div>
       <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px" id="couponsList"></div>
@@ -1179,7 +1178,7 @@ async function purgeCustomer(i){
 // ══ Coupons ══
 function cpModeChange(){
   var w=document.getElementById('cp_mode').value==='without';
-  ['cp_com50_wrap','cp_com30_wrap'].forEach(function(id){ document.getElementById(id).style.display=w?'none':''; });
+  document.getElementById('cp_com_wrap').style.display=w?'none':'';
 }
 function addCoupon(){
   var code    = (document.getElementById('cp_code').value||'').toUpperCase().replace(/[^\p{L}\p{N} ]/gu,'').replace(/\s+/g,' ').trim();
@@ -1192,9 +1191,8 @@ function addCoupon(){
   if(coupons.find(function(c){ return c.code===code; })){ showToast('❗ الكود موجود مسبقاً'); return; }
   var creatorName = (document.getElementById('cp_creator').value||'').trim();
   var withoutCom = document.getElementById('cp_mode').value==='without';
-  var commission50 = withoutCom ? 0 : (parseInt(document.getElementById('cp_commission50').value||'0')||0);
-  var commission30 = withoutCom ? 0 : (parseInt(document.getElementById('cp_commission30').value||'0')||0);
-  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commission50:commission50,commission30:commission30,creatorToken:genToken()});
+  var commissionUnit = withoutCom ? 0 : (parseInt(document.getElementById('cp_commission1').value||'0')||0);
+  coupons.unshift({code:code,type:type,value:value,maxUses:maxUses,active:true,totalUses:0,createdAt:new Date().toISOString(),creatorName:creatorName,commissionUnit:commissionUnit,creatorToken:genToken()});
   localStorage.setItem(COUPONS_KEY,JSON.stringify(coupons));
   DirazCloud.upsert('coupons',[{code:code,data:coupons[0],total_uses:0}]).catch(cloudFail);
   renderCoupons();
@@ -1202,8 +1200,7 @@ function addCoupon(){
   document.getElementById('cp_value').value = '';
   document.getElementById('cp_maxUses').value = '1';
   document.getElementById('cp_creator').value = '';
-  document.getElementById('cp_commission50').value = '1000';
-  document.getElementById('cp_commission30').value = '500';
+  document.getElementById('cp_commission1').value = '1000';
   document.getElementById('cp_mode').value = 'with'; cpModeChange();
   showToast('✅ تم إنشاء كود: '+code+' — اضغط 🔗 لنسخ رابط المنشئ');
 }
@@ -1214,31 +1211,32 @@ function copyCreatorLink(i,regen){
   var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
   if(regen && !confirm('إعادة توليد الرابط راح تلغي الرابط القديم. متأكد؟')) return;
   if(!c.creatorToken || regen){
-    c.creatorToken=genToken(); if(c.commission===undefined && c.commission50===undefined && c.commission30===undefined){ c.commission50=1000; c.commission30=500; }
+    c.creatorToken=genToken(); if(c.commission===undefined && c.commission50===undefined && c.commission30===undefined && c.commissionUnit===undefined){ c.commissionUnit=1000; }
     localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
     DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
     renderCoupons();
   }
   copyText(creatorLink(c)).then(function(){ showToast('🔗 تم نسخ رابط المنشئ'); });
 }
+/* العمولة: عطر واحد = unit ، عطرين وفوق = unit×2 (للطلب كله) بغض النظر عن الحجم */
 function comInfo(c){
-  var legacy = c.commission50===undefined && c.commission30===undefined;
-  return {legacy:legacy, c50:Number(c.commission50)||0, c30:Number(c.commission30)||0, old:(c.commission===undefined?5000:(Number(c.commission)||0))};
+  var u=c.commissionUnit;
+  if(u===undefined && (c.commission50!==undefined || c.commission30!==undefined)) u=(Number(c.commission50)||Number(c.commission30)||0);
+  var legacy = u===undefined;
+  return {legacy:legacy, unit:Number(u)||0, old:(c.commission===undefined?5000:(Number(c.commission)||0))};
 }
+function comFor(k,n){ n=parseInt(n)||0; return n<=0?0:(n===1?k.unit:k.unit*2); }
+function orderPerfumes(o){ var n=0; (Array.isArray(o.items)?o.items:[]).forEach(function(it){ n+=(parseInt(it.qty)||1); }); return n; }
 function orderEarn(c,o){
   var k=comInfo(c); if(k.legacy) return k.old;
-  var n50=0,n30=0;
-  (Array.isArray(o.items)?o.items:[]).forEach(function(it){ var q=parseInt(it.qty)||1; if((it.size||'50ml')==='30ml') n30+=q; else n50+=q; });
-  return n50*k.c50+n30*k.c30;
+  return comFor(k,orderPerfumes(o));
 }
 function editCommission(i){
   var cs=tryParse(COUPONS_KEY,[]); var c=cs[i]; if(!c) return;
   var k=comInfo(c);
-  var v50=prompt('عمولة المنشئ على كل عطر 50 مل (دينار):', k.legacy?1000:k.c50);
-  if(v50===null) return;
-  var v30=prompt('عمولة المنشئ على كل عطر 30 مل (دينار):', k.legacy?500:k.c30);
-  if(v30===null) return;
-  c.commission50=parseInt(v50)||0; c.commission30=parseInt(v30)||0; delete c.commission;
+  var v=prompt('عمولة المنشئ لطلب عطر واحد (دينار).\nطلب عطرين وفوق ينعطى الضعف (للطلب كله):', k.legacy?1000:k.unit);
+  if(v===null) return;
+  c.commissionUnit=parseInt(v)||0; delete c.commission; delete c.commission50; delete c.commission30;
   localStorage.setItem(COUPONS_KEY,JSON.stringify(cs));
   DirazCloud.update('coupons','code=eq.'+encodeURIComponent(c.code),{data:c,updated_at:new Date().toISOString()}).catch(cloudFail);
   renderCoupons();
@@ -1257,8 +1255,8 @@ function renderCoupons(){
     var earned = os.filter(function(o){ return o.status==='delivered'; }).reduce(function(s,o){ return s+orderEarn(c,o); },0);
     var extra = extTotal(c); earned += extra;
     var ki = comInfo(c);
-    var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('50مل: '+ki.c50.toLocaleString('en-US')+' • 30مل: '+ki.c30.toLocaleString('en-US')+' لكل عطر');
-    var noCom = !ki.legacy && ki.c50===0 && ki.c30===0; if(noCom) comTxt = 'بدون عمولة';
+    var comTxt = ki.legacy ? ('عمولة '+ki.old.toLocaleString('en-US')+'/طلب') : ('عطر واحد: '+ki.unit.toLocaleString('en-US')+' • عطرين وفوق: '+(ki.unit*2).toLocaleString('en-US'));
+    var noCom = !ki.legacy && ki.unit===0; if(noCom) comTxt = 'بدون عمولة';
     var creatorLine = '<br>👤 '+(c.creatorName?esc(c.creatorName):'بدون منشئ')+' • '+os.length+' طلب • مبيعات '+sales.toLocaleString('en-US')+(noCom?'':' • مستحقات المنشئ '+earned.toLocaleString('en-US')+(extra?' (منها خارجي '+extra.toLocaleString('en-US')+')':''))+' ('+comTxt+')';
     return '<div class="coupon-item '+(c.active?'':'coupon-inactive')+'">' +
       '<div class="coupon-code-big">'+esc(c.code)+'</div>' +
@@ -1568,23 +1566,22 @@ function extCalc(){
   var box=document.getElementById('ext_preview'); if(!box) return;
   var s=extSel(); if(!s){ box.textContent=''; return; }
   var k=comInfo(s.c);
-  if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة حسب الحجم. اضغط 💰 عنده وحدد عمولة 50 و35 أولاً.'; return; }
-  var n50=parseInt(document.getElementById('ext_n50').value)||0, n30=parseInt(document.getElementById('ext_n30').value)||0;
-  var amt=n50*k.c50+n30*k.c30;
-  box.innerHTML='العمولة: '+n50+' × '+k.c50.toLocaleString('en-US')+' + '+n30+' × '+k.c30.toLocaleString('en-US')+' = <span style="font-size:1.15rem">'+amt.toLocaleString('en-US')+' دينار</span>';
+  if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة. اضغط 💰 عنده وحدد العمولة أولاً.'; return; }
+  var n=(parseInt(document.getElementById('ext_n50').value)||0)+(parseInt(document.getElementById('ext_n30').value)||0);
+  box.innerHTML='عدد العطور: '+n+' ← العمولة: <span style="font-size:1.15rem">'+comFor(k,n).toLocaleString('en-US')+' دينار</span>';
 }
 function soCalc(){
   var box=document.getElementById('so_preview'); if(!box) return;
   var s=extSel(); if(!s){ box.textContent=''; return; }
   var k=comInfo(s.c);
-  if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة حسب الحجم. اضغط 💰 عنده وحدد العمولة أولاً.'; return; }
-  var n50=parseInt(document.getElementById('so_n50').value)||0, n30=parseInt(document.getElementById('so_n30').value)||0;
-  box.innerHTML='عمولة المنشئ: <span style="font-size:1.15rem">'+(n50*k.c50+n30*k.c30).toLocaleString('en-US')+' دينار</span>';
+  if(k.legacy){ box.innerHTML='⚠️ هذا كود قديم بدون عمولة. اضغط 💰 عنده وحدد العمولة أولاً.'; return; }
+  var n=(parseInt(document.getElementById('so_n50').value)||0)+(parseInt(document.getElementById('so_n30').value)||0);
+  box.innerHTML='عمولة المنشئ: <span style="font-size:1.15rem">'+comFor(k,n).toLocaleString('en-US')+' دينار</span>';
 }
 async function siteOrderAdd(){
   var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
   var k=comInfo(s.c);
-  if(k.legacy){ showToast('⚠️ حدد عمولة 50/35 للكود أولاً (زر 💰)'); return; }
+  if(k.legacy){ showToast('⚠️ حدد عمولة الكود أولاً (زر 💰)'); return; }
   var n50=parseInt(document.getElementById('so_n50').value)||0, n30=parseInt(document.getElementById('so_n30').value)||0;
   if(n50<0||n30<0||(n50+n30)===0){ showToast('❌ اكتب عدد العطور'); return; }
   var dv=(document.getElementById('so_dt').value||'').trim();
@@ -1609,10 +1606,10 @@ async function siteOrderAdd(){
 function extAdd(){
   var s=extSel(); if(!s){ showToast('❌ اختر كود'); return; }
   var k=comInfo(s.c);
-  if(k.legacy){ showToast('⚠️ حدد عمولة 50/35 للكود أولاً (زر 💰)'); return; }
+  if(k.legacy){ showToast('⚠️ حدد عمولة الكود أولاً (زر 💰)'); return; }
   var n50=parseInt(document.getElementById('ext_n50').value)||0, n30=parseInt(document.getElementById('ext_n30').value)||0;
   if(n50<0||n30<0||(n50+n30)===0){ showToast('❌ اكتب عدد العطور'); return; }
-  var amt=n50*k.c50+n30*k.c30;
+  var amt=comFor(k,n50+n30);
   if(!Array.isArray(s.c.externalLog)) s.c.externalLog=[];
   var dv=(document.getElementById('ext_date').value||'').trim();
   var when=dv?new Date(dv+'T12:00:00'):new Date(); if(isNaN(when.getTime())) when=new Date();
@@ -1644,7 +1641,7 @@ function extRenderLog(){
   if(!log.length){ box.innerHTML='<div class="no-items" style="padding:10px 0">لا توجد إضافات بعد</div>'; return; }
   box.innerHTML=log.slice(0,15).map(function(e){
     var d=new Date(e.date).toLocaleDateString('en-GB');
-    var what=e.kind==='manual'?'💵 مبلغ مباشر':('🌐 '+(e.n50||0)+'×50مل + '+(e.n30||0)+'×30مل');
+    var what=e.kind==='manual'?'💵 مبلغ مباشر':('🌐 طلب '+((e.n50||0)+(e.n30||0))+' عطر');
     return '<div class="coupon-item" style="padding:10px 14px"><div class="coupon-meta"><strong>+'+(Number(e.amount)||0).toLocaleString('en-US')+' دينار</strong> — '+what+'<br><small>'+d+(e.note?' • '+esc(e.note):'')+'</small></div><div class="coupon-actions"><button class="btn-del-order" onclick="extDel('+e.id+')">🗑️</button></div></div>';
   }).join('');
 }
