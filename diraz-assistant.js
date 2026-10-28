@@ -829,31 +829,12 @@
 
   /* plain(): الرد الاحتياطي إذا الذكاء مطفي أو فشل — after(): شنو يظهر بعد الجواب.
      الذكاء يبين للزبون مثل أي رد عادي من المساعد (بدون اسم، بدون صورة، بدون عدّاد) */
-  /* ───────── حد الذكاء لكل زبون (نسخة الزبون فقط) ─────────
-     بعد AI_LIMIT رسالة للذكاء يتحوّل الزبون للقائمة بدون ما نقله «خلصت»،
-     وبعد ساعتين من وصوله للحد يتصفر العدّاد ويرجع الذكاء. غيّر AI_LIMIT إذا تريد رقم ثاني. */
-  var AI_LIMIT=10, AI_WINDOW=2*60*60*1000, AI_QKEY='diraz_ai_quota';
-  function aiQuota(){
-    var q=null; try{ q=JSON.parse(localStorage.getItem(AI_QKEY)||'null'); }catch(e){}
-    var now=Date.now();
-    if(!q || typeof q.n!=='number') q={n:0,last:now,until:0};
-    if(q.until && (now>=q.until || q.until>now+AI_WINDOW)) q={n:0,last:now,until:0};
-    else if(!q.until && now-q.last>=AI_WINDOW) q={n:0,last:now,until:0};
-    return q;
-  }
-  function aiQuotaOk(){ return !aiQuota().until; }
-  function aiQuotaHit(){
-    var q=aiQuota(), now=Date.now(); q.n++; q.last=now;
-    if(q.n>=AI_LIMIT) q.until=now+AI_WINDOW;
-    try{ localStorage.setItem(AI_QKEY,JSON.stringify(q)); }catch(e){}
-  }
   function aiFallback(raw,plain,after){
-    if(!aiOn() || !aiQuotaOk()){ plain(); return; }
+    if(!aiOn()){ plain(); return; }
     var d=document.createElement('div'); d.className='dzA_m dzA_bot';
     d.innerHTML='<span style="opacity:.55">...</span>';
     $('dzA_msgs').appendChild(d); scrollEnd();
     aiAsk(raw).then(function(txt){
-      aiQuotaHit();
       aiHist.push({r:'user',t:raw.slice(0,300)}); aiHist.push({r:'bot',t:txt.slice(0,600)});
       if(aiHist.length>12) aiHist=aiHist.slice(-12);
       d.style.whiteSpace='pre-wrap';
@@ -1452,7 +1433,7 @@
   };
 
   /* للاختبار */
-  window.DirazAssistant={_quota:function(){ return aiQuota(); },_quotaReset:function(){ try{ localStorage.removeItem(AI_QKEY); }catch(e){} },_mention:function(q){ return mentionIdx(norm(q),getPerfumes()); },_ai:function(){return AI;},_listKnows:function(q){ var t=norm(q); return listKnows(t,parseMessage(q),getPerfumes()); },_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
+  window.DirazAssistant={_mention:function(q){ return mentionIdx(norm(q),getPerfumes()); },_ai:function(){return AI;},_listKnows:function(q){ var t=norm(q); return listKnows(t,parseMessage(q),getPerfumes()); },_parse:parseMessage,_recommend:function(q){ resetState(); var pm=parseMessage(q); Object.keys(pm.w).forEach(function(k){state.w[k]=pm.w[k];}); state.free=pm.free; if(pm.gender)state.gender=pm.gender; if(pm.budget)state.budget=pm.budget; return recommend(getPerfumes()); },_state:function(){return state;}};
 
   /* ═════════ النسخة الكاملة: مقفولة بكود لمرة وحدة، وبعدها الزبون يسأل أي شي بحرية ═════════ */
   var FULL_KEY='diraz_ai_full';
@@ -1500,7 +1481,7 @@
     if(!fullToken){ showLock(); return; }
     if(!fullWelcomed){
       fullWelcomed=true;
-      fHtml('أهلاً بيك بالنسخة الكاملة ✨<br>هنا تكدر تسألني عن أي شي براحتك، مو بس العطور.');
+      fHtml('أهلاً بيك بالنسخة الكاملة ✨<br>هنا تكدر تسألني عن أي شي براحتك، مو بس العطور.<br><small>🔒 لا تكتب رقم هاتفك أو عنوانك أو أي معلومة شخصية هنا.</small>');
     }
     /* نتأكد إن الجلسة ما انطردت */
     try{

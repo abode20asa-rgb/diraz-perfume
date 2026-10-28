@@ -1981,7 +1981,7 @@ async function aiTest(all){
   var body={q:'هلا، شنو أحلى عطر عندكم؟',test:true,history:[],catalog:'',section:''};
   if(!all) body.slot=aiSlot;
   try{
-    var r=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    var r=await fetch(proxy,{method:'POST',headers:await dzAuthHeaders(),body:JSON.stringify(body)});
     var j=await r.json().catch(function(){return {};});
     if(r.ok&&j.text){
       box.textContent=all
@@ -1992,6 +1992,8 @@ async function aiTest(all){
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN بالـ Worker (لازم يحتوي رابط لوحة التحكم)'; }
 }
 
+/* ترويسة اختبار الذكاء: الـ Worker صار يقبل test:true من الأدمن فقط (يتحقق من JWT بدالة am_i_admin) */
+async function dzAuthHeaders(){ var h={'Content-Type':'application/json'}; try{ var t=await DirazCloud.token(); if(t) h.Authorization='Bearer '+t; }catch(e){} return h; }
 /* إظهار/إخفاء المفتاح: يرجع مخفي تلقائياً كل ما تغيّر التبويب أو سكّرت النافذة */
 function dzEye(id,btn){ var i=document.getElementById(id); if(!i) return; var show=i.type==='password'; i.type=show?'text':'password'; btn.textContent=show?'🙈':'👁️'; btn.setAttribute('aria-label',show?'إخفاء المفتاح':'إظهار المفتاح'); }
 function dzEyeReset(){ ['ai_key','fa_key'].forEach(function(id){ var i=document.getElementById(id); if(!i) return; i.type='password'; var b=i.parentNode&&i.parentNode.querySelector('.key-eye'); if(b){ b.textContent='👁️'; b.setAttribute('aria-label','إظهار المفتاح'); } }); }
@@ -2110,7 +2112,7 @@ async function faTest(){
   if(!a.url){ box.textContent='املأ رابط API ومفتاح أول.'; return; }
   if(!/^https:\/\//i.test(proxy)){ box.textContent='اكتب رابط الوسيط (Worker) من نافذة الذكاء الاصطناعي أول.'; return; }
   try{
-    var r=await fetch(proxy,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({q:'اشرحلي بجملتين شنو الفرق بين العطر والكولونيا',test:true,slot:3,full:true,history:[],catalog:'',section:''})});
+    var r=await fetch(proxy,{method:'POST',headers:await dzAuthHeaders(),body:JSON.stringify({q:'اشرحلي بجملتين شنو الفرق بين العطر والكولونيا',test:true,slot:3,full:true,history:[],catalog:'',section:''})});
     var j=await r.json().catch(function(){return {};});
     box.textContent=(r.ok&&j.text)?('✅ اشتغل'+(j.ms?' ⏱ '+(j.ms/1000).toFixed(1)+' ثانية':'')+'. رد الذكاء:\n\n'+j.text):('❌ '+(j.error||('خطأ '+r.status)));
   }catch(e){ box.textContent='❌ ما كدرت أوصل للوسيط — تأكد من الرابط ومن ALLOWED_ORIGIN'; }
