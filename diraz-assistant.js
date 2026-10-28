@@ -1573,9 +1573,32 @@
   function fullWantsCatalog(v){
     try{ if(FULL_PERF_RX.test(v)) return true; return mentionIdx(norm(v),getPerfumes()).length>0; }catch(e){ return false; }
   }
+  var FULL_PLAN_RX=/باقتي|اشتراكي|نوع\s*(ال)?(باقه|باقة|اشتراك)|كردتي|كردت(ي| باقي)|رصيدي|باقي\s*(لي|عندي)|متى\s*(ينتهي|يخلص)\s*(اشتراك|باقه|باقة)/i;
   function fullSubmit(v){
     if(!fullToken){ showLock(); return; }
     if(fullBusy) return;
+    /* سؤال عن باقته/اشتراكه/كردته: نجاوبه من بيانات الاشتراك مباشرة (بدون الذكاء وبدون ما نصرف كردت) */
+    if(v.length<70 && FULL_PLAN_RX.test(v)){
+      fText(v,'me');
+      var pd=fText('...','bot'); pd.style.opacity='.6';
+      var done=function(x){
+        pd.style.opacity='';
+        if(!x||!x.plan){ pd.textContent='ما كدرت أجيب تفاصيل اشتراكك هسه، جرّب بعد شوي 🌸'; return; }
+        var t='نوع باقتك: '+planName(x)+' ✅\n';
+        if(x.plan==='max') t+='♾️ بلا حدود: تسأل براحتك بدون حد يومي وبدون مدة تنتهي.';
+        else if(x.plan==='pro') t+='⏳ ينتهي اشتراكك بعد '+daysLeftTxt(x.expires_at)+'.\nخلال هالمدة تسأل براحتك بدون عدد محدد.';
+        else { var vv=Number(x.value)||0, rem=Math.max(0,vv-(Number(x.used_today)||0)); t+='⚡ حدك اليومي '+vv+' كردت (كردت = رسالة).\nباقي لك اليوم: '+rem+' ويتجدد كل يوم.'; }
+        pd.textContent=t;
+      };
+      try{
+        DirazCloud.rpc('ai_full_check',{p_token:fullToken}).then(function(r){
+          if(r===false||(r&&r.ok===false)){ pd.remove(); lostAccess(r&&r.reason); return; }
+          if(r&&r.ok){ fullSub=r; renderPlan(); }
+          done(fullSub);
+        }).catch(function(){ done(fullSub); });
+      }catch(e){ done(fullSub); }
+      return;
+    }
     if(!aiOn()){ fText('الذكاء الاصطناعي مطفي هسه، جرّب بعد شوي 🌸'); return; }
     fText(v,'me');
     fullBusy=true;
