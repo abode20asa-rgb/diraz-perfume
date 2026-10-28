@@ -270,6 +270,18 @@ textarea{resize:vertical;min-height:80px}
 .fu-kick{flex:none;border:0;background:#fff;color:#d32f2f;font-family:'Cairo',sans-serif;font-weight:800;font-size:.78rem;padding:8px 14px;border-radius:50px;cursor:pointer}
 .fu-kick:hover{background:#ffe3e3}
 .fu-empty{text-align:center;opacity:.9;font-weight:700;padding:14px 0;font-size:.88rem}
+.pl-row{display:flex;gap:6px;margin-bottom:10px}
+.pl-btn{flex:1;border:1.5px solid rgba(255,255,255,.55);background:rgba(255,255,255,.14);color:#fff;font-family:'Cairo',sans-serif;font-weight:800;font-size:.8rem;padding:9px 4px;border-radius:14px;cursor:pointer;line-height:1.4}
+.pl-btn small{display:block;font-size:.66rem;opacity:.9;font-weight:600}
+.pl-btn.sel{background:#fff;color:#c45a7a;border-color:#fff}
+.pl-val{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pl-val label{font-weight:800;font-size:.82rem;flex:1;min-width:150px}
+.pl-val input{width:110px;border:0;border-radius:12px;padding:9px 10px;font-family:'Cairo',sans-serif;font-weight:800;text-align:center;direction:ltr;outline:none}
+.fu-act{display:flex;gap:6px;flex:none}
+.fu-badge{display:inline-block;background:#fff;color:#c45a7a;border-radius:50px;padding:1px 9px;font-size:.68rem;font-weight:900;margin-inline-start:6px;vertical-align:middle}
+.fu-edit-b{color:#c45a7a}
+.fu-edit{display:none;background:rgba(255,255,255,.14);border-radius:14px;padding:10px 12px;margin:-2px 0 10px}
+.fu-edit.open{display:block}
 </style>
 <style id="spAdminCss">
 /* ══ الدعم ══ */
@@ -648,9 +660,16 @@ textarea{resize:vertical;min-height:80px}
   <div class="ai-box">
     <div class="ai-top"><h2>🔓 النسخة الكاملة</h2><button type="button" class="ai-x" onclick="fullClose()" aria-label="إغلاق">✕</button></div>
     <div class="ai-sub" style="margin-top:0;border-top:0;padding-top:0">🔑 كود الفتح</div>
-    <div class="ai-note">ولّد كود وابعثه للزبون. الزبون يدوس «النسخة الكاملة» بالمساعد ويدخل الكود، وإذا صح يفتح له والكود <b>ينحذف</b> (يشتغل مرة وحدة، وصلاحيته 24 ساعة).</div>
-    <div class="fc-box" id="fullCodeBox2" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><button type="button" class="ai-mini" onclick="fullCopy('fullCodeBox2')">📋 نسخ</button></div>
-    <div style="margin-bottom:16px"><button type="button" class="ai-mini" onclick="fullGen()">🔑 توليد كود جديد</button></div>
+    <div class="ai-note">اختر نوع الباقة (<b>الحد اليومي = Plus</b>، <b>وقت = Pro</b>، <b>بلا حدود = Max</b>) وحدد القيمة وبعدها اضغط «صنع كود جديد» وابعثه للزبون. الكود يشتغل مرة وحدة وصلاحية استعماله 24 ساعة. وبعد ما الزبون يفعّله تكدر تعدّل باقته من قائمة المفعّلين تحت.</div>
+    <div class="fc-box" id="fullCodeBox2" style="display:none"><small>الكود (انسخه وابعثه للزبون):</small><span class="fc"></span><small class="fcp" style="font-weight:800"></small><button type="button" class="ai-mini" onclick="fullCopy('fullCodeBox2')">📋 نسخ</button></div>
+    <div class="ai-note" style="margin-bottom:8px">اختر نوع الباقة:</div>
+    <div class="pl-row" id="fgPlans">
+      <button type="button" class="pl-btn sel" data-p="plus" onclick="fgPick('plus')">⚡ الحد اليومي<small>Plus — كردت تتجدد كل يوم</small></button>
+      <button type="button" class="pl-btn" data-p="pro" onclick="fgPick('pro')">⏳ وقت<small>Pro — ينتهي بعد أيام</small></button>
+      <button type="button" class="pl-btn" data-p="max" onclick="fgPick('max')">♾️ بلا حدود<small>Max — بدون قيود</small></button>
+    </div>
+    <div class="pl-val" id="fgValWrap"><label id="fgValLbl">عدد الكردت (الرسائل) باليوم — يتجدد كل يوم</label><input type="number" id="fg_val" min="1" step="1" value="50" data-p="plus"></div>
+    <div style="margin-bottom:16px"><button type="button" class="ai-mini" onclick="fullGen()">🔑 صنع كود جديد</button></div>
     <div class="ai-sub">🗝️ أكواد غير مستخدمة</div>
     <div class="ai-note">هذي الأكواد اللي ولّدتها وبعد ما استخدمها أحد. تكدر تنسخ الكود أو تحذفه (مثلاً إذا ولّدته بالغلط أو انرسل لغلط). الكود اللي ينحذف ما يشتغل.</div>
     <div class="fc-head"><span id="fullCodesCount">⏳ جاري التحميل…</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="ai-mini" onclick="fullCodesLoad()">🔄</button><button type="button" class="ai-mini" onclick="fullCodesDelAll()">🗑️ حذف الكل</button></span></div>
@@ -672,8 +691,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="form-actions" style="flex-wrap:wrap"><button type="button" class="btn-save" onclick="faSave()">💾 حفظ الـ API</button><button type="button" class="btn-rvlist" onclick="faTest()">🧪 اختبار</button><button type="button" class="ai-mini" onclick="faClear()">🗑️ تفريغ</button></div>
     <div class="ai-test" id="faTestBox"></div>
 
-    <div class="ai-sub">👥 المفعّلين</div>
-    <div class="ai-note">هذولا الزبائن اللي فتحوا النسخة الكاملة بكود. اللي تبقيه ما تسوي له شي، واللي تريد تقفل عليه اضغط <b>طرد</b> وتنقفل عنده فوراً (وإذا يريدها يحتاج كود جديد).</div>
+
     <div class="fc-head"><span id="fullCount">⏳ جاري التحميل…</span><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="ai-mini" onclick="fullLoad()">🔄</button><button type="button" class="ai-mini" onclick="fullKickAll()">🚫 طرد الكل</button></span></div>
     <div id="fullList"></div>
   </div>
@@ -2002,16 +2020,34 @@ function dzEyeReset(){ ['ai_key','fa_key'].forEach(function(id){ var i=document.
 function fEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function fFmt(x){ if(!x) return '—'; var d=new Date(x); if(isNaN(d)) return '—'; return d.toLocaleString('en-GB',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
 function fMissing(e){ var m=String((e&&e.message)||e); return /ai_full|PGRST|404|function|relation/i.test(m); }
-var fullGenBusy=false, fullTimer=null;
+var fgPlan='plus', fullGenBusy=false, fullTimer=null;
+var PLAN_INFO={plus:{n:'Plus',u:'كردت باليوم'},pro:{n:'Pro',u:'يوم'},max:{n:'Max',u:''}};
+function planTxt(p,v){ if(p==='max') return 'Max • بلا حدود'; var i=PLAN_INFO[p]||PLAN_INFO.plus; return i.n+' • '+(Number(v)||0)+' '+i.u; }
+function fgPick(p){
+  fgPlan=p;
+  document.querySelectorAll('#fgPlans .pl-btn').forEach(function(b){ b.classList.toggle('sel',b.getAttribute('data-p')===p); });
+  var w=document.getElementById('fgValWrap'), l=document.getElementById('fgValLbl'), i=document.getElementById('fg_val'); if(!w) return;
+  w.style.display=p==='max'?'none':'flex';
+  l.textContent=p==='plus'?'عدد الكردت (الرسائل) باليوم — يتجدد كل يوم':'مدة الاشتراك بالأيام';
+  var cur=parseInt(i.value,10)||0;
+  if(p==='plus'&&(!cur||i.dataset.p!=='plus')) i.value='50';
+  if(p==='pro'&&(!cur||i.dataset.p!=='pro')) i.value='30';
+  i.dataset.p=p;
+}
 async function fullGen(){
-  if(fullGenBusy) return; fullGenBusy=true;
+  if(fullGenBusy) return;
+  var val=parseInt(document.getElementById('fg_val').value,10)||0;
+  if(fgPlan==='plus'&&(val<1||val>100000)){ showToast('❌ اكتب عدد الكردت باليوم'); return; }
+  if(fgPlan==='pro'&&(val<1||val>3650)){ showToast('❌ اكتب عدد الأيام'); return; }
+  if(fgPlan==='max') val=0;
+  fullGenBusy=true;
   try{
-    var code=await DirazCloud.rpc('ai_full_gen');
+    var code=await DirazCloud.rpc('ai_full_gen',{p_plan:fgPlan,p_value:val});
     if(typeof code!=='string'||!code) throw new Error('empty');
-    ['aiFullCode','fullCodeBox2'].forEach(function(id){ var b=document.getElementById(id); if(b){ b.style.display='block'; b.dataset.code=code; b.querySelector('.fc').textContent=code; } });
-    showToast('🔑 انولد كود جديد — يشتغل مرة وحدة');
+    ['aiFullCode','fullCodeBox2'].forEach(function(id){ var b=document.getElementById(id); if(b){ b.style.display='block'; b.dataset.code=code; b.querySelector('.fc').textContent=code; var pl=b.querySelector('.fcp'); if(pl) pl.textContent='الباقة: '+planTxt(fgPlan,val); } });
+    showToast('🔑 انولد كود جديد — '+planTxt(fgPlan,val));
     if(document.getElementById('fullModal').classList.contains('open')){ fullLoad(); fullCodesLoad(); }
-  }catch(e){ showToast(fMissing(e)?'⚠️ شغّل supabase-ai-full.sql في Supabase أولاً':'❌ فشل توليد الكود'); }
+  }catch(e){ showToast(fMissing(e)?'⚠️ شغّل supabase-ai-plans.sql في Supabase أولاً':'❌ فشل توليد الكود'); }
   fullGenBusy=false;
 }
 function fullCopy(id){
@@ -2020,7 +2056,7 @@ function fullCopy(id){
   try{ navigator.clipboard.writeText(c).then(ok,function(){ fbCopy(c); ok(); }); }catch(e){ fbCopy(c); ok(); }
 }
 function fbCopy(t){ var a=document.createElement('textarea'); a.value=t; a.style.position='fixed'; a.style.opacity='0'; document.body.appendChild(a); a.select(); try{ document.execCommand('copy'); }catch(e){} a.remove(); }
-function fullOpen(){ document.getElementById('fullModal').classList.add('open'); faLoad(); fullLoad(); fullCodesLoad(); clearInterval(fullTimer); fullTimer=setInterval(fullLoad,30000); }
+function fullOpen(){ document.getElementById('fullModal').classList.add('open'); fgPick(fgPlan); faLoad(); fullLoad(); fullCodesLoad(); clearInterval(fullTimer); fullTimer=setInterval(function(){ if(!document.querySelector('.fu-edit.open')) fullLoad(); },30000); }
 function fullClose(){ var m=document.getElementById('fullModal'); if(m) m.classList.remove('open'); clearInterval(fullTimer); dzEyeReset(); }
 async function fullLoad(){
   var list=document.getElementById('fullList'), cnt=document.getElementById('fullCount'); if(!list) return;
@@ -2029,10 +2065,36 @@ async function fullLoad(){
     var s=(r&&Array.isArray(r.sessions))?r.sessions:[], codes=(r&&r.codes)||0;
     cnt.textContent='👥 المفعّلين: '+s.length+(codes?' • أكواد بانتظار الاستعمال: '+codes:'');
     list.innerHTML=s.length?s.map(function(x){
-      var id=Number(x.id)||0;
-      return '<div class="fu-row"><div class="fu-i"><b>'+fEsc(x.name||'بدون اسم')+'</b>'+(x.phone?'<small style="direction:ltr;text-align:right">'+fEsc(x.phone)+'</small>':'')+'<small>فعّل: '+fFmt(x.created_at)+' • آخر نشاط: '+fFmt(x.last_seen)+' • رسائل: '+(x.msgs||0)+'</small></div><button type="button" class="fu-kick" onclick="fullKick('+id+')">🚫 طرد</button></div>';
+      var id=Number(x.id)||0, p=x.plan||'plus', v=Number(x.value)||0, extra='';
+      if(p==='pro') extra=x.expires_at?(' • ينتهي: '+fFmt(x.expires_at)+(x.expired?' (منتهي ⛔)':'')):'';
+      else if(p==='plus') extra=' • اليوم: '+(Number(x.used_today)||0)+'/'+v;
+      function pb(k,t){ return '<button type="button" class="pl-btn'+(k===p?' sel':'')+'" data-p="'+k+'" onclick="fuePick('+id+',\''+k+'\')">'+t+'</button>'; }
+      return '<div class="fu-wrap"><div class="fu-row"><div class="fu-i"><b>'+fEsc(x.name||'بدون اسم')+'<span class="fu-badge">'+fEsc(planTxt(p,v))+'</span></b>'+(x.phone?'<small style="direction:ltr;text-align:right">'+fEsc(x.phone)+'</small>':'')+'<small>فعّل: '+fFmt(x.created_at)+' • آخر نشاط: '+fFmt(x.last_seen)+' • رسائل: '+(x.msgs||0)+extra+'</small></div>'+
+        '<span class="fu-act"><button type="button" class="fu-kick fu-edit-b" onclick="fullEditToggle('+id+')">✏️ تعديل</button><button type="button" class="fu-kick" onclick="fullKick('+id+')">🚫 طرد</button></span></div>'+
+        '<div class="fu-edit" id="fe_'+id+'" data-plan="'+p+'" data-ov="'+v+'" data-op="'+p+'"><div class="pl-row">'+pb('plus','⚡ الحد اليومي<small>Plus</small>')+pb('pro','⏳ وقت<small>Pro</small>')+pb('max','♾️ بلا حدود<small>Max</small>')+'</div>'+
+        '<div class="pl-val" id="fevw_'+id+'" style="'+(p==='max'?'display:none':'')+'"><label id="fel_'+id+'">'+(p==='pro'?'عدد الأيام (تبدأ من الآن)':'عدد الكردت باليوم')+'</label><input type="number" id="fev_'+id+'" min="1" step="1" value="'+(p==='max'?'':v)+'"></div>'+
+        '<button type="button" class="fu-kick fu-edit-b" onclick="fueSave('+id+')">💾 حفظ التعديل</button></div></div>';
     }).join(''):'<div class="fu-empty">ما في أحد مفعّل هسه</div>';
-  }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل supabase-ai-full.sql في Supabase أولاً':'⚠️ تعذّر تحميل القائمة')+'</div>'; }
+  }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل supabase-ai-plans.sql في Supabase أولاً':'⚠️ تعذّر تحميل القائمة')+'</div>'; }
+}
+/* تعديل باقة مشترك مفعّل (حتى بعد ما فعّل الكود) */
+function fullEditToggle(id){ var b=document.getElementById('fe_'+id); if(b) b.classList.toggle('open'); }
+function fuePick(id,p){
+  var b=document.getElementById('fe_'+id); if(!b) return; b.dataset.plan=p;
+  b.querySelectorAll('.pl-btn').forEach(function(x){ x.classList.toggle('sel',x.getAttribute('data-p')===p); });
+  var w=document.getElementById('fevw_'+id), l=document.getElementById('fel_'+id), i=document.getElementById('fev_'+id);
+  w.style.display=p==='max'?'none':'flex';
+  l.textContent=p==='pro'?'عدد الأيام (تبدأ من الآن)':'عدد الكردت باليوم';
+  i.value=(p===b.dataset.op&&b.dataset.ov&&b.dataset.ov!=='0')?b.dataset.ov:(p==='plus'?'50':'30');
+}
+async function fueSave(id){
+  var b=document.getElementById('fe_'+id); if(!b) return;
+  var p=b.dataset.plan, v=parseInt(document.getElementById('fev_'+id).value,10)||0;
+  if(p==='plus'&&(v<1||v>100000)){ showToast('❌ اكتب عدد الكردت باليوم'); return; }
+  if(p==='pro'&&(v<1||v>3650)){ showToast('❌ اكتب عدد الأيام'); return; }
+  if(p==='max') v=0;
+  try{ await DirazCloud.rpc('ai_full_edit',{p_id:id,p_plan:p,p_value:v}); showToast('✅ انعدلت الباقة'); fullLoad(); }
+  catch(e){ showToast(fMissing(e)?'⚠️ شغّل supabase-ai-plans.sql في Supabase أولاً':'❌ فشل التعديل'); }
 }
 async function fullCodesLoad(){
   var list=document.getElementById('fullCodesList'), cnt=document.getElementById('fullCodesCount'); if(!list) return;
@@ -2042,10 +2104,10 @@ async function fullCodesLoad(){
     cnt.textContent='🗝️ أكواد غير مستخدمة: '+a.length;
     list.innerHTML=a.length?a.map(function(x){
       var c=fEsc(x.code);
-      return '<div class="fu-row"><div class="fu-i"><b style="font-family:monospace;letter-spacing:2px;direction:ltr;text-align:right">'+c+'</b><small>انولد: '+fFmt(x.created_at)+(x.expires_at?' • ينتهي: '+fFmt(x.expires_at):'')+'</small></div>'+
-        '<span style="display:flex;gap:6px"><button type="button" class="ai-mini" data-code="'+c+'" onclick="fullCodeCopy(this)">📋</button><button type="button" class="fu-kick" data-code="'+c+'" onclick="fullCodeDel(this)">🗑️ حذف</button></span></div>';
+      return '<div class="fu-row"><div class="fu-i"><b style="font-family:monospace;letter-spacing:2px;direction:ltr;text-align:right">'+c+'</b><small>'+fEsc(planTxt(x.plan,x.value))+' • انولد: '+fFmt(x.created_at)+(x.expires_at?' • ينتهي الكود: '+fFmt(x.expires_at):'')+'</small></div>'+
+        '<span class="fu-act"><button type="button" class="ai-mini" data-code="'+c+'" onclick="fullCodeCopy(this)">📋</button><button type="button" class="fu-kick" data-code="'+c+'" onclick="fullCodeDel(this)">🗑️ حذف</button></span></div>';
     }).join(''):'<div class="fu-empty">ما في أكواد غير مستخدمة</div>';
-  }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل ملف SQL الجديد (ai_full_codes) في Supabase أولاً':'⚠️ تعذّر تحميل الأكواد')+'</div>'; }
+  }catch(e){ cnt.textContent=''; list.innerHTML='<div class="fu-empty">'+(fMissing(e)?'⚠️ شغّل ملف SQL الجديد (supabase-ai-plans.sql) في Supabase أولاً':'⚠️ تعذّر تحميل الأكواد')+'</div>'; }
 }
 function fullCodeCopy(b){ var c=b&&b.dataset.code; if(!c) return; function ok(){ showToast('📋 اننسخ الكود'); } try{ navigator.clipboard.writeText(c).then(ok,function(){ fbCopy(c); ok(); }); }catch(e){ fbCopy(c); ok(); } }
 async function fullCodeDel(b){

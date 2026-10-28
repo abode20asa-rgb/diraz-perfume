@@ -436,6 +436,11 @@
       '.dzA_lock button{border:none;cursor:pointer;background:#4b2e83;color:#fff;font-family:Cairo,sans-serif;font-weight:800;font-size:.88rem;padding:11px;border-radius:50px}',
       '.dzA_lock button:disabled{opacity:.6;cursor:default}',
       '.dzA_lock .err{color:#d32f2f;font-size:.78rem;font-weight:700;min-height:1em}',
+      '.dzA_plans{display:flex;flex-direction:column;gap:7px;text-align:right;margin:2px 0}',
+      '.dzA_plan{border:1.5px solid #d9cdf2;border-radius:14px;padding:8px 12px;background:#faf7ff}',
+      '.dzA_plan b{display:block;font-size:.88rem;color:#4b2e83}',
+      '.dzA_plan span{display:block;font-size:.74rem;font-weight:600;opacity:.85;line-height:1.6}',
+      '.dzA_ok{background:#e8f6ec!important;border:1.5px solid #43a047!important;color:#1b5e20!important;font-weight:800}',
       '@media(max-width:480px){#dzA_btn{bottom:14px;right:14px;padding:7px 14px 7px 8px}#dzA_box{right:12px;bottom:72px}}'
     ].join('\n');
     document.head.appendChild(css);
@@ -1437,7 +1442,27 @@
 
   /* ═════════ النسخة الكاملة: مقفولة بكود لمرة وحدة، وبعدها الزبون يسأل أي شي بحرية ═════════ */
   var FULL_KEY='diraz_ai_full';
-  var fullMode=false, fullToken=null, fullHist=[], fullBusy=false, fullWelcomed=false;
+  var fullMode=false, fullToken=null, fullHist=[], fullBusy=false, fullWelcomed=false, fullSub=null;
+  /* الباقات: Plus = كردت يومية تتجدد، Pro = مدة بالأيام، Max = بلا حدود */
+  function daysLeftTxt(exp){
+    var ms=new Date(exp)-Date.now(); if(!exp||isNaN(ms)||ms<=0) return 'لحظات';
+    var d=Math.ceil(ms/86400000); return d===1?'يوم واحد':(d===2?'يومين':d+' يوم');
+  }
+  function planLine(x){
+    if(!x||!x.plan) return '';
+    if(x.plan==='max') return '♾️ نوع الباقة: بلا حدود (Max)';
+    if(x.plan==='pro') return '⏳ Pro • ينتهي اشتراكك بعد '+daysLeftTxt(x.expires_at);
+    var v=Number(x.value)||0, rem=Math.max(0,v-(Number(x.used_today)||0));
+    return '⚡ Plus • باقي لك '+rem+' كردت من '+v+' اليوم (يتجدد كل يوم)';
+  }
+  function planName(x){ return x.plan==='max'?'Max (بلا حدود)':(x.plan==='pro'?'Pro':'Plus'); }
+  function renderPlan(){
+    var sub=$('dzA_sub'); if(!sub) return;
+    var el=$('dzA_plan');
+    if(!el){ el=document.createElement('small'); el.id='dzA_plan'; el.style.fontWeight='800'; sub.parentNode.appendChild(el); }
+    var t=(fullMode&&fullToken)?planLine(fullSub):'';
+    el.textContent=t; el.style.display=t?'block':'none';
+  }
   try{ fullToken=localStorage.getItem(FULL_KEY)||null; }catch(e){}
 
   function fBox(){ return $('dzA_msgsF'); }
@@ -1474,11 +1499,13 @@
       if(ttl) ttl.textContent='🌸 مساعد ديراز للعطور';
       if(sub) sub.textContent='أخبرني شنو تحب وأرشح لك الأنسب';
     }
+    renderPlan();
     setInputState();
     setTimeout(function(){ var i=$('dzA_in'); if(i&&!i.disabled) i.focus(); },50);
   }
   function fullEnter(){
     if(!fullToken){ showLock(); return; }
+    renderPlan();
     if(!fullWelcomed){
       fullWelcomed=true;
       fHtml('أهلاً بيك بالنسخة الكاملة ✨<br>هنا تكدر تسألني عن أي شي براحتك، مو بس العطور.<br><small>🔒 لا تكتب رقم هاتفك أو عنوانك أو أي معلومة شخصية هنا.</small>');
@@ -1486,7 +1513,10 @@
     /* نتأكد إن الجلسة ما انطردت */
     try{
       if(window.DirazCloud && DirazCloud.rpc){
-        DirazCloud.rpc('ai_full_check',{p_token:fullToken}).then(function(ok){ if(ok===false) lostAccess(); }).catch(function(){});
+        DirazCloud.rpc('ai_full_check',{p_token:fullToken}).then(function(r){
+          if(r===false || (r&&r.ok===false)){ lostAccess(r&&r.reason); return; }
+          if(r&&r.ok){ fullSub=r; renderPlan(); }
+        }).catch(function(){});
       }
     }catch(e){}
   }
@@ -1495,7 +1525,12 @@
     if(fBox().querySelector('.dzA_lock')) return;
     var c=document.createElement('div'); c.className='dzA_lock';
     c.innerHTML='<div class="lk">🔒</div><b>النسخة الكاملة مقفولة</b>'+
-      '<p>هنا تسأل أي شي بحرية. حتى تفتحها اطلب الكود من الإدارة وادخله هنا (الكود يشتغل مرة وحدة بس).</p>'+
+      '<p>هنا تسأل أي شي بحرية. اختار باقتك، اطلب الكود من الإدارة وادخله هنا (الكود يشتغل مرة وحدة بس).</p>'+
+      '<div class="dzA_plans">'+
+        '<div class="dzA_plan"><b>⚡ Plus — حد يومي</b><span>عدد كردت (رسائل) خاص بيك يتجدد كل يوم.</span></div>'+
+        '<div class="dzA_plan"><b>⏳ Pro — اشتراك بمدة</b><span>تسأل براحتك ويظل اشتراكك شغّال لعدد أيام محدد.</span></div>'+
+        '<div class="dzA_plan"><b>♾️ Max — بلا حدود</b><span>أسئلة بدون حد يومي وبدون مدة تنتهي.</span></div>'+
+      '</div>'+
       '<input type="text" class="dzA_code" placeholder="XXXXX-XXXXX" autocomplete="off" maxlength="14">'+
       '<div class="err"></div><button type="button" class="dzA_codebtn">🔓 فتح</button>';
     fBox().appendChild(c);
@@ -1506,13 +1541,17 @@
       btn.disabled=true; err.textContent='';
       var cu=getCustomer()||{};
       DirazCloud.rpc('ai_full_redeem',{p_code:code,p_name:String(cu.name||'').slice(0,60),p_phone:String(cu.phone||'').replace(/\D/g,'').slice(0,15)})
-        .then(function(tok){
+        .then(function(r){
+          var tok=(r&&typeof r==='object')?r.token:null;
           if(typeof tok==='string' && tok.length>=20){
-            fullToken=tok; try{ localStorage.setItem(FULL_KEY,tok); }catch(e){}
-            c.remove(); fullWelcomed=false; fullHist=[]; fullEnter(); setInputState();
+            fullToken=tok; fullSub=r; try{ localStorage.setItem(FULL_KEY,tok); }catch(e){}
+            c.remove(); fullWelcomed=false; fullHist=[];
+            var okm=fHtml('✅ تم الاشتراك بباقة <b>'+planName(r)+'</b> — '+planLine(r).replace(/^\S+\s/,'')+'<br>استمتع 🎉');
+            okm.classList.add('dzA_ok');
+            fullEnter(); setInputState(); renderPlan();
             setTimeout(function(){ var i=$('dzA_in'); if(i) i.focus(); },50);
           }else{
-            err.textContent='❌ الكود غلط أو انستخدم قبل'; btn.disabled=false;
+            err.textContent='❌ الكود غلط أو انتهت صلاحيته أو انستخدم قبل'; btn.disabled=false;
           }
         })
         .catch(function(){ err.textContent='صار خطأ، جرّب مرة ثانية'; btn.disabled=false; });
@@ -1521,11 +1560,12 @@
     inp.addEventListener('keydown',function(e){ if(e.key==='Enter'){ e.preventDefault(); go(); } });
   }
   /* انطرد من الإدارة (أو التوكن ما عاد صالح): نرجّعه للقفل */
-  function lostAccess(){
-    fullToken=null; fullWelcomed=false; fullHist=[]; fullBusy=false;
+  function lostAccess(reason){
+    fullToken=null; fullSub=null; fullWelcomed=false; fullHist=[]; fullBusy=false;
     try{ localStorage.removeItem(FULL_KEY); }catch(e){}
     fBox().innerHTML='';
-    fHtml('انسحبت صلاحية النسخة الكاملة من هذا الجهاز 🔒<br>إذا تحتاجها اطلب كود جديد من الإدارة.');
+    fHtml(reason==='expired'?'انتهى اشتراكك بالنسخة الكاملة ⏳<br>للتجديد اطلب كود جديد من الإدارة.':'انسحبت صلاحية النسخة الكاملة من هذا الجهاز 🔒<br>إذا تحتاجها اطلب كود جديد من الإدارة.');
+    renderPlan();
     showLock();
   }
   /* النسخة الكاملة: الكتالوج وبطاقات العطور ننرسلها بس إذا السؤال عن العطور، وإلا يجاوب بحرية بدون ما نشدّه للعطور */
@@ -1546,8 +1586,10 @@
       body:JSON.stringify({q:v,history:fullHist.slice(-10),catalog:(fullWantsCatalog(v)?aiCatalog():''),section:'',full:true,token:fullToken})})
       .then(function(r){
         return r.json().catch(function(){return {};}).then(function(j){
-          if(r.status===403 && j.error==='kicked') throw {kicked:true};
+          if(r.status===403 && (j.error==='kicked'||j.error==='expired')) throw {kicked:true,reason:j.error};
+          if(r.status===429 && j.error==='limit') throw {limit:true,sub:j.sub};
           if(!r.ok||!j.text) throw new Error(j.error||('HTTP '+r.status));
+          if(j.sub){ fullSub=j.sub; renderPlan(); }
           return String(j.text);
         });
       })
@@ -1557,7 +1599,11 @@
         if(fullHist.length>20) fullHist=fullHist.slice(-20);
         try{ if(fullWantsCatalog(v)) showMentionCardsFull(v,txt); }catch(e){}
       },function(e){
-        if(e && e.kicked){ try{d.remove();}catch(x){} lostAccess(); return; }
+        if(e && e.kicked){ try{d.remove();}catch(x){} lostAccess(e.reason); return; }
+        if(e && e.limit){
+          if(e.sub){ fullSub=e.sub; renderPlan(); }
+          d.style.opacity=''; d.textContent='⚡ خلصت كردتك لليوم. تتجدد باجر وتكدر تكمل، أو اطلب من الإدارة ترقية باقتك.'; return;
+        }
         d.style.opacity=''; d.textContent='ما كدرت أجاوبك هسه 😔 جرّب مرة ثانية.';
       })
       .then(function(){ clearTimeout(to); fullBusy=false; fScroll(); });
