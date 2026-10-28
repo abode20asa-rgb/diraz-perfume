@@ -80,7 +80,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
 
   function render(d){
     var disc = d.type==='percent' ? fmt(d.value)+'%' : fmt(d.value)+' دينار';
-    var noCom = !d.legacy && !Number(d.commissionUnit);
+    var noCom = !d.legacy && !Number(d.commissionUnit) && !Number(d.commissionMulti);
     function items(o){
       var n = (o.n!=null) ? (Number(o.n)||0) : ((Number(o.n50)||0)+(Number(o.n30)||0));
       return n>0 ? (n===1 ? 'عطر واحد' : n+' عطور') : '';
@@ -111,7 +111,7 @@ footer{text-align:center;font-size:.75rem;opacity:.65;padding-bottom:24px}
         '<div class="meta"><span class="pill">خصم '+esc(disc)+'</span><span class="pill '+(d.active?'on':'off')+'">'+(d.active?'🟢 فعال':'🔴 متوقف')+'</span></div>'+
       '</div>'+
       '<div class="grid" style="margin-bottom:18px">'+
-        (noCom?'':'<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'عطر واحد: '+fmt(d.commissionUnit)+' • عطرين وفوق: '+fmt(Number(d.commissionUnit)*2)+' للطلب')+'</div></div>')+
+        (noCom?'':'<div class="stat earn wide"><div class="n">'+fmt(d.earned)+' دينار</div><div class="l">✅ أرباحك — '+(d.legacy?fmt(d.commission)+' لكل طلب':'عطر واحد: '+fmt(d.commissionUnit)+' • عطرين وفوق: '+fmt(d.commissionMulti)+' للطلب')+'</div></div>')+
         '<div class="stat wide"><div class="n">'+fmt(ordersCount)+'</div><div class="l">🛍️ عدد الطلبات</div></div>'+
       '</div>'+
       '<div class="card"><h2>آخر 3 طلبات</h2>'+rec+'<div class="note">يتحدث تلقائياً كل دقيقة</div></div>'+
