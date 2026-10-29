@@ -958,102 +958,105 @@
       return;
     }
 
-    /* ── الراوتر: إذا السؤال مو عن العطور، الذكاء الاصطناعي يجاوب (بدون سؤال القسم أو العمر) ── */
+    /* ── الراوتر: الذكاء الاصطناعي يجاوب كل أسئلة العطور والترشيح والكلام العام (مثل النسخة الكاملة).
+          المحرك المحلي (الكلمات المفتاحية) يشتغل فقط كاحتياط إذا الذكاء مطفي أو فشل.
+          أما الطلب والسلة وكود الخصم والاسم والعنوان فتبقى محادثة مرتبة محلياً (flow) ── */
     var pm=parseMessage(raw);
-    if(!listKnows(t,pm,perfumes)){
-      aiFallback(raw,function(){
-        /* الذكاء مطفي أو فشل: نعرض العطور */
-        if(!audience){ pendingRaw=raw; askSection(); return; }
-        showPopular(perfumes);
-      },function(){ chips(BASIC_CHIPS); });
-      return;
-    }
-
+    var localRest=function(){
     /* ما نعرف القسم بعد: نسأل أول حتى نجاوبه صح */
-    if(!audience){ pendingRaw=raw; askSection(); return; }
-
-    /* كلمة واحدة تشبه كود خصم خارج مسار الطلب: ما ننفذ شي، نوجّهه للطلب */
-    if(t.split(' ').length===1 && !pm.any && extractCode(raw)){
-      var known=perfumes.some(function(p){ return profile(p).full.indexOf(t)>-1; });
-      if(!known){
-        say('إذا هذا كود خصم 🎁 اضغط «🛒 طلب» وأسألك عنه بوقته، وأتأكد من السلة قبل ما أطبقه 🌸');
-        chips(cartSummary()?['🛒 طلب']:BASIC_CHIPS); return;
+      if(!audience){ pendingRaw=raw; askSection(); return; }
+  
+      /* كلمة واحدة تشبه كود خصم خارج مسار الطلب: ما ننفذ شي، نوجّهه للطلب */
+      if(t.split(' ').length===1 && !pm.any && extractCode(raw)){
+        var known=perfumes.some(function(p){ return profile(p).full.indexOf(t)>-1; });
+        if(!known){
+          say('إذا هذا كود خصم 🎁 اضغط «🛒 طلب» وأسألك عنه بوقته، وأتأكد من السلة قبل ما أطبقه 🌸');
+          chips(cartSummary()?['🛒 طلب']:BASIC_CHIPS); return;
+        }
       }
-    }
-
-    /* تحية / شكر */
-    if(!pm.any && !pm.free.length){
-      if(THANKS.test(t)){ say('عفواً حبيبي 🌸 إذا تريد ترشيح ثاني أني حاضر.'); return; }
-      if(GREET.test(t)){ say('هلا والله 🌸 شنو تحب من الروائح؟'); chips(BASIC_CHIPS); return; }
-      if(MORE.test(t) && state.lastIdx.length){ showMore(perfumes); return; }
-      if(/(شنو عندكم|شكو|كل العطور|عرض|المتوفر|الاصناف)/.test(t)){ listAll(perfumes); return; }
-      /* سؤال عام خارج العطور — نسلك له ونحول الموضوع */
-      if(/(كيف حالك|شلونك|شخبارك|وين تعيش|عمرك|شكد عمرك|من وين|جنسيتك|انت انسان|انت روبوت|انت ذكاء|شلون اشتغل|كيف تصنع|شلون تسوي|شنو هوايتك|تحب شنو|عندك صديق|متزوج|عندك عيله|شلون اتعلمت|منو صنعك|شنو اسمك الحقيقي|شلون تكدر|شنو رايك ب|شنو الاخبار|شكو جديد|اخبارك|شلون يومك|كيف يومك)/.test(t)){
+  
+      /* تحية / شكر */
+      if(!pm.any && !pm.free.length){
+        if(THANKS.test(t)){ say('عفواً حبيبي 🌸 إذا تريد ترشيح ثاني أني حاضر.'); return; }
+        if(GREET.test(t)){ say('هلا والله 🌸 شنو تحب من الروائح؟'); chips(BASIC_CHIPS); return; }
+        if(MORE.test(t) && state.lastIdx.length){ showMore(perfumes); return; }
+        if(/(شنو عندكم|شكو|كل العطور|عرض|المتوفر|الاصناف)/.test(t)){ listAll(perfumes); return; }
+        /* سؤال عام خارج العطور — نسلك له ونحول الموضوع */
+        if(/(كيف حالك|شلونك|شخبارك|وين تعيش|عمرك|شكد عمرك|من وين|جنسيتك|انت انسان|انت روبوت|انت ذكاء|شلون اشتغل|كيف تصنع|شلون تسوي|شنو هوايتك|تحب شنو|عندك صديق|متزوج|عندك عيله|شلون اتعلمت|منو صنعك|شنو اسمك الحقيقي|شلون تكدر|شنو رايك ب|شنو الاخبار|شكو جديد|اخبارك|شلون يومك|كيف يومك)/.test(t)){
+          aiFallback(raw,function(){
+            say('هذا سؤال حلو 🌸 بس أني هنا مخصص للعطور! خليني أرد عليك بسؤال أهم: شنو نوع الريحة اللي تحبها؟ هادية، سويت، منعشة، قوية…؟');
+            chips(BASIC_CHIPS);
+          },function(){ chips(BASIC_CHIPS); });
+          return;
+        }
         aiFallback(raw,function(){
-          say('هذا سؤال حلو 🌸 بس أني هنا مخصص للعطور! خليني أرد عليك بسؤال أهم: شنو نوع الريحة اللي تحبها؟ هادية، سويت، منعشة، قوية…؟');
-          chips(BASIC_CHIPS);
+          say('أني متخصص بالعطور بس 🌸 احچيلي شنو نوع الريحة اللي تحبها: هادئة، سويت، منعشة، قوية…؟'); chips(BASIC_CHIPS);
         },function(){ chips(BASIC_CHIPS); });
         return;
       }
-      aiFallback(raw,function(){
-        say('أني متخصص بالعطور بس 🌸 احچيلي شنو نوع الريحة اللي تحبها: هادئة، سويت، منعشة، قوية…؟'); chips(BASIC_CHIPS);
-      },function(){ chips(BASIC_CHIPS); });
-      return;
-    }
-
-    /* ── التعمق بالتفاصيل: نسأل عن العمر مرة وحدة إذا ما نعرفه ── */
-    var cust0=getCustomer();
-    if((pm.any||pm.free.length) && cust0 && !cust0.age && !state.askedAge){
-      state.askedAge=true;
-      state.pendingQuery=raw;
-      say('حلو 🌸 وبسؤال صغير: شكد عمرك؟ (اكتبه بالرقم) حتى أختارلك العطر الأنسب لعمرك — وإذا ما تحب اكتب «تخطي».');
-      flow={step:'ageThenRecommend'};
-      return;
-    }
-
-    /* "غيرهم" مع كلمات جديدة = دمج؛ بدون جديد = المزيد */
-    var newTraits=Object.keys(pm.w).length>0, hasNew=newTraits||pm.free.length>0||pm.gender||pm.budget;
-    if(MORE.test(t) && !hasNew && state.lastIdx.length){ showMore(perfumes); return; }
-
-    /* هل الطلب يغيّر التفضيلات أم يكمّلها؟ */
-    if(/(من جديد|ابدا|ابدأ|بلش|غير الطلب|امسح)/.test(t)) resetState();
-    Object.keys(pm.w).forEach(function(k){ state.w[k]=(state.w[k]||0)*0.6+pm.w[k]; });
-    if(pm.gender) state.gender=pm.gender;
-    if(pm.budget) state.budget=pm.budget;
-    state.free=pm.free.length?pm.free.slice(0,6):state.free;
-    state.shown=[];
-
-    var res=recommend(perfumes);
-    if(!res.poolSize){
-      var why=[]; if(state.gender) why.push('النوع «'+state.gender+'»'); if(state.budget) why.push('ميزانية '+fmt(state.budget)+' دينار');
-      var hasType=perfumes.some(function(p){ return p.type && norm(p.type).indexOf(norm(state.gender||'-'))>-1; });
-      if(state.gender && !hasType) say('حالياً ما عندنا عطور «'+state.gender+'» معروضة 😔 بس إذا تريد أرشحلك من العطور الموجودة، احچيلي شنو تحب.');
-      else say('ما لقيت عطر متوفر بهالشروط ('+why.join(' + ')+') 😔 جرّب تغيّر الميزانية أو النوع.');
-      state.gender=audGender(); chips(['من جديد'].concat(BASIC_CHIPS.slice(0,3))); return;
-    }
-    var top=res.list.filter(function(x){return x.score>0.3;});
-    var noTaste=!Object.keys(state.w).length && !state.free.length;
-    if(!top.length && noTaste){
-      say(buildIntro());
-      state.pending=res.list.slice(3);
-      showCards(res.list.slice(0,3),perfumes,true);
-      return;
-    }
-    if(!top.length){
-      aiFallback(raw,function(){
-        say('ما لقيت شي يطابق طلبك بالضبط، بس هذي أكثر العطور اللي تنطلب عندنا 🌸');
+  
+      /* ── التعمق بالتفاصيل: نسأل عن العمر مرة وحدة إذا ما نعرفه ── */
+      var cust0=getCustomer();
+      if((pm.any||pm.free.length) && cust0 && !cust0.age && !state.askedAge){
+        state.askedAge=true;
+        state.pendingQuery=raw;
+        say('حلو 🌸 وبسؤال صغير: شكد عمرك؟ (اكتبه بالرقم) حتى أختارلك العطر الأنسب لعمرك — وإذا ما تحب اكتب «تخطي».');
+        flow={step:'ageThenRecommend'};
+        return;
+      }
+  
+      /* "غيرهم" مع كلمات جديدة = دمج؛ بدون جديد = المزيد */
+      var newTraits=Object.keys(pm.w).length>0, hasNew=newTraits||pm.free.length>0||pm.gender||pm.budget;
+      if(MORE.test(t) && !hasNew && state.lastIdx.length){ showMore(perfumes); return; }
+  
+      /* هل الطلب يغيّر التفضيلات أم يكمّلها؟ */
+      if(/(من جديد|ابدا|ابدأ|بلش|غير الطلب|امسح)/.test(t)) resetState();
+      Object.keys(pm.w).forEach(function(k){ state.w[k]=(state.w[k]||0)*0.6+pm.w[k]; });
+      if(pm.gender) state.gender=pm.gender;
+      if(pm.budget) state.budget=pm.budget;
+      state.free=pm.free.length?pm.free.slice(0,6):state.free;
+      state.shown=[];
+  
+      var res=recommend(perfumes);
+      if(!res.poolSize){
+        var why=[]; if(state.gender) why.push('النوع «'+state.gender+'»'); if(state.budget) why.push('ميزانية '+fmt(state.budget)+' دينار');
+        var hasType=perfumes.some(function(p){ return p.type && norm(p.type).indexOf(norm(state.gender||'-'))>-1; });
+        if(state.gender && !hasType) say('حالياً ما عندنا عطور «'+state.gender+'» معروضة 😔 بس إذا تريد أرشحلك من العطور الموجودة، احچيلي شنو تحب.');
+        else say('ما لقيت عطر متوفر بهالشروط ('+why.join(' + ')+') 😔 جرّب تغيّر الميزانية أو النوع.');
+        state.gender=audGender(); chips(['من جديد'].concat(BASIC_CHIPS.slice(0,3))); return;
+      }
+      var top=res.list.filter(function(x){return x.score>0.3;});
+      var noTaste=!Object.keys(state.w).length && !state.free.length;
+      if(!top.length && noTaste){
+        say(buildIntro());
+        state.pending=res.list.slice(3);
         showCards(res.list.slice(0,3),perfumes,true);
-      },function(){
-        say('وهذي أكثر العطور اللي تنطلب عندنا 🌸');
-        showCards(res.list.slice(0,3),perfumes,true);
-      });
-      return;
-    }
-    var intro=buildIntro();
-    say(intro);
-    showCards(top.slice(0,3),perfumes,false);
-    state.pending=top.slice(3);
-    if(res.soldOutCount) setTimeout(function(){},0);
+        return;
+      }
+      if(!top.length){
+        aiFallback(raw,function(){
+          say('ما لقيت شي يطابق طلبك بالضبط، بس هذي أكثر العطور اللي تنطلب عندنا 🌸');
+          showCards(res.list.slice(0,3),perfumes,true);
+        },function(){
+          say('وهذي أكثر العطور اللي تنطلب عندنا 🌸');
+          showCards(res.list.slice(0,3),perfumes,true);
+        });
+        return;
+      }
+      var intro=buildIntro();
+      say(intro);
+      showCards(top.slice(0,3),perfumes,false);
+      state.pending=top.slice(3);
+      if(res.soldOutCount) setTimeout(function(){},0);
+    };
+    var plain=function(){
+      if(!listKnows(t,pm,perfumes)){
+        if(!audience){ pendingRaw=raw; askSection(); return; }
+        showPopular(perfumes); return;
+      }
+      localRest();
+    };
+    aiFallback(raw,plain,function(){ chips(BASIC_CHIPS); });
   }
 
   /* ───────── معالجة المحادثة الطبيعية (اسم → عمر → كود → عنوان) ───────── */
