@@ -1079,7 +1079,7 @@ function changeQty(idx,size,d){
     // التحقق إذا كان الكود المطبق يحتاج إلى إزالة بسبب تغيير السلة
     if(appliedCoupon){
       const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
-      if(currentItemCount<2||currentItemCount>3){
+      if(currentItemCount<2){
         appliedCoupon=null; 
         discountAmount=0;
         showCouponMsg('❌ تم إلغاء الخصم: تغير عدد العطور','error');
@@ -1096,7 +1096,7 @@ function removeFromCart(idx,size){
   // التحقق إذا كان الكود المطبق يحتاج إلى إزالة بسبب تغيير السلة
   if(appliedCoupon){
     const currentItemCount=cart.reduce((s,i)=>s+i.qty,0);
-    if(currentItemCount<2||currentItemCount>3){
+    if(currentItemCount<2){
       appliedCoupon=null; 
       discountAmount=0;
       showCouponMsg('❌ تم إلغاء الخصم: تغير عدد العطور','error');
@@ -1147,9 +1147,9 @@ function updateCartUI(){
   
   // إعادة حساب الخصم عند كل تحديث
   if(appliedCoupon){
-    if(currentItemCount<2||currentItemCount>3){
+    if(currentItemCount<2){
       appliedCoupon=null; discountAmount=0;
-      showCouponMsg('❌ تم إلغاء الخصم: يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط','error');
+      showCouponMsg('❌ تم إلغاء الخصم: يُطبّق عند طلب عطرين أو أكثر','error');
     } else {
       if(isBundleCoupon(appliedCoupon)){
         const bt=bundleTarget(currentItemCount);
@@ -1211,12 +1211,18 @@ function updateCartUI(){
 let appliedCoupon=null, discountAmount=0;
 function toggleCouponInput(){ document.getElementById('couponArea').classList.toggle('open'); }
 // ── عروض الباقات (كود 12.5% أو كود "ديراز") ──
-// 50ml: عطرين 35,000 / ثلاثة 45,000  •  30ml: ثلاثة عطر بـ30,000 (الثالث مجاني)
+// 50ml: عطرين 35,000 / ثلاثة 45,000  •  30ml: ثلاثة عطر بـ30,000 (الثالث مجاني)  •  4 عطور فأكثر: خصم 5,000 لكل عطر
 function isBundleCoupon(c){ return String(c.code).toUpperCase()==='ديراز' || (c.type==='percent' && Number(c.value)===12.5); }
+const EXTRA_PERFUME_DISCOUNT=5000; // خصم لكل عطر عند 4 عطور فأكثر (بدون حد أعلى)
 function bundleTarget(count){
   const sizes=new Set(cart.map(i=>i.size||'50ml'));
   if(sizes.size!==1) return {error:'mixed'};
   const size=[...sizes][0];
+  if(count>=4){
+    const raw=cart.reduce((s,i)=>s+i.price*i.qty,0);
+    const disc=EXTRA_PERFUME_DISCOUNT*count;
+    return {target:Math.max(raw-disc,0),label:'خصم '+disc.toLocaleString('en-US')+' دينار ('+count+' عطور × '+EXTRA_PERFUME_DISCOUNT.toLocaleString('en-US')+')'};
+  }
   if(size==='30ml'){
     if(count===3) return {target:30000,label:'عطر مجاني — 3 عطور بسعر 30,000 دينار'};
     return {error:'need3'};
@@ -1233,8 +1239,7 @@ async function applyCoupon(){
   const code=(document.getElementById('couponInput').value||'').toUpperCase().replace(/\s+/g,' ').trim();
   if(!code){showCouponMsg('❗ أدخل الكود أولاً','error');return;}
   const itemCount=cart.reduce((total,item)=>total+item.qty,0);
-  if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو ثلاثة عطور أولاً','error');return;}
-  if(itemCount>3){showCouponMsg('❌ الخصم يُطبّق فقط عند طلب عطرين أو ثلاثة عطور بالضبط. عند 4 عطور أو أكثر لا يوجد خصم','error');return;}
+  if(itemCount<2){showCouponMsg('❌ لا يمكن تطبيق الخصم على عطر واحد. أضف عطرين أو أكثر أولاً','error');return;}
   
   // التحقق من الكود عبر السيرفر (يرجّع الكود المطلوب فقط)
   const customer=tryParse(CUSTOMER_KEY,{});
