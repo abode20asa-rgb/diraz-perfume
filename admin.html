@@ -500,7 +500,7 @@ textarea{resize:vertical;min-height:80px}
     <div class="section-card" id="adsCard">
       <h2>📢 الإعلانات</h2>
       <p>أضف صورة إعلان (مصممة بكانفا مثلاً)، اختر مكانها بالموقع، وشوف شكلها بالمحاكي قبل ما تحفظ. تكدر تغيّر الكلام أو تشيله أو تحذف الإعلان بأي وقت.</p>
-      <div class="form-actions"><button type="button" class="btn-save" onclick="adsOpen(-1)">➕ إضافة إعلان</button></div>
+      <div class="form-actions" style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn-save" onclick="adsOpen(-1)">➕ إضافة إعلان</button><button type="button" class="btn-save" id="adListBtn" onclick="adsToggleList()" style="background:#fff;color:#c45a7a">📋 الإعلانات الحالية (0)</button></div>
       <div id="adList" style="margin-top:16px"></div>
     </div>
 
@@ -2383,6 +2383,7 @@ function dzAdHtml(a){
   };
   function render(){
     var box=$('adList'); if(!box) return;
+    var lb=$('adListBtn'); if(lb) lb.textContent='📋 الإعلانات الحالية ('+arr.length+')';
     if(!arr.length){ box.innerHTML='<div class="no-items">لا توجد إعلانات بعد، اضغط «إضافة إعلان»</div>'; return; }
     box.innerHTML=arr.map(function(a,i){
       return '<div class="ad-item'+(a.active===false?' off':'')+'">'+
@@ -2393,6 +2394,7 @@ function dzAdHtml(a){
         '<button type="button" onclick="adsAct(\'edit\','+i+')">✏️ تعديل</button><button type="button" class="del" onclick="adsAct(\'del\','+i+')">🗑️</button></div></div>';
     }).join('');
   }
+  window.adsToggleList=function(){ var b=$('adList'); if(!b) return; b.style.display=(b.style.display==='none')?'':'none'; if(b.style.display!=='none'){ try{ b.scrollIntoView({behavior:'smooth',block:'nearest'}); }catch(e){} } };
   window.adsAct=async function(w,i){
     if(w==='edit') return window.adsOpen(i);
     if(w==='del'){ if(!confirm('حذف هذا الإعلان؟')) return; arr.splice(i,1); }
