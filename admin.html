@@ -321,6 +321,60 @@ textarea{resize:vertical;min-height:80px}
 #adminPanel .section-card.dz-acc.open>.dz-body{display:block}
 @media(max-width:600px){#adminPanel .section-card.dz-acc>.dz-body{padding:16px 14px 18px}}
 </style>
+<style id="dzAdsAdminCss">
+
+.dz-ad{display:block;position:relative;overflow:hidden;margin:var(--g,8px) 0;box-shadow:0 6px 20px rgba(120,30,70,.18);text-decoration:none;color:inherit;font-family:'Cairo',sans-serif;direction:rtl}
+.dz-ad>img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.dz-ad.fx>img{height:100%;object-fit:cover}
+.dz-ad-o{position:absolute;inset:0;pointer-events:none}
+.dz-ad-t{position:absolute;inset:0;display:flex;flex-direction:column;padding:16px 18px;gap:6px;pointer-events:none}
+.dz-ad-t.top{justify-content:flex-start}.dz-ad-t.mid{justify-content:center}.dz-ad-t.bot{justify-content:flex-end}
+.dz-ad-t.s{align-items:flex-start;text-align:right}.dz-ad-t.c{align-items:center;text-align:center}.dz-ad-t.e{align-items:flex-end;text-align:left}
+.dz-ad-t h4{font-size:1.3rem;font-weight:900;line-height:1.35;margin:0}
+.dz-ad-t p{font-size:.92rem;font-weight:700;line-height:1.5;margin:0}
+.dz-ad-t.lt{text-shadow:0 2px 10px rgba(0,0,0,.45)}
+.dz-ad-b{display:inline-block;padding:8px 22px;border-radius:50px;background:#fff;color:#c45a7a;font-weight:900;font-size:.86rem;margin-top:4px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.perfumes-grid>.dz-ad{grid-column:1/-1}
+
+#toast{z-index:10200!important}
+.ad-item{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.22);border:1.5px solid rgba(255,255,255,.45);border-radius:16px;padding:10px;margin-bottom:10px;flex-wrap:wrap}
+.ad-item.off{opacity:.55}
+.ad-thumb{width:96px;height:60px;border-radius:10px;object-fit:cover;background:rgba(255,255,255,.3);flex:none}
+.ad-info{flex:1;min-width:140px;color:#fff;font-weight:700;font-size:.85rem;line-height:1.6}
+.ad-info b{font-weight:900}
+.ad-btns{display:flex;gap:6px;flex-wrap:wrap}
+.ad-btns button{border:0;border-radius:10px;padding:7px 11px;background:#fff;color:#c45a7a;font-family:'Cairo',sans-serif;font-weight:800;font-size:.8rem;cursor:pointer}
+.ad-btns button.del{background:#e53935;color:#fff}
+#adModal{position:fixed;inset:0;z-index:10050;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(60,15,40,.6);direction:rtl;font-family:'Cairo',sans-serif}
+#adModal.on{display:flex}
+.adm-box{background:#fff;color:#333;width:min(1000px,100%);max-height:calc(100vh - 28px);border-radius:22px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 18px 60px rgba(120,30,70,.4)}
+.adm-head{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid #f1dde6}
+.adm-head h3{color:#c45a7a;font-size:1.15rem;font-weight:900}
+.adm-x{border:0;background:#fce4ef;color:#c45a7a;width:34px;height:34px;border-radius:50%;font-weight:900;cursor:pointer}
+.adm-body{display:grid;grid-template-columns:1fr 372px;gap:20px;padding:16px 20px;overflow:auto}
+.adm-sw{position:sticky;top:0;align-self:start}
+.adm-sw h4{font-size:.85rem;color:#c45a7a;font-weight:900;margin-bottom:8px;text-align:center}
+#adSim{width:340px;max-width:100%;height:520px;margin:0 auto;overflow:auto;border-radius:22px;border:6px solid #2b2b2b;background:#f4a7be;position:relative}
+.sim-hdr{position:sticky;top:0;z-index:2;background:rgba(244,150,185,.95);color:#fff;text-align:center;font-weight:900;font-size:.8rem;letter-spacing:3px;padding:10px;border-bottom:1px solid rgba(255,255,255,.4)}
+.sim-body{padding:12px}
+.sim-title{text-align:center;color:#fff;font-weight:900;font-size:1.3rem;margin:6px 0 14px}
+.sim-card{background:#fff;border-radius:18px;height:96px;margin:10px 0;display:flex;align-items:center;justify-content:center;color:#c45a7a;font-weight:800;font-size:.9rem;opacity:.9}
+.sim-ph{border:2px dashed rgba(255,255,255,.9);border-radius:16px;color:#fff;text-align:center;padding:34px 10px;font-weight:800;font-size:.85rem;margin:10px 0}
+#adSim .dz-ad.fx{cursor:grab;touch-action:none}
+.adm-ctl .g{margin-bottom:12px}
+.adm-ctl label{display:block;color:#8a3a57;font-size:.82rem;font-weight:800;margin-bottom:5px}
+.adm-ctl input[type=text],.adm-ctl input[type=number],.adm-ctl select{width:100%;padding:9px 12px;border-radius:12px;border:1.5px solid #e6d3db;background:#fff;color:#222;font-family:'Cairo',sans-serif;font-size:.9rem}
+.adm-ctl input[type=range]{width:100%;accent-color:#c45a7a}
+.adm-ctl .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.adm-ctl .hint{font-size:.75rem;color:#999;font-weight:600;margin-top:4px;line-height:1.6}
+.adm-ctl .sec{font-weight:900;color:#c45a7a;font-size:.9rem;margin:16px 0 8px;padding-bottom:5px;border-bottom:1px solid #f1dde6}
+.adm-ctl .pick{display:inline-block;padding:10px 18px;border-radius:50px;background:#c45a7a;color:#fff;font-weight:900;font-size:.88rem;cursor:pointer}
+.adm-ctl output{float:left;color:#c45a7a;font-weight:900}
+.adm-foot{display:flex;gap:10px;padding:12px 20px;border-top:1px solid #f1dde6;flex-wrap:wrap}
+.adm-foot button{flex:1;min-width:110px;padding:12px;border:0;border-radius:50px;font-family:'Cairo',sans-serif;font-weight:900;font-size:.95rem;cursor:pointer}
+.adm-foot .ok{background:#c45a7a;color:#fff}.adm-foot .cx{background:#fce4ef;color:#c45a7a}.adm-foot .rm{background:#e53935;color:#fff}
+@media(max-width:860px){.adm-body{grid-template-columns:1fr}.adm-sw{order:-1;position:static}#adSim{height:380px}}
+</style>
 </head>
 <body>
 
@@ -439,6 +493,71 @@ textarea{resize:vertical;min-height:80px}
           <button type="button" onclick="rvReasonFill(this)">لا يخص الموقع أو العطور</button>
         </div>
         <div class="act"><button type="button" class="go" onclick="rvRejectConfirm()">🗑️ حذف</button><button type="button" class="cx" onclick="rvRejectClose()">إلغاء</button></div>
+      </div>
+    </div>
+
+    <!-- الإعلانات -->
+    <div class="section-card" id="adsCard">
+      <h2>📢 الإعلانات</h2>
+      <p>أضف صورة إعلان (مصممة بكانفا مثلاً)، اختر مكانها بالموقع، وشوف شكلها بالمحاكي قبل ما تحفظ. تكدر تغيّر الكلام أو تشيله أو تحذف الإعلان بأي وقت.</p>
+      <div class="form-actions"><button type="button" class="btn-save" onclick="adsOpen(-1)">➕ إضافة إعلان</button></div>
+      <div id="adList" style="margin-top:16px"></div>
+    </div>
+
+    <div id="adModal" role="dialog" aria-label="محرر الإعلان">
+      <div class="adm-box">
+        <div class="adm-head"><h3 id="admTitle">📢 إعلان جديد</h3><button type="button" class="adm-x" onclick="adsClose()" aria-label="إغلاق">✕</button></div>
+        <div class="adm-body">
+          <div class="adm-ctl">
+            <div class="g">
+              <label>صورة الإعلان *</label>
+              <label class="pick" for="adFile">📷 اختيار صورة</label>
+              <input type="file" id="adFile" accept="image/*" style="display:none" onchange="adsPick(this)">
+              <div class="hint" id="adImgInfo">ارفع الصورة كما صممتها بكانفا (مثلاً 1080×540 أو أي مقاس)، تنضغط تلقائياً.</div>
+            </div>
+            <div class="sec">📍 المكان</div>
+            <div class="row2">
+              <div class="g"><label>مكان الإعلان</label>
+                <select data-k="slot" onchange="adsSet(this)"><option value="top">أعلى صفحة العطور</option><option value="between">بين العطور</option><option value="bottom">أسفل الصفحة (بعد العطور)</option></select></div>
+              <div class="g"><label>يظهر في قسم</label>
+                <select data-k="sec" onchange="adsSet(this)"><option value="all">كل الأقسام</option><option value="men">رجالي فقط</option><option value="women">نسائي فقط</option></select></div>
+            </div>
+            <div class="g" id="adGBetween"><label>يظهر بعد العطر رقم</label><input type="number" min="1" max="50" data-k="after" data-n="1" oninput="adsSet(this)"><div class="hint">مثلاً 2 = بين العطر الثاني والثالث. تكدر تضيف أكثر من إعلان بأرقام مختلفة.</div></div>
+            <div class="sec">🖼️ شكل الصورة</div>
+            <div class="g"><label>طريقة العرض</label>
+              <select data-k="mode" onchange="adsSet(this)"><option value="natural">طبيعية (نفس تصميم كانفا بدون قص)</option><option value="fixed">ارتفاع مخصص (تقص وتحرّك الصورة)</option></select></div>
+            <div id="adGFixed">
+              <div class="g"><label>الارتفاع <output id="o_h"></output></label><input type="range" min="100" max="500" step="5" data-k="h" data-n="1" oninput="adsSet(this)"></div>
+              <div class="g"><label>التكبير <output id="o_zoom"></output></label><input type="range" min="1" max="3" step="0.05" data-k="zoom" data-n="1" oninput="adsSet(this)"><div class="hint">اسحب الصورة داخل المحاكي بإصبعك أو الماوس لتحريكها.</div></div>
+            </div>
+            <div class="row2">
+              <div class="g"><label>استدارة الحواف <output id="o_radius"></output></label><input type="range" min="0" max="40" step="1" data-k="radius" data-n="1" oninput="adsSet(this)"></div>
+              <div class="g"><label>الفراغ حول الإعلان <output id="o_gap"></output></label><input type="range" min="0" max="60" step="2" data-k="gap" data-n="1" oninput="adsSet(this)"></div>
+            </div>
+            <div class="sec">✏️ الكلام (اتركه فارغاً حتى ينشال)</div>
+            <div class="g"><label>العنوان</label><input type="text" maxlength="60" data-k="title" oninput="adsSet(this)" placeholder="مثال: خصم 20% على كل العطور"></div>
+            <div class="g"><label>نص ثانوي</label><input type="text" maxlength="120" data-k="sub" oninput="adsSet(this)" placeholder="مثال: لفترة محدودة"></div>
+            <div class="row2">
+              <div class="g"><label>نص الزر</label><input type="text" maxlength="25" data-k="btn" oninput="adsSet(this)" placeholder="اطلب الآن"></div>
+              <div class="g"><label>رابط الإعلان</label><input type="text" maxlength="300" data-k="link" oninput="adsSet(this)" placeholder="https://..."></div>
+            </div>
+            <div class="row2">
+              <div class="g"><label>مكان الكلام</label><select data-k="pos" onchange="adsSet(this)"><option value="top">فوق</option><option value="mid">وسط</option><option value="bot">تحت</option></select></div>
+              <div class="g"><label>محاذاة الكلام</label><select data-k="al" onchange="adsSet(this)"><option value="s">يمين</option><option value="c">وسط</option><option value="e">يسار</option></select></div>
+            </div>
+            <div class="row2">
+              <div class="g"><label>لون الكلام</label><select data-k="color" onchange="adsSet(this)"><option value="white">أبيض</option><option value="dark">غامق</option></select></div>
+              <div class="g"><label>تعتيم الصورة <output id="o_shade"></output></label><input type="range" min="0" max="70" step="5" data-k="shade" data-n="1" oninput="adsSet(this)"></div>
+            </div>
+            <div class="g"><label style="display:flex;align-items:center;gap:8px;cursor:pointer"><input type="checkbox" data-k="active" onchange="adsSet(this)" style="width:18px;height:18px;accent-color:#c45a7a"> الإعلان فعّال (يظهر بالموقع)</label></div>
+          </div>
+          <div class="adm-sw"><h4>📱 المحاكي — هكذا يظهر بالموبايل</h4><div id="adSim"></div></div>
+        </div>
+        <div class="adm-foot">
+          <button type="button" class="ok" onclick="adsSave()">💾 حفظ ونشر</button>
+          <button type="button" class="rm" id="adDelBtn" onclick="adsDelCur()" style="display:none">🗑️ حذف</button>
+          <button type="button" class="cx" onclick="adsClose()">إلغاء</button>
+        </div>
       </div>
     </div>
 
@@ -769,7 +888,7 @@ function refreshFromCloud(){
 document.addEventListener('visibilitychange', function(){ if(!document.hidden) refreshFromCloud(); });
 window.addEventListener('focus', refreshFromCloud);
 setInterval(refreshFromCloud, 30000);
-function initAll(){ try{ spStart(); }catch(e){} try{ rvLoad(); setInterval(rvLoad,30000); }catch(e){} try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
+function initAll(){ try{ window.adsLoad&&window.adsLoad(); }catch(e){} try{ spStart(); }catch(e){} try{ rvLoad(); setInterval(rvLoad,30000); }catch(e){} try{ loadPushAdmin(); }catch(e){} try{ initSections(); }catch(e){}
   initSiteToggle();
   pullFromCloud().then(function(){
     renderStats(); renderOrders(); renderCustomers(); renderCoupons();
@@ -2217,6 +2336,154 @@ async function fullKickAll(){
     });
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+})();
+</script>
+<script>
+
+function dzAdEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dzAdLink(u){u=String(u||'').trim();if(!u)return '';if(/^(https?:\/\/|tel:|mailto:)/i.test(u))return u;if(/^[\w\-\/]+\.html(\?[^\s]*)?(#[^\s]*)?$/i.test(u))return u;if(/^[\w\-]+(\.[\w\-]+)+(\/\S*)?$/i.test(u))return 'https://'+u;return '';}
+function dzAdHtml(a){
+  if(!a||!a.image)return '';
+  var fx=a.mode==='fixed',h=Math.max(80,Math.min(700,Number(a.h)||220));
+  var rad=Number(a.radius);if(isNaN(rad))rad=18;var gap=Number(a.gap);if(isNaN(gap))gap=8;
+  var x=a.x==null?50:Number(a.x),y=a.y==null?50:Number(a.y),z=Math.max(1,Math.min(3,Number(a.zoom)||1));
+  var st='border-radius:'+rad+'px;--g:'+gap+'px;'+(fx?'height:'+h+'px;':'');
+  var img='<img src="'+dzAdEsc(a.image)+'" alt="'+dzAdEsc(a.title||'إعلان')+'" draggable="false"'+(fx?' style="object-position:'+x+'% '+y+'%;transform:scale('+z+');transform-origin:'+x+'% '+y+'%"':'')+'>';
+  var o=Number(a.shade)||0;
+  var shade=o>0?'<div class="dz-ad-o" style="background:rgba(0,0,0,'+(Math.min(70,o)/100)+')"></div>':'';
+  var pos={top:'top',mid:'mid',bot:'bot'}[a.pos]||'bot',al={s:'s',c:'c',e:'e'}[a.al]||'c',dark=a.color==='dark';
+  var txt='';
+  if(a.title||a.sub||a.btn){
+    txt='<div class="dz-ad-t '+pos+' '+al+(dark?'':' lt')+'" style="color:'+(dark?'#3a1626':'#fff')+'">'+
+      (a.title?'<h4>'+dzAdEsc(a.title)+'</h4>':'')+(a.sub?'<p>'+dzAdEsc(a.sub)+'</p>':'')+(a.btn?'<span class="dz-ad-b">'+dzAdEsc(a.btn)+'</span>':'')+'</div>';
+  }
+  var inner=img+shade+txt,cls='dz-ad'+(fx?' fx':''),lk=dzAdLink(a.link);
+  return lk?'<a class="'+cls+'" style="'+st+'" href="'+dzAdEsc(lk)+'" target="_blank" rel="noopener">'+inner+'</a>':'<div class="'+cls+'" style="'+st+'">'+inner+'</div>';
+}
+
+(function(){
+  var KEY='diraz_ads', arr=[], cur=null, editing=-1, drag=null;
+  function $(i){ return document.getElementById(i); }
+  function E(t){ return dzAdEsc(t); }
+  function toast(m){ try{ showToast(m); }catch(e){ alert(m); } }
+  var SLOT={top:'أعلى صفحة العطور',between:'بين العطور',bottom:'أسفل الصفحة'}, SEC={all:'كل الأقسام',men:'رجالي فقط',women:'نسائي فقط'};
+  function def(){ return {id:Date.now().toString(36),slot:'top',after:2,sec:'all',mode:'natural',h:220,zoom:1,x:50,y:50,radius:18,gap:12,title:'',sub:'',btn:'',link:'',pos:'bot',al:'c',color:'white',shade:0,active:true,image:''}; }
+  function saveLocal(){ try{ localStorage.setItem(KEY,JSON.stringify(arr)); return true; }catch(e){ return false; } }
+  async function persist(){
+    var okL=saveLocal();
+    if(!window.DirazCloud){ toast(okL?'💾 انحفظ على هذا الجهاز فقط':'❌ فشل الحفظ'); return false; }
+    try{ await DirazCloud.upsert('site_config',[{key:'ads',value:arr}]); toast('✅ انحفظ ونُشر بالموقع'); return true; }
+    catch(e){ toast('⚠️ فشل الحفظ بالسيرفر، تأكد من تسجيل الدخول'); return false; }
+  }
+  window.adsLoad=async function(){
+    try{ var c=JSON.parse(localStorage.getItem(KEY)||'null'); if(Array.isArray(c)) arr=c; }catch(e){}
+    render();
+    if(!window.DirazCloud) return;
+    try{ var rows=await DirazCloud.list('site_config','&key=eq.ads'); var v=rows&&rows[0]&&rows[0].value; if(Array.isArray(v)){ arr=v; saveLocal(); render(); } }catch(e){}
+  };
+  function render(){
+    var box=$('adList'); if(!box) return;
+    if(!arr.length){ box.innerHTML='<div class="no-items">لا توجد إعلانات بعد، اضغط «إضافة إعلان»</div>'; return; }
+    box.innerHTML=arr.map(function(a,i){
+      return '<div class="ad-item'+(a.active===false?' off':'')+'">'+
+        '<img class="ad-thumb" src="'+E(a.image)+'" alt="">'+
+        '<div class="ad-info"><b>'+E(a.title||'بدون عنوان')+'</b><br>📍 '+E(SLOT[a.slot]||'')+(a.slot==='between'?' (بعد العطر '+(Number(a.after)||1)+')':'')+' • '+E(SEC[a.sec]||SEC.all)+'<br>'+(a.active===false?'⏸️ متوقف':'🟢 فعّال')+'</div>'+
+        '<div class="ad-btns"><button type="button" onclick="adsAct(\'up\','+i+')">↑</button><button type="button" onclick="adsAct(\'down\','+i+')">↓</button>'+
+        '<button type="button" onclick="adsAct(\'tog\','+i+')">'+(a.active===false?'تفعيل':'إيقاف')+'</button>'+
+        '<button type="button" onclick="adsAct(\'edit\','+i+')">✏️ تعديل</button><button type="button" class="del" onclick="adsAct(\'del\','+i+')">🗑️</button></div></div>';
+    }).join('');
+  }
+  window.adsAct=async function(w,i){
+    if(w==='edit') return window.adsOpen(i);
+    if(w==='del'){ if(!confirm('حذف هذا الإعلان؟')) return; arr.splice(i,1); }
+    else if(w==='tog'){ arr[i].active=(arr[i].active===false); }
+    else if(w==='up'&&i>0){ var t=arr[i]; arr[i]=arr[i-1]; arr[i-1]=t; }
+    else if(w==='down'&&i<arr.length-1){ var t2=arr[i]; arr[i]=arr[i+1]; arr[i+1]=t2; }
+    else return;
+    render(); await persist();
+  };
+  function fill(){
+    Array.prototype.forEach.call(document.querySelectorAll('#adModal [data-k]'),function(el){
+      var k=el.getAttribute('data-k');
+      if(el.type==='checkbox') el.checked=cur[k]!==false; else el.value=cur[k]==null?'':cur[k];
+    });
+  }
+  function ui(){
+    $('adGBetween').style.display=cur.slot==='between'?'':'none';
+    $('adGFixed').style.display=cur.mode==='fixed'?'':'none';
+    var u={h:' px',zoom:'×',radius:' px',gap:' px',shade:'%'};
+    Object.keys(u).forEach(function(k){ var o=$('o_'+k); if(o) o.textContent=cur[k]+u[k]; });
+  }
+  function sim(focus){
+    var ad=cur.image?dzAdHtml(cur):'<div class="sim-ph">⬆️ اختر صورة وراح تظهر هنا</div>';
+    var n=Math.max(1,Math.min(4,Number(cur.after)||1)), cards='';
+    for(var i=1;i<=4;i++){ cards+='<div class="sim-card">عطر '+i+'</div>'+((cur.slot==='between'&&n===i)?ad:''); }
+    var box=$('adSim');
+    box.innerHTML='<div class="sim-hdr">DIRAZ PERFUME</div><div class="sim-body">'+(cur.slot==='top'?ad:'')+'<div class="sim-title">🌺 عطورنا</div>'+cards+(cur.slot==='bottom'?ad:'')+'</div>';
+    Array.prototype.forEach.call(box.querySelectorAll('a.dz-ad'),function(x){ x.addEventListener('click',function(e){ e.preventDefault(); }); });
+    if(focus){ var el=box.querySelector('.dz-ad,.sim-ph'); if(el) box.scrollTop=Math.max(0,el.offsetTop-60); }
+  }
+  window.adsSet=function(el){
+    var k=el.getAttribute('data-k');
+    cur[k]= el.type==='checkbox' ? el.checked : (el.getAttribute('data-n')!==null ? (Number(el.value)||0) : el.value);
+    if(k==='after'&&cur.after<1) cur.after=1;
+    ui(); sim(k==='slot'||k==='after'||k==='mode');
+  };
+  window.adsOpen=function(i){
+    editing=i; cur=Object.assign(def(), i>=0?JSON.parse(JSON.stringify(arr[i])):{});
+    $('admTitle').textContent=i>=0?'✏️ تعديل الإعلان':'📢 إعلان جديد';
+    $('adDelBtn').style.display=i>=0?'':'none';
+    $('adImgInfo').textContent='ارفع الصورة كما صممتها بكانفا (أي مقاس)، تنضغط تلقائياً.';
+    fill(); ui(); sim(true); $('adModal').classList.add('on');
+  };
+  window.adsClose=function(){ $('adModal').classList.remove('on'); };
+  window.adsPick=function(inp){
+    var f=inp.files&&inp.files[0]; if(!f) return;
+    if(!/^image\//.test(f.type)){ toast('❌ اختر ملف صورة'); inp.value=''; return; }
+    var fr=new FileReader();
+    fr.onload=function(){
+      var im=new Image();
+      im.onload=function(){
+        var r=Math.min(1,1200/im.width), c=document.createElement('canvas');
+        c.width=Math.round(im.width*r); c.height=Math.round(im.height*r);
+        c.getContext('2d').drawImage(im,0,0,c.width,c.height);
+        var q=.88, out=c.toDataURL('image/webp',q);
+        if(out.indexOf('image/webp')<0) out=c.toDataURL('image/jpeg',q);
+        while(out.length>450000&&q>.45){ q-=.1; out=c.toDataURL(out.indexOf('image/webp')>=0?'image/webp':'image/jpeg',q); }
+        cur.image=out; cur.x=50; cur.y=50;
+        $('adImgInfo').textContent='✅ '+im.width+'×'+im.height+' px • الحجم بعد الضغط ~'+Math.round(out.length/1370)+' KB';
+        sim(true);
+      };
+      im.onerror=function(){ toast('❌ تعذّر قراءة الصورة'); };
+      im.src=fr.result;
+    };
+    fr.readAsDataURL(f); inp.value='';
+  };
+  window.adsSave=async function(){
+    if(!cur.image){ toast('⚠️ اختر صورة للإعلان أولاً'); return; }
+    if(cur.link&&!dzAdLink(cur.link)){ toast('⚠️ الرابط غير صحيح'); return; }
+    if(editing>=0) arr[editing]=cur; else arr.push(cur);
+    render(); var ok=await persist(); if(ok) adsClose();
+  };
+  window.adsDelCur=async function(){
+    if(editing<0) return; if(!confirm('حذف هذا الإعلان؟')) return;
+    arr.splice(editing,1); render(); adsClose(); await persist();
+  };
+  function clamp(v){ return Math.max(0,Math.min(100,Math.round(v*10)/10)); }
+  document.addEventListener('DOMContentLoaded',function(){
+    var box=$('adSim'); if(!box) return;
+    box.addEventListener('pointerdown',function(e){
+      var el=e.target.closest&&e.target.closest('.dz-ad.fx'); if(!el||cur.mode!=='fixed') return;
+      var r=el.getBoundingClientRect(); drag={sx:e.clientX,sy:e.clientY,x:Number(cur.x),y:Number(cur.y),w:r.width,h:r.height,el:el};
+      try{ el.setPointerCapture(e.pointerId); }catch(x){} e.preventDefault();
+    });
+    box.addEventListener('pointermove',function(e){
+      if(!drag) return;
+      cur.x=clamp(drag.x-(e.clientX-drag.sx)/drag.w*100); cur.y=clamp(drag.y-(e.clientY-drag.sy)/drag.h*100);
+      var im=drag.el.querySelector('img'); if(im){ im.style.objectPosition=cur.x+'% '+cur.y+'%'; im.style.transformOrigin=cur.x+'% '+cur.y+'%'; }
+    });
+    ['pointerup','pointercancel'].forEach(function(n){ box.addEventListener(n,function(){ drag=null; }); });
+  });
 })();
 </script>
 </body>

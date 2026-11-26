@@ -573,6 +573,38 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
   header .customer-btn,header .cart-icon-btn,header .back-btn{width:34px;height:34px}
 }
 </style>
+<style id="dzAdsCss">
+.rv-bar{display:flex;justify-content:center;margin:0 0 18px}
+.rv-dots{display:inline-flex;align-items:center;gap:10px;background:#fff;color:var(--pink-deep);border:0;border-radius:50px;padding:7px 18px;font-family:'Cairo',sans-serif;font-weight:800;font-size:.85rem;cursor:pointer;box-shadow:0 3px 12px rgba(196,90,122,.2);transition:transform .2s}
+.rv-dots:hover{transform:translateY(-2px)}
+.rv-dots i{font-style:normal;font-size:1rem;line-height:1;letter-spacing:2px;font-weight:900}
+#rvAll{position:fixed;inset:0;z-index:10090;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(60,15,40,.55);direction:rtl;font-family:'Cairo',sans-serif}
+#rvAll.on{display:flex}
+.rva-box{background:#fff;color:#333;width:min(460px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;border-radius:22px;overflow:hidden;box-shadow:0 18px 60px rgba(120,30,70,.4)}
+.rva-head{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f1dde6}
+.rva-head h3{color:var(--pink-deep);font-size:1.1rem;font-weight:900}
+.rva-head small{font-size:.8rem;color:#999;font-weight:700}
+.rva-x{border:0;background:var(--pink-light);color:var(--pink-deep);width:34px;height:34px;border-radius:50%;font-size:1rem;font-weight:900;cursor:pointer}
+.rva-list{overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px;flex:1}
+.rva-list .rv-card{position:static;width:auto;transform:none;left:auto;top:auto}
+.rva-list .rv-bd{display:block;-webkit-line-clamp:unset;overflow:visible}
+.rva-empty{text-align:center;color:#999;padding:30px 10px;font-weight:700}
+.rva-foot{padding:12px 16px;border-top:1px solid #f1dde6}
+.rva-add{width:100%;padding:12px;border:0;border-radius:50px;background:var(--pink-deep);color:#fff;font-family:'Cairo',sans-serif;font-weight:900;font-size:1rem;cursor:pointer}
+
+.dz-ad{display:block;position:relative;overflow:hidden;margin:var(--g,8px) 0;box-shadow:0 6px 20px rgba(120,30,70,.18);text-decoration:none;color:inherit;font-family:'Cairo',sans-serif;direction:rtl}
+.dz-ad>img{display:block;width:100%;height:auto;user-select:none;-webkit-user-drag:none}
+.dz-ad.fx>img{height:100%;object-fit:cover}
+.dz-ad-o{position:absolute;inset:0;pointer-events:none}
+.dz-ad-t{position:absolute;inset:0;display:flex;flex-direction:column;padding:16px 18px;gap:6px;pointer-events:none}
+.dz-ad-t.top{justify-content:flex-start}.dz-ad-t.mid{justify-content:center}.dz-ad-t.bot{justify-content:flex-end}
+.dz-ad-t.s{align-items:flex-start;text-align:right}.dz-ad-t.c{align-items:center;text-align:center}.dz-ad-t.e{align-items:flex-end;text-align:left}
+.dz-ad-t h4{font-size:1.3rem;font-weight:900;line-height:1.35;margin:0}
+.dz-ad-t p{font-size:.92rem;font-weight:700;line-height:1.5;margin:0}
+.dz-ad-t.lt{text-shadow:0 2px 10px rgba(0,0,0,.45)}
+.dz-ad-b{display:inline-block;padding:8px 22px;border-radius:50px;background:#fff;color:#c45a7a;font-weight:900;font-size:.86rem;margin-top:4px;box-shadow:0 3px 10px rgba(0,0,0,.18)}
+.perfumes-grid>.dz-ad{grid-column:1/-1}
+</style>
 </head>
 <body class="sec-pick">
 
@@ -692,7 +724,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
       </button>
       <button type="button" role="menuitem" class="rev-btn" onclick="dzMenuGo('review')">
         <span class="mi-ico">⭐</span>
-        <span class="mi-txt">الآراء<small>شاركنا رأيك</small></span>
+        <span class="mi-txt">الآراء<small>شاهد الآراء وشاركنا رأيك</small></span>
       </button>
     </div>
     <img src="images/logo.jpg" alt="شعار ديراز للعطور" class="logo">
@@ -711,7 +743,8 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
 </header>
 
 <main>
-  <div class="rv-strip" id="rvStrip" style="display:none" aria-label="آراء الزبائن"><div class="rv-track" id="rvTrack"></div></div>
+  <div class="rv-bar" id="rvBar"><button type="button" class="rv-dots" onclick="dzReviewsAll()" aria-label="آراء الزبائن"><i>&#8226;&#8226;&#8226;</i><span>آراء الزبائن</span></button></div>
+  <div id="dzAdTop"></div>
   <div class="page-title">
     <h1>🌺 عطورنا</h1>
     <p>اكتشف مجموعتنا المميزة من العطور الفاخرة</p>
@@ -738,6 +771,7 @@ body.sec-men .card-name-ar,body.sec-men .card-desc{text-shadow:0 1px 5px rgba(26
     </div>
     <div class="soon-box" id="soonBox" style="display:none">هذا القسم قريباً<small>نجهّز لكم أجمل العطور، ترقّبونا</small></div>
     <div class="perfumes-grid" id="perfumesGrid"></div>
+    <div id="dzAdBottom"></div>
     <div class="order-bar">
       <a href="contact.html" class="order-btn">&#128235; للاستفسار</a>
     </div>
@@ -1627,6 +1661,7 @@ function renderCards(){
   grid.querySelectorAll('.zoomable-perfume-image').forEach(image=>{
     image.addEventListener('click',()=>openImageLightbox(image.src));
   });
+  try{ if(window.dzRenderAds) window.dzRenderAds(); }catch(e){}
 }
 
 // ── الأقسام (رجالي / نسائي) ──
@@ -1712,6 +1747,67 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
 </script>
 
 
+<!-- ═══ الإعلانات ═══ -->
+<script>
+
+function dzAdEsc(t){return String(t==null?'':t).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function dzAdLink(u){u=String(u||'').trim();if(!u)return '';if(/^(https?:\/\/|tel:|mailto:)/i.test(u))return u;if(/^[\w\-\/]+\.html(\?[^\s]*)?(#[^\s]*)?$/i.test(u))return u;if(/^[\w\-]+(\.[\w\-]+)+(\/\S*)?$/i.test(u))return 'https://'+u;return '';}
+function dzAdHtml(a){
+  if(!a||!a.image)return '';
+  var fx=a.mode==='fixed',h=Math.max(80,Math.min(700,Number(a.h)||220));
+  var rad=Number(a.radius);if(isNaN(rad))rad=18;var gap=Number(a.gap);if(isNaN(gap))gap=8;
+  var x=a.x==null?50:Number(a.x),y=a.y==null?50:Number(a.y),z=Math.max(1,Math.min(3,Number(a.zoom)||1));
+  var st='border-radius:'+rad+'px;--g:'+gap+'px;'+(fx?'height:'+h+'px;':'');
+  var img='<img src="'+dzAdEsc(a.image)+'" alt="'+dzAdEsc(a.title||'إعلان')+'" draggable="false"'+(fx?' style="object-position:'+x+'% '+y+'%;transform:scale('+z+');transform-origin:'+x+'% '+y+'%"':'')+'>';
+  var o=Number(a.shade)||0;
+  var shade=o>0?'<div class="dz-ad-o" style="background:rgba(0,0,0,'+(Math.min(70,o)/100)+')"></div>':'';
+  var pos={top:'top',mid:'mid',bot:'bot'}[a.pos]||'bot',al={s:'s',c:'c',e:'e'}[a.al]||'c',dark=a.color==='dark';
+  var txt='';
+  if(a.title||a.sub||a.btn){
+    txt='<div class="dz-ad-t '+pos+' '+al+(dark?'':' lt')+'" style="color:'+(dark?'#3a1626':'#fff')+'">'+
+      (a.title?'<h4>'+dzAdEsc(a.title)+'</h4>':'')+(a.sub?'<p>'+dzAdEsc(a.sub)+'</p>':'')+(a.btn?'<span class="dz-ad-b">'+dzAdEsc(a.btn)+'</span>':'')+'</div>';
+  }
+  var inner=img+shade+txt,cls='dz-ad'+(fx?' fx':''),lk=dzAdLink(a.link);
+  return lk?'<a class="'+cls+'" style="'+st+'" href="'+dzAdEsc(lk)+'" target="_blank" rel="noopener">'+inner+'</a>':'<div class="'+cls+'" style="'+st+'">'+inner+'</div>';
+}
+
+(function(){
+  var ads=[];
+  function list(slot){ return ads.filter(function(a){ return a && a.image && a.active!==false && a.slot===slot && (!a.sec||a.sec==='all'||a.sec===curSection); }); }
+  window.dzRenderAds=function(){
+    var t=document.getElementById('dzAdTop'), b=document.getElementById('dzAdBottom');
+    if(t) t.innerHTML=list('top').map(dzAdHtml).join('');
+    if(b) b.innerHTML=list('bottom').map(dzAdHtml).join('');
+    var grid=document.getElementById('perfumesGrid'); if(!grid) return;
+    Array.prototype.slice.call(grid.children).forEach(function(n){ if(n.classList.contains('dz-ad')) n.remove(); });
+    if(!curSection || (typeof searchQ!=='undefined' && searchQ)) return;
+    var cards=Array.prototype.slice.call(grid.children).filter(function(c){ return c.classList.contains('card'); });
+    if(!cards.length) return;
+    list('between').slice().sort(function(a,b){ return (Number(b.after)||1)-(Number(a.after)||1); }).forEach(function(a){
+      var n=Math.max(1,Math.min(cards.length,Number(a.after)||1));
+      var tmp=document.createElement('div'); tmp.innerHTML=dzAdHtml(a); var el=tmp.firstChild; if(!el) return;
+      cards[n-1].insertAdjacentElement('afterend',el);
+    });
+  };
+  var _sp=window.showPicker;
+  if(typeof _sp==='function') window.showPicker=function(){ _sp.apply(this,arguments); try{ window.dzRenderAds(); }catch(e){} };
+  function done(v){ if(!Array.isArray(v)) return; ads=v; try{ localStorage.setItem('diraz_ads',JSON.stringify(v)); }catch(e){} window.dzRenderAds(); }
+  try{ var c=JSON.parse(localStorage.getItem('diraz_ads')||'null'); if(Array.isArray(c)){ ads=c; window.dzRenderAds(); } }catch(e){}
+  if(window.DirazCloud){
+    DirazCloud.rpc('site_ads').then(done).catch(function(){
+      DirazCloud.list('site_config','&key=eq.ads').then(function(r){ done(r&&r[0]&&r[0].value); }).catch(function(){});
+    });
+  }
+})();
+</script>
+<!-- ═══ كل الآراء ═══ -->
+<div id="rvAll" role="dialog" aria-label="آراء الزبائن">
+  <div class="rva-box">
+    <div class="rva-head"><h3>⭐ آراء الزبائن <small id="rvaCount"></small></h3><button type="button" class="rva-x" onclick="dzReviewsAllClose()" aria-label="إغلاق">✕</button></div>
+    <div class="rva-list" id="rvaList"></div>
+    <div class="rva-foot"><button type="button" class="rva-add" onclick="dzRvAddFromList()">＋ إضافة رأي</button></div>
+  </div>
+</div>
 <!-- ═══ الآراء ═══ -->
 <div id="rvModal" role="dialog" aria-label="إضافة رأي">
   <div class="rv-box" id="rvBox">
@@ -1756,36 +1852,19 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     return '<div class="rv-card '+g+'" title="'+esc(r.body)+'"><div class="rv-av">'+AV[g]+'</div>'+
       '<div class="rv-tx"><div class="rv-nm">'+esc(r.name)+'</div><div class="rv-bd">'+esc(r.body)+'</div></div></div>';
   }
-  var queue=[], qi=0, anim=null, timer=null, started=false;
-  var reduced=window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function showNext(delay){
-    clearTimeout(timer);
-    timer=setTimeout(function(){
-      var strip=$('rvStrip'), stage=$('rvTrack');
-      if(!queue.length) return;
-      stage.innerHTML=cardHtml(queue[qi%queue.length]); qi++;
-      var el=stage.firstChild, sw=strip.clientWidth, cw=el.offsetWidth;
-      if(reduced || !el.animate){ el.style.left=Math.max(0,(sw-cw)/2)+'px'; timer=setTimeout(function(){ showNext(0); },6000); return; }
-      var dur=Math.max(8000,Math.round((sw+cw)/0.055)); // حوالي 55 بكسل بالثانية
-      anim=el.animate([{transform:'translateX('+(-cw)+'px)'},{transform:'translateX('+sw+'px)'}],{duration:dur,easing:'linear',fill:'forwards'});
-      anim.onfinish=function(){ stage.innerHTML=''; anim=null; showNext(700); };
-    },delay);
+  var allList=[];
+  function fill(){
+    $('rvaList').innerHTML = allList.length ? allList.map(cardHtml).join('') : '<div class="rva-empty">لا توجد آراء بعد، كن أول من يشاركنا رأيه 🌸</div>';
+    $('rvaCount').textContent = allList.length ? '('+allList.length+')' : '';
   }
-  function render(list){
-    queue=list;
-    $('rvStrip').style.display='block';
-    if(started) return; started=true;
-    var strip=$('rvStrip');
-    function hold(){ if(anim) anim.pause(); }
-    function go(){ if(anim) anim.play(); }
-    strip.addEventListener('mouseenter',hold); strip.addEventListener('mouseleave',go);
-    strip.addEventListener('touchstart',hold,{passive:true});
-    strip.addEventListener('touchend',function(){ setTimeout(go,1500); },{passive:true});
-    showNext(0);
-  }
+  window.dzReviewsAll=function(){ fill(); $('rvAll').classList.add('on'); load(); };
+  window.dzReviewsAllClose=function(){ $('rvAll').classList.remove('on'); };
+  window.dzRvAddFromList=function(){ dzReviewsAllClose(); dzReviewOpen(); };
+  $('rvAll').addEventListener('click',function(e){ if(e.target===this) dzReviewsAllClose(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') dzReviewsAllClose(); });
   function load(){
     if(!window.DirazCloud) return;
-    DirazCloud.rpc('approved_reviews').then(function(r){ if(Array.isArray(r)&&r.length) render(r); }).catch(function(){});
+    DirazCloud.rpc('approved_reviews').then(function(r){ if(Array.isArray(r)){ allList=r; if($('rvAll').classList.contains('on')) fill(); } }).catch(function(){});
   }
 
   function warn(m){ var el=$('rvMsg'); if(!el) return; el.textContent=m||''; el.classList.toggle('on',!!m); }
@@ -2166,7 +2245,7 @@ document.addEventListener('keydown',e=>{ if(e.key==='Escape' && document.getElem
     closeMenu();
     if(what==='orders' && window.dzOrdersOpen) window.dzOrdersOpen();
     else if(what==='support' && window.dzSupportOpen) window.dzSupportOpen();
-    else if(what==='review' && window.dzReviewOpen) window.dzReviewOpen();
+    else if(what==='review' && window.dzReviewsAll) window.dzReviewsAll();
   };
   document.addEventListener('click',function(e){ if(!menu.contains(e.target) && !btn.contains(e.target)) closeMenu(); });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeMenu(); });
